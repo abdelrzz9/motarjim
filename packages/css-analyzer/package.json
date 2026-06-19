@@ -8,6 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@html-native/shared": "0.1.0"
+    "@html-native/shared": "0.1.0",
+    "postcss": "^8.5.15"
   }
 }

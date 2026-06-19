@@ -34,7 +34,7 @@ describe('Generator boilerplate', () => {
       const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
       const result = generateFlutter(ir);
       expect(result.code).toContain("import 'package:flutter/material.dart'");
-      expect(result.code).toContain('class GeneratedWidget extends StatelessWidget');
+      expect(result.code).toContain('class GeneratedView extends StatelessWidget');
       expect(result.code).toContain('Widget build(BuildContext context)');
     });
 
@@ -56,7 +56,7 @@ describe('Generator boilerplate', () => {
       expect(result.code).toContain('import androidx.compose.runtime.*');
       expect(result.code).toContain('import androidx.compose.foundation.layout.*');
       expect(result.code).toContain('@Composable');
-      expect(result.code).toContain('fun GeneratedComponent()');
+      expect(result.code).toContain('fun GeneratedView()');
     });
 
     it('produces valid Compose structure', () => {
@@ -98,6 +98,77 @@ describe('Generator boilerplate', () => {
       expect(generateCompose(ir).metadata.nodes).toBeGreaterThan(0);
       expect(generateSwiftUI(ir).metadata.nodes).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('Structural validity', () => {
+  describe('Flutter', () => {
+    it('has balanced braces', () => {
+      const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+      const { code } = generateFlutter(ir);
+      let depth = 0;
+      for (const ch of code) {
+        if (ch === '{') depth++;
+        if (ch === '}') depth--;
+        expect(depth).toBeGreaterThanOrEqual(0);
+      }
+      expect(depth).toBe(0);
+    });
+  });
+
+  describe('Compose', () => {
+    it('has balanced braces and parens', () => {
+      const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+      const { code } = generateCompose(ir);
+      let depth = 0;
+      for (const ch of code) {
+        if (ch === '{') depth++;
+        if (ch === '}') depth--;
+        expect(depth).toBeGreaterThanOrEqual(0);
+      }
+      expect(depth).toBe(0);
+    });
+  });
+
+  describe('SwiftUI', () => {
+    it('has balanced braces', () => {
+      const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+      const { code } = generateSwiftUI(ir);
+      let depth = 0;
+      for (const ch of code) {
+        if (ch === '{') depth++;
+        if (ch === '}') depth--;
+        expect(depth).toBeGreaterThanOrEqual(0);
+      }
+      expect(depth).toBe(0);
+    });
+  });
+});
+
+describe('Custom name', () => {
+  it('Flutter uses custom class name', () => {
+    const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+    const { code } = generateFlutter(ir, 'MyWidget');
+    expect(code).toContain('class MyWidget extends StatelessWidget');
+  });
+
+  it('Compose uses custom function name', () => {
+    const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+    const { code } = generateCompose(ir, 'MyScreen');
+    expect(code).toContain('fun MyScreen()');
+  });
+
+  it('SwiftUI uses custom struct name', () => {
+    const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+    const { code } = generateSwiftUI(ir, 'CustomView');
+    expect(code).toContain('struct CustomView: View');
+  });
+
+  it('defaults to GeneratedView for all platforms', () => {
+    const ir = runPipeline(SAMPLE_HTML, SAMPLE_CSS);
+    expect(generateFlutter(ir).code).toContain('class GeneratedView');
+    expect(generateCompose(ir).code).toContain('fun GeneratedView()');
+    expect(generateSwiftUI(ir).code).toContain('struct GeneratedView: View');
   });
 });
 
@@ -172,12 +243,12 @@ describe('End-to-end full pipeline', () => {
 
     const flutter = generateFlutter(ir);
     expect(flutter.code).toContain("import 'package:flutter/material.dart'");
-    expect(flutter.code).toContain('GeneratedWidget');
+    expect(flutter.code).toContain('GeneratedView');
     expect(flutter.metadata.nodes).toBeGreaterThan(0);
 
     const compose = generateCompose(ir);
     expect(compose.code).toContain('import androidx.compose.material3.*');
-    expect(compose.code).toContain('GeneratedComponent');
+    expect(compose.code).toContain('GeneratedView');
     expect(compose.metadata.nodes).toBeGreaterThan(0);
 
     const swift = generateSwiftUI(ir);

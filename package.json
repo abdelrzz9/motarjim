@@ -10,6 +10,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bench": "npx tsx benchmarks/run.ts",
+    "gen-fixtures": "npx tsx benchmarks/fixtures/generate.ts",
     "lint": "eslint packages/",
     "format": "prettier --write 'packages/**/*.ts'",
     "typecheck": "tsc --noEmit"
@@ -23,7 +25,6 @@
   },
   "dependencies": {
     "commander": "^12.0.0",
-    "parse5": "^7.1.2",
-    "postcss": "^8.5.15"
+    "parse5": "^7.1.2"
   }
 }

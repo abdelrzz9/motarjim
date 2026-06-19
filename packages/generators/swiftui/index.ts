@@ -75,7 +75,7 @@ const swiftuiEmitter: NodeEmitter = {
   },
 };
 
-export function generate(node: UiNode): GenerateResult {
+export function generate(node: UiNode, name: string = 'GeneratedView'): GenerateResult {
   const start = performance.now();
 
   const body = walkTree(node, swiftuiEmitter, 0);
@@ -86,7 +86,7 @@ export function generate(node: UiNode): GenerateResult {
 
   const code = `import SwiftUI
 
-struct GeneratedView: View {
+struct ${name}: View {
     var body: some View {
 ${indentedBody}
     }

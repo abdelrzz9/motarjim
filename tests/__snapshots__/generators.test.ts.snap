@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 
 @Composable
-fun GeneratedComponent() {
+fun GeneratedView() {
     Column {
         Card(
             modifier = Modifier
@@ -27,7 +27,7 @@ fun GeneratedComponent() {
 exports[`Snapshot tests > card-grid > Flutter snapshot > flutter-card-grid 1`] = `
 "import 'package:flutter/material.dart';
 
-class GeneratedWidget extends StatelessWidget {
+class GeneratedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -76,7 +76,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 
 @Composable
-fun GeneratedComponent() {
+fun GeneratedView() {
     Column {
         Text(text = "Contact")
         OutlinedTextField(
@@ -102,7 +102,7 @@ fun GeneratedComponent() {
 exports[`Snapshot tests > contact-form > Flutter snapshot > flutter-contact-form 1`] = `
 "import 'package:flutter/material.dart';
 
-class GeneratedWidget extends StatelessWidget {
+class GeneratedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -158,7 +158,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 
 @Composable
-fun GeneratedComponent() {
+fun GeneratedView() {
     Column {
         Text(text = "Welcome Build something great")
         Button(
@@ -174,7 +174,7 @@ fun GeneratedComponent() {
 exports[`Snapshot tests > hero-section > Flutter snapshot > flutter-hero-section 1`] = `
 "import 'package:flutter/material.dart';
 
-class GeneratedWidget extends StatelessWidget {
+class GeneratedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -214,7 +214,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 
 @Composable
-fun GeneratedComponent() {
+fun GeneratedView() {
     TopAppBar(
         title = { Text("Title") }
     )
@@ -225,7 +225,7 @@ fun GeneratedComponent() {
 exports[`Snapshot tests > nav-bar > Flutter snapshot > flutter-nav-bar 1`] = `
 "import 'package:flutter/material.dart';
 
-class GeneratedWidget extends StatelessWidget {
+class GeneratedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(

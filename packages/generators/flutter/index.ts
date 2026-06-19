@@ -85,7 +85,7 @@ const flutterEmitter: NodeEmitter = {
   },
 };
 
-export function generate(node: UiNode): GenerateResult {
+export function generate(node: UiNode, name: string = 'GeneratedView'): GenerateResult {
   const start = performance.now();
 
   const body = walkTree(node, flutterEmitter, 0);
@@ -96,7 +96,7 @@ export function generate(node: UiNode): GenerateResult {
 
   const code = `import 'package:flutter/material.dart';
 
-class GeneratedWidget extends StatelessWidget {
+class ${name} extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ${indentedBody};

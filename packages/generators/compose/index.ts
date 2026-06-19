@@ -77,7 +77,7 @@ const composeEmitter: NodeEmitter = {
   },
 };
 
-export function generate(node: UiNode): GenerateResult {
+export function generate(node: UiNode, name: string = 'GeneratedView'): GenerateResult {
   const start = performance.now();
 
   const body = walkTree(node, composeEmitter, 0);
@@ -92,7 +92,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Modifier
 
 @Composable
-fun GeneratedComponent() {
+fun ${name}() {
 ${indentedBody}
 }
 `;
