@@ -6,6 +6,8 @@ import {
   UiNodeType,
 } from '@html-native/shared';
 
+export type { SemanticDetector } from './ai.js';
+
 export function detectSemantics(
   styledNodes: StyledNode[],
 ): SemanticHint[] {

@@ -2,8 +2,14 @@
   "name": "@html-native/semantic-analyzer",
   "version": "0.1.0",
   "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "index.ts",
+  "types": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./ai": "./ai.ts",
+    "./ai.js": "./ai.ts"
+  },
   "scripts": {
     "build": "tsc"
   },

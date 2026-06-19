@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { resolve } from 'path';
 import { parseHtml } from '@html-native/parser';
 import { parseCss, applyStyles } from '@html-native/css-analyzer';
 import { detectSemantics } from '@html-native/semantic-analyzer';
@@ -10,6 +10,7 @@ import { optimize } from '@html-native/optimizer';
 import { generate as generateFlutter } from '@html-native/generator-flutter';
 import { generate as generateCompose } from '@html-native/generator-compose';
 import { generate as generateSwiftUI } from '@html-native/generator-swiftui';
+import { createAiDetector } from '@html-native/semantic-analyzer/ai';
 
 const program = new Command();
 
@@ -25,6 +26,8 @@ program
   .option('-c, --css <path>', 'Input CSS file')
   .requiredOption('-t, --target <platform>', 'Target platform: flutter, compose, swiftui')
   .option('-o, --output <path>', 'Output file path')
+  .option('--ai-enhance', 'Use Ollama AI for enhanced semantic detection (optional, local-only)')
+  .option('--ai-model <model>', 'Ollama model name (default: qwen2.5:7b)')
   .action(async (opts) => {
     const inputPath = resolve(opts.input);
     if (!existsSync(inputPath)) {
@@ -51,8 +54,16 @@ program
       const stylesheet = parseCss(css);
       const styledNodes = applyStyles(ast.children, stylesheet);
 
-      // 3. Semantic analysis
-      const hints = detectSemantics(styledNodes);
+      // 3. Semantic analysis (optional AI enhancement)
+      let hints;
+      if (opts.aiEnhance) {
+        console.error('Using AI-enhanced semantic detection (Ollama)...');
+        const aiDetector = createAiDetector(opts.aiModel ? { model: opts.aiModel } : undefined);
+        hints = await aiDetector(styledNodes);
+      } else {
+        hints = detectSemantics(styledNodes);
+      }
+
       const rootStyled: import('@html-native/shared').StyledNode = {
         node: ast,
         styles: {},

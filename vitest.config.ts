@@ -14,6 +14,7 @@ export default defineConfig({
       '@html-native/generator-compose': resolve(__dirname, 'packages/generators/compose/index.ts'),
       '@html-native/generator-swiftui': resolve(__dirname, 'packages/generators/swiftui/index.ts'),
       '@html-native/cli': resolve(__dirname, 'packages/cli/index.ts'),
+      '@html-native/semantic-analyzer/ai': resolve(__dirname, 'packages/semantic-analyzer/ai.ts'),
     },
   },
   test: {
