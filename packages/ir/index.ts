@@ -6,8 +6,9 @@ export function createIrNode(
   type: UiNode['type'],
   properties: Record<string, unknown> = {},
   children: UiNode[] = [],
+  value?: string,
 ): UiNode {
-  return { type, properties, children };
+  return { type, properties, children, value };
 }
 
 export function styledNodeToIr(styled: StyledNode, hints: SemanticHint[] = []): UiNode {
@@ -27,9 +28,34 @@ export function styledNodeToIr(styled: StyledNode, hints: SemanticHint[] = []): 
 
   Object.assign(props, extractProps(styled));
 
-  const children = styled.children.map(c => styledNodeToIr(c, hints));
+  const nodeValue = (props.value as string) || undefined;
+  delete props.value;
 
-  return createIrNode(type, props, children);
+  // For text-like elements (h1-h6, p, span, #text), extract text from child #text nodes
+  const textTags = new Set(['h1','h2','h3','h4','h5','h6','p','span','a','label','#text']);
+  let effectiveValue = nodeValue;
+
+  if (!effectiveValue && textTags.has(tag)) {
+    const textParts: string[] = [];
+    for (const child of styled.children) {
+      if (child.node.tagName === '#text' && child.node.value) {
+        textParts.push(child.node.value);
+      }
+    }
+    if (textParts.length > 0) {
+      effectiveValue = textParts.join(' ');
+    }
+  }
+
+  // Build children, skipping #text nodes whose content was absorbed
+  const children = styled.children
+    .filter(c => {
+      if (effectiveValue && textTags.has(tag) && c.node.tagName === '#text') return false;
+      return true;
+    })
+    .map(c => styledNodeToIr(c, hints));
+
+  return createIrNode(type, props, children, effectiveValue);
 }
 
 function inferType(
@@ -101,8 +127,9 @@ function extractProps(styled: StyledNode): Record<string, unknown> {
   if (s['box-shadow']) props.boxShadow = s['box-shadow'];
   if (s['position']) props.position = s['position'];
 
-  const valueAttr = styled.node.attributes.find(a => a.name === 'value');
-  if (valueAttr) props.value = valueAttr.value;
+  if (styled.node.value) {
+    props.value = styled.node.value;
+  }
 
   const srcAttr = styled.node.attributes.find(a => a.name === 'src');
   if (srcAttr) props.src = srcAttr.value;
@@ -113,9 +140,9 @@ function extractProps(styled: StyledNode): Record<string, unknown> {
   const hrefAttr = styled.node.attributes.find(a => a.name === 'href');
   if (hrefAttr) props.href = hrefAttr.value;
 
-  const text = styled.node.attributes.find(a => a.name === 'value');
-  if (styled.node.tagName === '#text' && text) {
-    props.value = text.value;
+  const htmlValueAttr = styled.node.attributes.find(a => a.name === 'value');
+  if (htmlValueAttr && styled.node.tagName === 'input') {
+    props.value = htmlValueAttr.value;
   }
 
   return props;

@@ -10,6 +10,7 @@ export interface HtmlNode {
   tagName: string;
   attributes: HtmlAttribute[];
   children: HtmlNode[];
+  value?: string;
   sourceLocation?: SourceLocation;
 }
 
