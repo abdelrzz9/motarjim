@@ -67,7 +67,15 @@ html-native-engine/
 │   │   ├── compose/            # Kotlin Compose code generation
 │   │   └── swiftui/            # Swift code generation
 │   └── cli/                    # Command-line interface
-│       └── index.ts            # html-native convert command
+│       ├── index.ts            # Entry point
+│       ├── bin.ts              # Binary shebang
+│       └── src/
+│           ├── cli.ts          # Commander program setup (7 commands)
+│           ├── types.ts        # Shared type definitions
+│           ├── config/         # Config loader + smart defaults
+│           ├── commands/       # convert, init, watch, batch, validate, explain, new
+│           ├── services/       # Pipeline, wizard, validation, templates, error formatting
+│           └── ui/             # Progress spinners, output formatting
 ├── benchmarks/
 │   ├── fixtures/               # Reusable benchmark input files
 │   ├── run.ts                  # Benchmark runner
@@ -169,7 +177,7 @@ The three platform generators are similar-but-different. Forcing them into a sha
 
 ## Future Scalability
 
-- **Incremental compilation:** The pipeline is functional (input → output with no mutable state per call). A file watcher could recompile only changed nodes.
+- **Incremental compilation:** The pipeline is functional (input → output with no mutable state per call). The built-in watch mode (via chokidar) recompiles on file changes.
 - **Source maps:** Each `UiNode` could carry source location data from `HtmlNode.sourceLocation`.
 - **CSS cascade:** Current matching is flat (last rule wins). A proper specificity calculator would improve output quality.
 - **Responsive design:** Media query data flows through the IR but generators don't consume it yet — a natural extension point.

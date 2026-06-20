@@ -35,9 +35,12 @@ Unlike cloud-based converters, html-native-engine runs entirely on your machine:
 ## Key Features
 
 - **Full pipeline:** parser → CSS analyzer → semantic analyzer → IR → optimizer → code generator
-- **71 tests** covering parsing, CSS matching, semantic detection, IR conversion, optimization, and code generation
+- **103 tests** covering parsing, CSS matching, semantic detection, IR conversion, optimization, code generation, and CLI commands
 - **12 snapshot tests** verifying generated output across nav, card, hero, and form patterns
 - **100ms pipeline** for 1000+ HTML nodes — 5× headroom against the 500ms target
+- **7 CLI commands:** convert, init, watch, batch, validate, explain, new (templates)
+- **Smart defaults:** auto-detect input, CSS, target from output extension
+- **Watch mode:** auto-regenerate on HTML/CSS changes via chokidar
 - **Media query support** in the CSS analyzer (parsed into the IR, generator consumption in progress)
 - **Optional Ollama AI enhancement** for improved semantic component detection
 - **TypeScript strict mode** throughout — zero `any` in production code

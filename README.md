@@ -7,7 +7,7 @@ Write once in HTML/CSS. Ship native code for every platform.
 [![npm version](https://img.shields.io/badge/npm-0.1.0-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 [![build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![tests](https://img.shields.io/badge/tests-71%20passed-brightgreen)]()
+[![tests](https://img.shields.io/badge/tests-103%20passed-brightgreen)]()
 [![benchmark](https://img.shields.io/badge/benchmark-98ms%20%2F%201000%20nodes-blue)]()
 
 ---
@@ -17,7 +17,7 @@ Write once in HTML/CSS. Ship native code for every platform.
 - **Local-first** — Zero cloud dependencies. Everything runs on your machine.
 - **Multi-platform** — Generate Flutter (Dart), Jetpack Compose (Kotlin), or SwiftUI from the same HTML/CSS.
 - **Compiler architecture** — Full pipeline: parse → analyze → optimize → generate. No runtime, no WebView.
-- **71 tests** — Comprehensive test suite with snapshot coverage.
+- **103 tests** — Comprehensive test suite with snapshot coverage.
 - **~100ms for 1000 nodes** — 5× headroom against the 500ms target.
 - **Optional AI enhancement** — Ollama integration for smarter component detection.
 - **TypeScript strict mode** — Zero `any`, zero errors.
@@ -89,26 +89,35 @@ npm install
 ### CLI Usage
 
 ```bash
-# Convert to Flutter
-html-native convert \
-  --input page.html \
-  --css styles.css \
-  --target flutter \
-  --output lib/generated.dart
+# Minimal (auto-detect everything)
+html-native convert
 
-# Convert to Compose
-html-native convert \
-  --input page.html \
-  --css styles.css \
-  --target compose \
-  --output GeneratedView.kt
+# Specify input only
+html-native convert index.html
 
-# Convert to SwiftUI
-html-native convert \
-  --input page.html \
-  --css styles.css \
-  --target swiftui \
-  --output GeneratedView.swift
+# Full manual configuration
+html-native convert index.html --css styles.css --target flutter --output lib/generated.dart
+
+# Auto-detect target from output extension
+html-native convert index.html --output home.kt
+
+# Project initialization
+html-native init
+
+# Watch mode (auto-regenerate on changes)
+html-native watch --input designs/index.html --target flutter
+
+# Batch convert all HTML files in a directory
+html-native batch designs/ --target flutter
+
+# Validate HTML/CSS before converting
+html-native validate index.html --css styles.css
+
+# Explain the compilation pipeline
+html-native explain
+
+# Scaffold a project from a template
+html-native new landing-page
 ```
 
 ## Examples
@@ -211,11 +220,10 @@ struct GeneratedView: View {
 Optional Ollama integration for improved component detection:
 
 ```bash
-html-native convert \
-  --input page.html \
-  --css styles.css \
-  --target flutter \
-  --ai-enhance
+html-native convert index.html --ai-enhance
+
+# With custom model
+html-native convert index.html --ai-enhance --ai-model llama3
 ```
 
 See [docs/ai-enhancement.md](docs/ai-enhancement.md) for setup instructions.
@@ -241,7 +249,7 @@ See [docs/benchmarks.md](docs/benchmarks.md) for detailed results.
 - [ ] CSS value mapping (colors, padding, etc.)
 - [ ] Responsive design generation
 - [ ] Advanced CSS selectors
-- [ ] Watch mode
+- [x] Watch mode
 - [ ] VS Code extension
 
 See [docs/roadmap.md](docs/roadmap.md) for full roadmap.
