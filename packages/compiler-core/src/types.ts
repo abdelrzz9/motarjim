@@ -117,6 +117,8 @@ export interface CompilerOptions {
   aiModel?: string;
   dryRun?: boolean;
   plugins?: CompilerPlugin[];
+  /** High-level domain plugins (MotarjimPlugin) */
+  motarjimPlugins?: import('./plugin-api.js').MotarjimPlugin[];
 }
 
 export interface CompilerContext {

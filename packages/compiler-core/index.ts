@@ -29,3 +29,19 @@ export type {
 export { PassManager } from './src/pass-manager.js';
 export { PipelineExecutor } from './src/pipeline-executor.js';
 export { definePass, createPlugin, composePlugins } from './src/plugin.js';
+
+// Plugin system
+export { PluginRegistry, validatePlugin } from './src/plugin-api.js';
+export type {
+  MotarjimPlugin,
+  PluginApi,
+  PluginSemanticRule,
+  IrTransform,
+  IrTransformResult,
+  GeneratorFactory,
+  PluginEvent,
+  PluginEventHandler,
+  PluginValidation,
+  RegisteredPlugin,
+} from './src/plugin-api.js';
+export type { OptimizationPass } from './src/pass-types.js';

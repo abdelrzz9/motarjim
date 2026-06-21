@@ -5,14 +5,19 @@ import type {
 } from './types.js';
 import { PHASES, CompilerError } from './types.js';
 import { PassManager } from './pass-manager.js';
+import { PluginRegistry } from './plugin-api.js';
+import type { MotarjimPlugin, GeneratorFactory } from './plugin-api.js';
+import type { SemanticRule, PlatformTarget } from '@html-native/shared';
 
 export class PipelineExecutor {
   private passManager: PassManager;
   private ctx: CompilerContext;
   private phaseTimings = new Map<PhaseId, number>();
+  private pluginRegistry: PluginRegistry;
 
   constructor(options: CompilerOptions, passManager?: PassManager) {
     this.passManager = passManager ?? new PassManager();
+    this.pluginRegistry = new PluginRegistry();
 
     this.ctx = {
       options,
@@ -20,13 +25,127 @@ export class PipelineExecutor {
       data: new Map(),
     };
 
-    this.registerPlugins(options.plugins ?? []);
+    this.registerLowLevelPlugins(options.plugins ?? []);
+    this.registerMotarjimPlugins(options.motarjimPlugins ?? []);
+    this.injectPluginPasses();
   }
 
-  private registerPlugins(plugins: import('./types.js').CompilerPlugin[]): void {
+  private registerLowLevelPlugins(plugins: import('./types.js').CompilerPlugin[]): void {
     for (const plugin of plugins) {
       plugin.register(this.passManager);
     }
+  }
+
+  private registerMotarjimPlugins(plugins: MotarjimPlugin[]): void {
+    for (const plugin of plugins) {
+      const validation = this.pluginRegistry.register(plugin);
+      if (!validation.valid) {
+        for (const err of validation.errors) {
+          this.ctx.diagnostics.push({
+            code: 'PLG_001',
+            message: err,
+            severity: 'error',
+            phase: this.toDiagnosticPhase('parse'),
+            passId: 'plugin-registry',
+          });
+        }
+      }
+      for (const warn of validation.warnings) {
+        this.ctx.diagnostics.push({
+          code: 'PLG_002',
+          message: warn,
+          severity: 'warning',
+          phase: this.toDiagnosticPhase('parse'),
+          passId: 'plugin-registry',
+        });
+      }
+    }
+  }
+
+  /** Convert plugin extension points into CompilerPass objects and register them */
+  private injectPluginPasses(): void {
+    // IR transforms become passes in the 'ir' phase
+    const irTransforms = this.pluginRegistry.allIrTransforms;
+    for (let i = 0; i < irTransforms.length; i++) {
+      const transform = irTransforms[i];
+      this.passManager.register({
+        id: `plugin:ir:${transform.id}`,
+        phase: 'ir',
+        name: transform.name,
+        description: transform.description,
+        after: ['plugin:ir'],
+        run: (ctx: CompilerContext) => {
+          const ir = ctx.irOutput?.ir;
+          if (!ir) {
+            return {
+              ok: false,
+              value: { ir: null as never, componentCount: 0 },
+              diagnostics: [{
+                code: 'PLG_003',
+                message: `IR transform "${transform.id}" skipped: no IR output available`,
+                severity: 'warning',
+                phase: 'ir',
+              }],
+            };
+          }
+          const result = transform.run(ir, ctx);
+          ctx.irOutput = { ir: result.ir, componentCount: ctx.irOutput?.componentCount ?? 0 };
+          return {
+            ok: !result.diagnostics.some(d => d.severity === 'error'),
+            value: ctx.irOutput,
+            diagnostics: result.diagnostics,
+          };
+        },
+      });
+    }
+
+    // Optimization passes become passes in the 'optimize' phase
+    const optPasses = this.pluginRegistry.allOptimizationPasses;
+    for (const pass of optPasses) {
+      this.passManager.register({
+        id: `plugin:optimize:${pass.name}`,
+        phase: 'optimize',
+        name: pass.name,
+        after: ['main-optimize'],
+        run: (ctx: CompilerContext) => {
+          const ir = ctx.optimizeOutput?.ir ?? ctx.irOutput?.ir;
+          if (!ir) {
+            return {
+              ok: false,
+              value: { ir: null as never, savings: 0 },
+              diagnostics: [{
+                code: 'PLG_004',
+                message: `Optimization pass "${pass.name}" skipped: no IR to optimize`,
+                severity: 'warning',
+                phase: 'optimizer',
+              }],
+            };
+          }
+          const optimized = pass.run(ir);
+          ctx.optimizeOutput = { ir: optimized, savings: ctx.optimizeOutput?.savings ?? 0 };
+          return {
+            ok: true,
+            value: ctx.optimizeOutput,
+            diagnostics: [],
+          };
+        },
+      });
+    }
+  }
+
+  /** Get a generator registered by a plugin (if any) */
+  getGenerator(platform: PlatformTarget): GeneratorFactory | undefined {
+    return this.pluginRegistry.allGenerators.get(platform);
+  }
+
+  /** Get all semantic rules contributed by plugins */
+  getPluginSemanticRules(): SemanticRule[] {
+    return this.pluginRegistry.allSemanticRules;
+  }
+
+  /** Get the plugin registry for inspection */
+  get pluginRegistry_(): PluginRegistry {
+    return this.pluginRegistry;
   }
 
   get context(): Readonly<CompilerContext> {
