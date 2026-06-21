@@ -1,6 +1,26 @@
 import postcss from 'postcss';
-import type { CssStylesheet, CssRule, CssMediaQuery, HtmlNode, ResolvedStyles, StyledNode, ResponsiveHint, Result } from '@html-native/shared';
+import type { CssStylesheet, CssRule, CssMediaQuery, HtmlNode, ResolvedStyles, StyledNode, ResponsiveHint, Result, Specificity } from '@html-native/shared';
 import { DiagnosticBag } from '@html-native/shared/diagnostics.js';
+import { parseSelector, calculateSpecificity, matchAst, matchSelectorString, type ParentResolver } from './selector.js';
+import { cascadeStyles, createParentResolver, inheritMissingProperties, parseInlineStyles } from './cascade.js';
+
+// -- Re-export selector and cascade types/functions --
+
+export type { ParentResolver } from './selector.js';
+export {
+  parseSelector,
+  calculateSpecificity,
+  matchAst,
+  matchSelectorString,
+  parseSelectorList,
+} from './selector.js';
+export {
+  cascadeStyles,
+  createParentResolver,
+  inheritMissingProperties,
+  parseInlineStyles,
+  INHERITED_PROPERTIES,
+} from './cascade.js';
 
 export { detectLayoutIntent, analyzeLayoutIntents, describeLayout, LAYOUT_PATTERNS } from './intent.js';
 export {
@@ -121,50 +141,46 @@ export function extractResponsiveHints(stylesheet: CssStylesheet): ResponsiveHin
   return hints;
 }
 
+// -- Backward-compatible wrapper using new selector engine --
+
 export function matchSelector(selector: string, node: HtmlNode): boolean {
-  if (selector === '*') return true;
-  if (selector.startsWith('.')) {
-    const cls = selector.slice(1);
-    const classAttr = node.attributes.find(a => a.name === 'class');
-    return classAttr?.value.split(/\s+/).includes(cls) || false;
-  }
-  if (selector.startsWith('#')) {
-    const id = selector.slice(1);
-    const idAttr = node.attributes.find(a => a.name === 'id');
-    return idAttr?.value === id || false;
-  }
-  return selector === node.tagName;
+  return matchSelectorString(selector, node);
 }
 
-export function resolveStyles(node: HtmlNode, stylesheet: CssStylesheet): ResolvedStyles {
-  const styles: ResolvedStyles = {};
-  for (const rule of stylesheet.rules) {
-    for (const selector of rule.selectors) {
-      if (matchSelector(selector, node)) {
-        for (const decl of rule.declarations) {
-          styles[decl.property] = decl.value;
-        }
-      }
-    }
-  }
-  return styles;
+// -- Cascade-based style resolution --
+
+export function resolveStyles(
+  node: HtmlNode,
+  stylesheet: CssStylesheet,
+  getParent?: ParentResolver,
+  parentStyles?: ResolvedStyles | null,
+): ResolvedStyles {
+  const resolver = getParent ?? (() => null);
+  return cascadeStyles(node, stylesheet, resolver, parentStyles ?? null);
 }
+
+// -- Apply styles using cascade with inheritance --
 
 export function applyStyles(nodes: HtmlNode[], stylesheet: CssStylesheet, file: string = 'input.html'): Result<StyledNode[]> {
   const bag = new DiagnosticBag();
 
-  function apply(nodes: HtmlNode[]): StyledNode[] {
-    return nodes.map(node => ({
-      node,
-      styles: resolveStyles(node, stylesheet),
-      children: apply(node.children),
-    }));
+  const getParent = createParentResolver(nodes);
+
+  function apply(nodes: HtmlNode[], parentStyles: ResolvedStyles | null): StyledNode[] {
+    return nodes.map(node => {
+      const styles = cascadeStyles(node, stylesheet, getParent, parentStyles);
+      return {
+        node,
+        styles,
+        children: apply(node.children, styles),
+      };
+    });
   }
 
   if (stylesheet.rules.length === 0 && stylesheet.mediaQueries.length === 0) {
     bag.addInfo('CSS_003', 'No CSS rules to apply, nodes will be unstyled', 'css');
   }
 
-  const styled = apply(nodes);
+  const styled = apply(nodes, null);
   return bag.toResult(styled);
 }

@@ -49,6 +49,41 @@ export interface HtmlNode {
   sourceSpan?: SourceSpan;
 }
 
+// -- Selector AST --
+
+export type Combinator = 'descendant' | 'child' | 'adjacent-sibling' | 'general-sibling';
+
+export interface SelectorSimple {
+  type: 'universal' | 'tag' | 'class' | 'id' | 'attribute' | 'pseudo';
+  value: string;
+  operator?: string;
+  compareValue?: string;
+}
+
+export interface SelectorCompound {
+  simples: SelectorSimple[];
+}
+
+export interface SelectorRelation {
+  left: SelectorAst;
+  combinator: Combinator;
+  right: SelectorCompound;
+}
+
+export type SelectorAst = SelectorCompound | SelectorRelation;
+
+export interface Specificity {
+  id: number;
+  class: number;
+  tag: number;
+}
+
+export function specificityCompare(a: Specificity, b: Specificity): number {
+  if (a.id !== b.id) return b.id - a.id;
+  if (a.class !== b.class) return b.class - a.class;
+  return b.tag - a.tag;
+}
+
 // -- CSS Types --
 
 export interface CssStyleDeclaration {
