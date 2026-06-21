@@ -1,5 +1,6 @@
 import * as parse5 from 'parse5';
-import { HtmlNode, HtmlAttribute } from '@html-native/shared';
+import type { HtmlNode, HtmlAttribute, Result } from '@html-native/shared';
+import { DiagnosticBag } from '@html-native/shared/diagnostics.js';
 
 let nodeCounter = 0;
 
@@ -12,7 +13,7 @@ function convertAttrs(attrs: any[] | undefined): HtmlAttribute[] {
   return attrs.map((a: any) => ({ name: a.name, value: a.value ?? '' }));
 }
 
-function walkTree(node: any): HtmlNode | null {
+function walkTree(node: any, bag: DiagnosticBag): HtmlNode | null {
   const tagName = node.tagName?.toLowerCase() || '';
 
   if (!tagName) return null;
@@ -44,7 +45,7 @@ function walkTree(node: any): HtmlNode | null {
         });
       }
     } else if ((child as any).tagName) {
-      const childNode = walkTree(child);
+      const childNode = walkTree(child, bag);
       if (childNode) {
         htmlNode.children.push(childNode);
       }
@@ -66,9 +67,18 @@ function findBody(doc: any): any {
   );
 }
 
-export function parseHtml(html: string): HtmlNode {
+export function parseHtml(html: string, file: string = 'input.html'): Result<HtmlNode> {
   nodeCounter = 0;
-  const document = parse5.parse(html);
+  const bag = new DiagnosticBag();
+
+  let document: any;
+  try {
+    document = parse5.parse(html);
+  } catch (err) {
+    bag.addError('PARSER_001', `Failed to parse HTML: ${(err as Error).message}`, 'parser');
+    return bag.asResult();
+  }
+
   const body = findBody(document);
 
   const children: HtmlNode[] = [];
@@ -76,23 +86,36 @@ export function parseHtml(html: string): HtmlNode {
     const bodyChildren = (body as any).childNodes || [];
     for (const child of bodyChildren) {
       if (child.tagName) {
-        const node = walkTree(child);
+        const node = walkTree(child, bag);
         if (node) children.push(node);
       }
     }
+  } else {
+    bag.addWarning('PARSER_002', 'No <body> element found in HTML document', 'parser');
   }
 
-  return {
+  const root: HtmlNode = {
     nodeId: 'root',
     tagName: 'root',
     attributes: [],
     children,
   };
+
+  return bag.toResult(root);
 }
 
-export function parseFragment(html: string): HtmlNode[] {
+export function parseFragment(html: string, file: string = 'fragment.html'): Result<HtmlNode[]> {
   nodeCounter = 0;
-  const fragment = parse5.parseFragment(html);
+  const bag = new DiagnosticBag();
+
+  let fragment: any;
+  try {
+    fragment = parse5.parseFragment(html);
+  } catch (err) {
+    bag.addError('PARSER_003', `Failed to parse HTML fragment: ${(err as Error).message}`, 'parser');
+    return bag.asResult();
+  }
+
   const nodes: HtmlNode[] = [];
 
   const fragChildren = (fragment as any).childNodes || [];
@@ -109,10 +132,10 @@ export function parseFragment(html: string): HtmlNode[] {
         });
       }
     } else if ((child as any).tagName) {
-      const node = walkTree(child);
+      const node = walkTree(child, bag);
       if (node) nodes.push(node);
     }
   }
 
-  return nodes;
+  return bag.toResult(nodes);
 }
