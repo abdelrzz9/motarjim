@@ -13,6 +13,12 @@ import { z } from 'zod';
 import type { StyledNode, SemanticHint, HtmlNode, AiDetectorConfig } from '@html-native/shared';
 import { detectSemantics, type SemanticDetector } from './index.js';
 
+function unwrapDetectSemantics(nodes: StyledNode[]): SemanticHint[] {
+  const result = detectSemantics(nodes);
+  if (!result.ok) return [];
+  return result.value;
+}
+
 // -- Zod Schemas for Structured Output Validation --
 
 const SemanticComponentSchema = z.object({
@@ -299,7 +305,7 @@ export function createAiDetector(config?: AiDetectorConfig): SemanticDetector {
         allAiHints.push(...batchHints);
       }
 
-      const ruleHints = detectSemantics(nodes);
+      const ruleHints = unwrapDetectSemantics(nodes);
 
       if (allAiHints.length === 0) {
         return ruleHints;
@@ -310,7 +316,7 @@ export function createAiDetector(config?: AiDetectorConfig): SemanticDetector {
       console.warn(
         `Ollama unavailable (${(err as Error).message}), falling back to rule-based detector`,
       );
-      return detectSemantics(nodes);
+      return unwrapDetectSemantics(nodes);
     }
   };
 }

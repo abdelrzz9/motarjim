@@ -4,7 +4,9 @@ import {
   ResolvedStyles,
   SemanticHint,
   UiNodeType,
+  Result,
 } from '@html-native/shared';
+import { DiagnosticBag } from '@html-native/shared/diagnostics.js';
 
 export {
   SemanticPatternStore,
@@ -17,7 +19,8 @@ export type SemanticDetector = (nodes: StyledNode[]) => Promise<SemanticHint[]>;
 
 export function detectSemantics(
   styledNodes: StyledNode[],
-): SemanticHint[] {
+): Result<SemanticHint[]> {
+  const bag = new DiagnosticBag();
   const hints: SemanticHint[] = [];
 
   function walk(node: StyledNode) {
@@ -81,7 +84,7 @@ export function detectSemantics(
     walk(node);
   }
 
-  return hints;
+  return bag.toResult(hints);
 }
 
 function getClasses(node: HtmlNode): string[] {
