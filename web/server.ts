@@ -10,7 +10,7 @@ const app = express();
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.post('/api/convert', (req, res) => {
+app.post('/api/convert', async (req, res) => {
   const { html, css, target } = req.body ?? {};
 
   if (typeof html !== 'string' || !html.trim()) {
@@ -21,14 +21,14 @@ app.post('/api/convert', (req, res) => {
   }
 
   try {
-    const output = runPipeline({ html, css: css ?? '', target });
+    const output = await runPipeline({ html, css: css ?? '', target });
     res.json(output);
   } catch (err: unknown) {
     res.status(500).json({ error: err instanceof Error ? err.message : 'Conversion failed.' });
   }
 });
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => {
   console.log(`motarjim web UI running at http://localhost:${PORT}`);
 });

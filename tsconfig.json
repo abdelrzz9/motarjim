@@ -7,13 +7,13 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "packages",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["packages/**/*", "web/**/*"],
+  "include": ["packages/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
