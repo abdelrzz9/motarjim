@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "workspaces": [
     "packages/*",
-    "packages/generators/*"
+    "packages/generators/*",
+    "web"
   ],
   "scripts": {
     "build": "tsc",

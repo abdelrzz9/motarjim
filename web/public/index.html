@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>motarjim — HTML/CSS → Native UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0d12;
+    --panel:#11151c;
+    --panel-2:#161b24;
+    --border:#1e2530;
+    --text:#e7eaf0;
+    --muted:#6f7a8c;
+    --flame:#ff7a35;
+    --flame-dim:#5a3b28;
+    --teal:#38d9c9;
+    --error:#ff5470;
+    --flutter:#54c5f8;
+    --compose:#3ddc84;
+    --swiftui:#fb7d3a;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:'Manrope',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  code,pre,textarea,.mono{
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:16px 24px;
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:800;
+    font-size:18px;
+    letter-spacing:-0.01em;
+  }
+  .brand .mark{
+    width:20px;height:20px;
+    background:var(--flame);
+    border-radius:5px 5px 5px 0;
+    transform:rotate(45deg);
+    flex:none;
+  }
+  .brand small{
+    color:var(--muted);
+    font-weight:500;
+    font-size:12px;
+    margin-left:4px;
+  }
+
+  .targets{
+    display:flex;
+    gap:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:4px;
+  }
+  .target-btn{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font-family:inherit;
+    font-weight:700;
+    font-size:13px;
+    padding:7px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .target-btn .dot{
+    width:7px;height:7px;border-radius:50%;
+    flex:none;
+  }
+  .target-btn[data-target="flutter"] .dot{background:var(--flutter);}
+  .target-btn[data-target="compose"] .dot{background:var(--compose);}
+  .target-btn[data-target="swiftui"] .dot{background:var(--swiftui);}
+  .target-btn.active{
+    background:var(--panel-2);
+    color:var(--text);
+  }
+
+  .compile-btn{
+    border:none;
+    background:var(--flame);
+    color:#1a0e06;
+    font-family:inherit;
+    font-weight:800;
+    font-size:14px;
+    padding:10px 20px;
+    border-radius:999px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:filter .15s, transform .1s;
+  }
+  .compile-btn:hover{filter:brightness(1.08);}
+  .compile-btn:active{transform:scale(.97);}
+  .compile-btn:disabled{opacity:.6;cursor:default;}
+
+  /* ---------- pipeline strip (signature element) ---------- */
+  .pipeline{
+    display:flex;
+    align-items:center;
+    gap:0;
+    padding:18px 24px;
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+  }
+  .stage{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+    transition:color .25s;
+  }
+  .stage .node{
+    width:9px;height:9px;
+    border-radius:50%;
+    background:var(--border);
+    box-shadow:0 0 0 0 rgba(255,122,53,0);
+    transition:background .25s, box-shadow .25s;
+    flex:none;
+  }
+  .stage.active .node{
+    background:var(--flame);
+    box-shadow:0 0 10px 2px rgba(255,122,53,.55);
+  }
+  .stage.active{color:var(--text);}
+  .stage.done .node{background:var(--teal);box-shadow:none;}
+  .stage.done{color:var(--muted);}
+  .stage-link{
+    width:34px;height:1px;
+    background:var(--border);
+    margin:0 8px;
+    flex:none;
+    position:relative;
+    overflow:hidden;
+  }
+  .stage-link::after{
+    content:'';
+    position:absolute;inset:0;
+    background:var(--teal);
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform .3s ease;
+  }
+  .stage-link.filled::after{transform:scaleX(1);}
+
+  /* ---------- main grid ---------- */
+  .main{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    min-height:calc(100vh - 140px);
+  }
+  @media (max-width:860px){
+    .main{grid-template-columns:1fr;}
+  }
+  .pane{
+    display:flex;
+    flex-direction:column;
+    border-right:1px solid var(--border);
+    min-height:0;
+  }
+  .main > .pane:last-child{border-right:none;}
+
+  .pane-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 18px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel);
+  }
+  .tabs{display:flex;gap:4px;}
+  .tab-btn{
+    border:none;background:transparent;
+    color:var(--muted);
+    font-family:inherit;font-weight:700;font-size:12.5px;
+    padding:6px 12px;border-radius:6px;cursor:pointer;
+    text-transform:uppercase;letter-spacing:.04em;
+  }
+  .tab-btn.active{background:var(--panel-2);color:var(--text);}
+
+  .pane-actions button{
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--muted);
+    font-family:inherit;
+    font-size:12px;font-weight:600;
+    padding:5px 11px;border-radius:6px;
+    cursor:pointer;
+  }
+  .pane-actions button:hover{color:var(--text);}
+
+  .editor-area{
+    position:relative;
+    flex:1;
+    min-height:300px;
+  }
+  textarea{
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    resize:none;
+    border:none;
+    outline:none;
+    background:var(--ink);
+    color:var(--text);
+    font-size:13.5px;
+    line-height:1.6;
+    padding:18px;
+    display:none;
+  }
+  textarea.visible{display:block;}
+
+  .output-code{
+    flex:1;
+    margin:0;
+    padding:18px;
+    overflow:auto;
+    font-size:13.5px;
+    line-height:1.6;
+    background:var(--ink);
+    white-space:pre;
+    min-height:300px;
+  }
+  .output-code .placeholder{color:var(--muted);font-family:'Manrope',sans-serif;font-size:13px;}
+
+  .stats-bar{
+    display:flex;
+    gap:18px;
+    padding:10px 18px;
+    border-top:1px solid var(--border);
+    background:var(--panel);
+    font-size:12px;
+    color:var(--muted);
+    flex-wrap:wrap;
+  }
+  .stats-bar b{color:var(--text);font-weight:700;}
+
+  .banner{
+    margin:0;
+    padding:10px 18px;
+    background:rgba(255,84,112,.12);
+    color:var(--error);
+    border-bottom:1px solid rgba(255,84,112,.3);
+    font-size:13px;
+    font-weight:600;
+    display:none;
+  }
+  .banner.show{display:block;}
+
+  ::selection{background:rgba(255,122,53,.35);}
+  textarea::placeholder{color:var(--muted);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="mark"></span>motarjim<small>HTML/CSS → Native UI</small></div>
+  <div class="targets" id="targets">
+    <button class="target-btn active" data-target="flutter"><span class="dot"></span>Flutter</button>
+    <button class="target-btn" data-target="compose"><span class="dot"></span>Compose</button>
+    <button class="target-btn" data-target="swiftui"><span class="dot"></span>SwiftUI</button>
+  </div>
+  <button class="compile-btn" id="compileBtn">▸ Compile</button>
+</div>
+
+<div class="pipeline" id="pipeline">
+  <!-- stages injected by JS -->
+</div>
+
+<p class="banner" id="banner"></p>
+
+<div class="main">
+  <div class="pane">
+    <div class="pane-head">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="html">HTML</button>
+        <button class="tab-btn" data-tab="css">CSS</button>
+      </div>
+      <div class="pane-actions"><button id="sampleBtn">Load sample</button></div>
+    </div>
+    <div class="editor-area">
+      <textarea id="htmlInput" class="visible" spellcheck="false" placeholder="<section class=&quot;hero&quot;>...</section>"></textarea>
+      <textarea id="cssInput" spellcheck="false" placeholder=".hero { padding: 2rem; }"></textarea>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="pane-head">
+      <div class="tabs"><span class="tab-btn active" id="outputLabel">OUTPUT.DART</span></div>
+      <div class="pane-actions">
+        <button id="copyBtn">Copy</button>
+        <button id="downloadBtn">Download</button>
+      </div>
+    </div>
+    <pre class="output-code" id="output"><span class="placeholder">// Compiled code will show up here.
+// Paste your HTML + CSS on the left, pick a target above, hit Compile.</span></pre>
+    <div class="stats-bar" id="statsBar" style="display:none;">
+      <span>Nodes: <b id="statNodes">–</b></span>
+      <span>Components: <b id="statComponents">–</b></span>
+      <span>Lines: <b id="statLines">–</b></span>
+      <span>Time: <b id="statTime">–</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const STAGES = ['Parse', 'Style', 'Analyze', 'IR', 'Optimize', 'Generate'];
+  const EXT = { flutter: 'dart', compose: 'kt', swiftui: 'swift' };
+
+  const pipelineEl = document.getElementById('pipeline');
+  STAGES.forEach((name, i) => {
+    const stage = document.createElement('div');
+    stage.className = 'stage';
+    stage.dataset.stage = i;
+    stage.innerHTML = `<span class="node"></span><span>${name}</span>`;
+    pipelineEl.appendChild(stage);
+    if (i < STAGES.length - 1) {
+      const link = document.createElement('div');
+      link.className = 'stage-link';
+      link.dataset.link = i;
+      pipelineEl.appendChild(link);
+    }
+  });
+
+  const htmlInput = document.getElementById('htmlInput');
+  const cssInput = document.getElementById('cssInput');
+  const tabBtns = document.querySelectorAll('.tab-btn[data-tab]');
+  const targetBtns = document.querySelectorAll('.target-btn');
+  const compileBtn = document.getElementById('compileBtn');
+  const outputEl = document.getElementById('output');
+  const outputLabel = document.getElementById('outputLabel');
+  const statsBar = document.getElementById('statsBar');
+  const banner = document.getElementById('banner');
+  const sampleBtn = document.getElementById('sampleBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  let currentTarget = 'flutter';
+  let lastCode = '';
+
+  tabBtns.forEach(btn => btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    htmlInput.classList.toggle('visible', tab === 'html');
+    cssInput.classList.toggle('visible', tab === 'css');
+  }));
+
+  targetBtns.forEach(btn => btn.addEventListener('click', () => {
+    targetBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTarget = btn.dataset.target;
+    outputLabel.textContent = `OUTPUT.${EXT[currentTarget].toUpperCase()}`;
+  }));
+
+  sampleBtn.addEventListener('click', () => {
+    htmlInput.value =
+`<nav class="navbar">
+  <h1>My App</h1>
+</nav>
+<section class="hero">
+  <h1>Welcome</h1>
+  <p>Build something great</p>
+  <button>Get Started</button>
+</section>`;
+    cssInput.value =
+`.navbar { background: #333; color: white; padding: 1rem; }
+.hero { text-align: center; padding: 4rem; background: #1a1a2e; color: white; }
+button { background: blue; color: white; border-radius: 8px; padding: 12px 24px; }`;
+  });
+
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  function resetPipeline(){
+    document.querySelectorAll('.stage').forEach(s => s.classList.remove('active','done'));
+    document.querySelectorAll('.stage-link').forEach(l => l.classList.remove('filled'));
+  }
+
+  async function animatePipeline(){
+    const stages = document.querySelectorAll('.stage');
+    const links = document.querySelectorAll('.stage-link');
+    for (let i = 0; i < stages.length; i++){
+      stages[i].classList.add('active');
+      await sleep(110);
+      stages[i].classList.remove('active');
+      stages[i].classList.add('done');
+      if (links[i]) links[i].classList.add('filled');
+    }
+  }
+
+  function showBanner(msg){
+    banner.textContent = msg;
+    banner.classList.add('show');
+  }
+  function hideBanner(){
+    banner.classList.remove('show');
+  }
+
+  compileBtn.addEventListener('click', async () => {
+    const html = htmlInput.value.trim();
+    if (!html){
+      showBanner('Paste some HTML first — the engine needs at least one element to compile.');
+      return;
+    }
+    hideBanner();
+    compileBtn.disabled = true;
+    compileBtn.textContent = 'Compiling…';
+    resetPipeline();
+    statsBar.style.display = 'none';
+
+    const animation = animatePipeline();
+    const request = fetch('/api/convert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html, css: cssInput.value, target: currentTarget }),
+    }).then(r => r.json().then(data => ({ ok: r.ok, data })));
+
+    const [, { ok, data }] = await Promise.all([animation, request]);
+
+    compileBtn.disabled = false;
+    compileBtn.textContent = '▸ Compile';
+
+    if (!ok || data.error){
+      showBanner(data.error || 'Conversion failed.');
+      resetPipeline();
+      return;
+    }
+
+    lastCode = data.code;
+    outputEl.textContent = data.code;
+    outputLabel.textContent = `OUTPUT.${EXT[currentTarget].toUpperCase()}`;
+
+    document.getElementById('statNodes').textContent = data.stats.htmlNodes;
+    document.getElementById('statComponents').textContent = data.stats.componentsDetected;
+    document.getElementById('statLines').textContent = data.stats.generatedLines;
+    document.getElementById('statTime').textContent = data.stats.duration.toFixed(2) + 's';
+    statsBar.style.display = 'flex';
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    if (!lastCode) return;
+    await navigator.clipboard.writeText(lastCode);
+    copyBtn.textContent = 'Copied';
+    setTimeout(() => copyBtn.textContent = 'Copy', 1200);
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!lastCode) return;
+    const blob = new Blob([lastCode], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `GeneratedView.${EXT[currentTarget]}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "@motarjim/pipeline-core",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@motarjim/accessibility-analyzer": "0.1.0",
+    "@motarjim/css-analyzer": "0.1.0",
+    "@motarjim/generator-compose": "0.1.0",
+    "@motarjim/generator-flutter": "0.1.0",
+    "@motarjim/generator-swiftui": "0.1.0",
+    "@motarjim/ir": "0.1.0",
+    "@motarjim/optimizer": "0.1.0",
+    "@motarjim/parser": "0.1.0",
+    "@motarjim/semantic-analyzer": "0.1.0",
+    "@motarjim/shared": "0.1.0"
+  }
+}
