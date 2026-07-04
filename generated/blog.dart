@@ -191,6 +191,7 @@ class _BlogCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 color: Color(0xFF555555),
+                height: 1.6,
               ),
             ),
             const SizedBox(height: 16),
