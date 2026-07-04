@@ -17,6 +17,7 @@ motarjim-diag = { workspace = true }
 motarjim-parser = { workspace = true }
 motarjim-ast = { workspace = true }
 motarjim-fs = { workspace = true }
+motarjim-span = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tower-lsp = "0.19"

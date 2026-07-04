@@ -7,6 +7,7 @@ description = "Filesystem abstraction for Motarjim compiler"
 
 [dependencies]
 motarjim-diag = { workspace = true }
+motarjim-span = { workspace = true }
 serde = { workspace = true, optional = true }
 
 [features]

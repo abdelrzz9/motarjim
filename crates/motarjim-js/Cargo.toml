@@ -8,6 +8,7 @@ description = "JavaScript lexer, parser, AST, and semantic analysis for the Mota
 [dependencies]
 motarjim-diag = { workspace = true }
 motarjim-lexer = { workspace = true }
+motarjim-span = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

@@ -16,6 +16,7 @@ motarjim-diag = { workspace = true }
 motarjim-fs = { workspace = true }
 motarjim-js = { workspace = true }
 motarjim-profiling = { workspace = true, optional = true }
+motarjim-span = { workspace = true }
 clap = { version = "4", features = ["derive"] }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }

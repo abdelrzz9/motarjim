@@ -9,6 +9,7 @@ description = "Incremental compilation engine for Motarjim compiler"
 motarjim-cache = { workspace = true }
 motarjim-fs = { workspace = true }
 motarjim-diag = { workspace = true }
+motarjim-span = { workspace = true }
 sha2 = { workspace = true }
 serde = { workspace = true, optional = true }
 

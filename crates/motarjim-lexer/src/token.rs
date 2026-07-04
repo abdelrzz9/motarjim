@@ -1,4 +1,4 @@
-use motarjim_diag::SourceSpan;
+use motarjim_span::SourceSpan;
 
 /// A token produced by the lexer.
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -7,9 +7,11 @@ description = "SwiftUI code generator for Motarjim compiler"
 
 [dependencies]
 motarjim-ast = { workspace = true }
+motarjim-ast-html = { workspace = true }
 motarjim-diag = { workspace = true }
 motarjim-ir = { workspace = true }
 motarjim-formatter = { workspace = true }
+motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 smol_str = { workspace = true }
 

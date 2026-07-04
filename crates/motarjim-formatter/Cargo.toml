@@ -8,6 +8,7 @@ description = "Code output formatter for Motarjim compiler"
 [dependencies]
 motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
+motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 
 [lints]

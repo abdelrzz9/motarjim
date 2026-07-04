@@ -8,7 +8,10 @@ description = "Intermediate representation builder and transformation for Motarj
 [dependencies]
 motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
+motarjim-ast-html = { workspace = true }
+motarjim-ast-ir = { workspace = true }
 motarjim-selectors = { workspace = true }
+motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 smol_str = { workspace = true }
 

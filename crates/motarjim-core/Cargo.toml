@@ -7,7 +7,9 @@ description = "Public API facade for Motarjim compiler"
 
 [dependencies]
 motarjim-ast = { workspace = true }
+motarjim-ast-html = { workspace = true }
 motarjim-diag = { workspace = true }
+motarjim-span = { workspace = true }
 motarjim-lexer = { workspace = true }
 motarjim-parser = { workspace = true }
 motarjim-css = { workspace = true }

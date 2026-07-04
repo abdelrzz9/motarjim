@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use motarjim_ast::style::ComputedStyle;
+use motarjim_ast_html::ComputedStyle;
 use motarjim_ast::{Document, Element, HtmlNode, NodeId, NodeType};
 use motarjim_diag::DiagnosticBag;
 use motarjim_ir::IrBuilder;

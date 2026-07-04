@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr, TargetIr};
-use motarjim_ast::style::ComputedStyle;
+use motarjim_ast_html::ComputedStyle;
 use motarjim_ast::NodeId;
 use motarjim_gen_flutter::FlutterGenerator;
 use smol_str::SmolStr;

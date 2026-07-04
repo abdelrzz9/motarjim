@@ -2,7 +2,7 @@ use super::*;
 use crate::properties::parse_font_weight;
 
 use motarjim_ast::css::{CssRule, CssStylesheet, Declaration};
-use motarjim_ast::selector::{Selector, SimpleSelector};
+use motarjim_ast_css::{Selector, SimpleSelector};
 use motarjim_ast::Element;
 use smol_str::SmolStr;
 

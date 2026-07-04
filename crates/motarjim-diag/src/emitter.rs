@@ -1,8 +1,7 @@
 use std::fmt::Write;
 
-use crate::bag::DiagnosticBag;
-use crate::diagnostic::{Diagnostic, Severity};
-use crate::span::SourceFile;
+use crate::{Diagnostic, DiagnosticBag, Severity};
+use motarjim_span::SourceFile;
 
 /// Emits diagnostics to the terminal with optional colored output.
 ///
@@ -49,18 +48,17 @@ impl DiagnosticEmitter {
         source_file: Option<&SourceFile>,
     ) -> String {
         let severity_color = match diagnostic.severity {
-            Severity::Error => "\x1b[31m",   // red
-            Severity::Warning => "\x1b[33m", // yellow
-            Severity::Info => "\x1b[34m",    // blue
-            Severity::Hint => "\x1b[32m",    // green
-            Severity::Note => "\x1b[36m",    // cyan
+            Severity::Error => "\x1b[31m",
+            Severity::Warning => "\x1b[33m",
+            Severity::Info => "\x1b[34m",
+            Severity::Hint => "\x1b[32m",
+            Severity::Note => "\x1b[36m",
         };
         let reset = "\x1b[0m";
         let bold = "\x1b[1m";
 
         let mut output = String::new();
 
-        // Severity + code header
         let _ = writeln!(
             output,
             "{}{}{}{}[E{:04}]:{} {}",
@@ -73,13 +71,12 @@ impl DiagnosticEmitter {
             diagnostic.message
         );
 
-        // Source location with snippet
         if let Some(span) = &diagnostic.span {
             if let Some(sf) = source_file {
                 let _ = writeln!(
                     output,
                     " {} {}-->{} {}:{}:{}",
-                    severity_color, bold, reset, sf.path, span.start.line, span.start.column
+                    severity_color, bold, reset, sf.path.display(), span.start.line, span.start.column
                 );
                 let _ = writeln!(output, "  {severity_color}");
                 output.push_str(&sf.snippet(span, 2));
@@ -87,12 +84,10 @@ impl DiagnosticEmitter {
             }
         }
 
-        // Suggestions
         for suggestion in &diagnostic.suggestions {
             let _ = writeln!(output, "  \x1b[32mhelp:{reset} {suggestion}");
         }
 
-        // Notes
         for note in &diagnostic.notes {
             let _ = writeln!(output, "  \x1b[36mnote:{reset} {note}");
         }
@@ -111,7 +106,7 @@ impl Default for DiagnosticEmitter {
 mod tests {
     use super::*;
     use crate::codes;
-    use crate::span::{SourceFile, SourceLocation, SourceSpan};
+    use motarjim_span::{SourceFile, SourceLocation, SourceSpan};
 
     #[test]
     fn test_emit_to_string_basic() {
@@ -130,7 +125,7 @@ mod tests {
     #[test]
     fn test_emit_to_string_with_span() {
         let emitter = DiagnosticEmitter::new();
-        let sf = SourceFile::new("test.html", "<div>hello</div>");
+        let sf = SourceFile::new("test.html", "<div>hello</div>".to_string());
         let span = SourceSpan {
             start: SourceLocation {
                 line: 1,
@@ -177,7 +172,6 @@ mod tests {
             &Diagnostic::new(Severity::Info, codes::CONFIG_FILE_NOT_FOUND, "config"),
             None,
         );
-        // Just verify it produces output without panicking
         assert!(!output.is_empty());
     }
 }

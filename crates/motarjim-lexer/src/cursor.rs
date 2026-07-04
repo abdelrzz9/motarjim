@@ -1,4 +1,4 @@
-use motarjim_diag::{SourceLocation, SourceSpan};
+use motarjim_span::{SourceLocation, SourceSpan};
 
 /// Character cursor for zero-copy tokenization.
 #[derive(Debug, Clone)]

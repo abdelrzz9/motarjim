@@ -8,6 +8,7 @@ description = "CSS selector parser and matching engine for Motarjim compiler"
 [dependencies]
 motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
+motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 
 [dev-dependencies]

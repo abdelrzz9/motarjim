@@ -1,11 +1,11 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
-#![allow(clippy::pedantic, clippy::nursery)]
 
 //! Diagnostic system for the Motarjim compiler.
 //!
-//! This crate provides a comprehensive diagnostic infrastructure:
+//! This crate provides a comprehensive diagnostic infrastructure by re-exporting
+//! types from [`motarjim_errors`] and [`motarjim_span`]:
 //!
 //! - **Severity levels** — [`Severity`] distinguishes Error, Warning, Info, Hint, and Note.
 //! - **Diagnostic codes** — [`DiagnosticCode`] pairs a numeric ID with a static message.
@@ -19,23 +19,14 @@
 //!
 //! ## Feature flags
 //!
-//! - `color` — Enables [`emitter::DiagnosticEmitter`] for colored terminal output.
-//! - `json` — Derives `serde::Serialize` and `serde::Deserialize` on all diagnostic types.
+//! - `color` — Enables `emitter::DiagnosticEmitter` for colored terminal output.
+//! - `json` — Derives `serde::Serialize`/`Deserialize` on diagnostic types.
 
-/// Internal diagnostic bag implementation.
-mod bag;
 pub mod codes;
-/// Internal diagnostic types.
-mod diagnostic;
 #[cfg(feature = "color")]
-#[cfg_attr(
-    feature = "color",
-    doc = "Colored terminal diagnostic output (requires the `color` feature)."
-)]
 pub mod emitter;
-/// Internal source span types.
-mod span;
 
-pub use bag::DiagnosticBag;
-pub use diagnostic::{Diagnostic, DiagnosticCode, Severity};
-pub use span::{SourceFile, SourceLocation, SourceSpan};
+pub use motarjim_errors::diagnostic::{Diagnostic, DiagnosticBag};
+pub use motarjim_errors::code::DiagnosticCode;
+pub use motarjim_errors::severity::Severity;
+pub use motarjim_span::{SourceFile, SourceLocation, SourceSpan};

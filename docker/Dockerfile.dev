@@ -1,0 +1,14 @@
+FROM rust:1.78 AS wasm-builder
+RUN cargo install wasm-pack
+WORKDIR /app
+COPY . .
+RUN wasm-pack build --target web crates/motarjim-wasm
+
+FROM node:20
+WORKDIR /app
+COPY --from=wasm-builder /app/pkg ./apps/web/public/wasm
+COPY apps/web/package.json apps/web/package-lock.json ./apps/web/
+RUN cd apps/web && npm ci
+COPY . .
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--prefix", "apps/web"]

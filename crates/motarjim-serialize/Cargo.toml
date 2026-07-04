@@ -7,6 +7,7 @@ description = "Serialization helpers for Motarjim compiler"
 
 [dependencies]
 motarjim-ast = { workspace = true, features = ["serialize"] }
+motarjim-ast-html = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 smol_str = { workspace = true }

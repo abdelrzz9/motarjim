@@ -9,7 +9,7 @@
 //! using the [`CodeWriter`](motarjim_formatter::CodeWriter) for indented Swift output.
 
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr};
-use motarjim_ast::style::EdgeValues;
+use motarjim_ast_html::EdgeValues;
 use motarjim_ast::NodeId;
 use motarjim_formatter::CodeWriter;
 

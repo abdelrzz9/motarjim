@@ -8,6 +8,8 @@ description = "Optimization passes for Motarjim compiler IR"
 [dependencies]
 motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
+motarjim-ast-html = { workspace = true }
+motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 rayon = { workspace = true }
 smol_str = { workspace = true }

@@ -1,41 +1,39 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
-#![allow(clippy::pedantic, clippy::nursery)]
 
 //! AST type definitions for the Motarjim compiler.
 //!
-//! This crate defines all the AST types used across the compiler pipeline,
-//! including HTML nodes, CSS stylesheets, selectors, intermediate representation,
-//! layout strategies, computed styles, and semantic roles.
+//! This crate re-exports all AST types from domain-specific sub-crates:
 //!
-//! These types are pure data with no logic — they are shared by the parser,
-//! CSS engine, IR builder, optimizer, and generators.
+//! - [`motarjim_ast_html`] — HTML node types, computed styles, semantic roles
+//! - [`motarjim_ast_css`] — CSS stylesheet and selector types
+//! - [`motarjim_ast_ir`] — Intermediate representation types
+//! - [`motarjim_span`] — Source location and span types
 
-pub mod css;
-mod html;
-pub mod ir;
-pub mod layout;
-pub mod selector;
-pub mod semantic;
-pub mod style;
+pub use motarjim_ast_css as css;
+pub use motarjim_ast_html as html;
+pub use motarjim_ast_ir as ir;
 
-pub use css::{
+// Re-export all public types from sub-crates for convenience.
+pub use motarjim_ast_css::{
     AtRule, CharsetRule, CssRule, CssStylesheet, Declaration, FontFaceRule, ImportRule, Keyframe,
     KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
     SupportsRule,
 };
-pub use html::{
-    Attribute, Document, DocumentTypeNode, Element, HtmlNode, NodeId, NodeType, SemanticDocument,
-    StyledDocument, StyledNode,
-};
-pub use ir::{HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr};
-pub use layout::{Breakpoint, LayoutConstraints, LayoutStrategy, ResponsiveVariant};
-pub use selector::{
+pub use motarjim_ast_css::{
     AttributeOperator, Combinator, PseudoClass, PseudoElement, Selector, SimpleSelector,
 };
-pub use semantic::{A11yViolation, AccessibilityInfo, SemanticRole};
-pub use style::{
-    AlignContent, AlignItems, Background, Border, ComputedStyle, DisplayType, EdgeValues,
-    FlexDirection, FlexWrap, FontWeight, JustifyContent, Overflow, PositionType, TextAlign,
+
+pub use motarjim_ast_html::{
+    A11yViolation, AccessibilityInfo, Attribute, ComputedStyle, DisplayType, Document,
+    DocumentTypeNode, Element, HtmlNode, NodeId, NodeType, SemanticDocument, SemanticRole,
+    StyledDocument, StyledNode,
 };
+pub use motarjim_ast_html::{
+    AlignContent, AlignItems, Background, Border, EdgeValues, FlexDirection, FlexWrap, FontWeight,
+    JustifyContent, Overflow, PositionType, TextAlign,
+};
+
+pub use motarjim_ast_ir::{HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr};
+pub use motarjim_ast_ir::{Breakpoint, LayoutConstraints, LayoutStrategy, ResponsiveVariant};

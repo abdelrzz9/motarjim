@@ -1,32 +1,19 @@
 {
   "name": "motarjim",
   "version": "0.1.0",
+  "private": true,
   "workspaces": [
-    "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "bench": "npx tsx benchmarks/run.ts",
-    "gen-fixtures": "npx tsx benchmarks/fixtures/generate.ts",
-    "lint": "eslint packages/",
-    "format": "prettier --write 'packages/**/*.ts'",
-    "typecheck": "tsc --noEmit",
-    "start:playground": "npm start -w @motarjim/playground",
-    "start:website": "npm start -w @motarjim/website",
-    "build:playground": "npm run build -w @motarjim/playground",
-    "build:website": "npm run build -w @motarjim/website"
+    "dev": "npm run dev -w @motarjim/web",
+    "build": "npm run build -w @motarjim/web",
+    "preview": "npm run preview -w @motarjim/web",
+    "lint": "eslint apps/ --ext .ts,.tsx",
+    "format": "prettier --write 'apps/**/*.{ts,tsx,css}'",
+    "typecheck": "npm run typecheck -w @motarjim/web"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "eslint": "^8.57.0",
-    "prettier": "^3.2.0",
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
-  },
-  "dependencies": {
-    "zod": "^4.4.3"
+    "typescript": "^5.4.0"
   }
 }

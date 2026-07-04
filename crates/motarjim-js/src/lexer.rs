@@ -1,44 +1,31 @@
-//! Zero-copy tokenizer for JavaScript source text.
+//! Character-level tokenizer for ECMAScript (JavaScript).
 
-use motarjim_lexer::{Cursor, Token};
+use motarjim_span::SourceSpan;
 
-use crate::token::{keyword_from_str, JsTokenKind};
+use crate::token::{keyword_from_str, JsToken, JsTokenKind, TokenValue};
 
-/// Tokenizes JavaScript source text into a flat token stream.
-///
-/// Built on top of [`motarjim_lexer::Cursor`] for position tracking, mirroring
-/// the HTML and CSS tokenizers in `motarjim-lexer`.
-///
-/// # Example
-///
-/// ```rust
-/// use motarjim_js::JsLexer;
-///
-/// let mut lexer = JsLexer::new("let x = 1;");
-/// let tokens = lexer.tokenize();
-/// assert!(!tokens.is_empty());
-/// ```
-#[derive(Debug, Clone)]
 pub struct JsLexer<'a> {
-    /// The full source text, kept alongside the cursor so raw slices can be
-    /// recovered for tokens that require custom scanning (template literals).
     source: &'a str,
-    /// Internal cursor over the source text.
-    cursor: Cursor<'a>,
+    pos: usize,
+    start: usize,
+    line: u32,
+    column: u32,
+    regex_allowed: bool,
 }
 
 impl<'a> JsLexer<'a> {
-    /// Creates a new lexer over the given source text.
-    #[must_use]
-    pub const fn new(source: &'a str) -> Self {
+    pub fn new(source: &'a str) -> Self {
         Self {
             source,
-            cursor: Cursor::new(source),
+            pos: 0,
+            start: 0,
+            line: 1,
+            column: 1,
+            regex_allowed: true,
         }
     }
 
-    /// Tokenizes the entire input and returns all tokens, ending with `Eof`.
-    pub fn tokenize(&mut self) -> Vec<Token<JsTokenKind>> {
+    pub fn tokenize(&mut self) -> Vec<JsToken> {
         let mut tokens = Vec::new();
         loop {
             let token = self.next_token();
@@ -51,500 +38,650 @@ impl<'a> JsLexer<'a> {
         tokens
     }
 
-    /// Returns the source slice from `start` to the cursor's current position.
-    fn raw_since(&self, start: usize) -> &'a str {
-        &self.source[start..self.cursor.pos()]
+    pub fn set_regex_allowed(&mut self, allowed: bool) {
+        self.regex_allowed = allowed;
     }
 
-    /// Scans and returns the next token.
-    fn next_token(&mut self) -> Token<JsTokenKind> {
+    fn next_token(&mut self) -> JsToken {
         self.skip_trivia();
+        self.start = self.pos;
 
-        if self.cursor.is_eof() {
-            let pos = self.cursor.pos();
-            return Token::new(JsTokenKind::Eof, self.cursor.span_since(pos), "");
+        if self.is_eof() {
+            return self.make_token(JsTokenKind::Eof);
         }
 
-        let start = self.cursor.pos();
-        let c = self.cursor.peek().expect("not eof, so a character exists");
-
+        let c = self.peek();
         match c {
-            '`' => self.read_template(start),
-            '"' | '\'' => self.read_string(start, c),
-            _ if c.is_ascii_digit() => self.read_number(start),
-            _ if is_ident_start(c) => self.read_ident_or_keyword(start),
-            _ => self.read_punct(start),
+            '\n' | '\r' => {
+                self.advance();
+                self.make_token(JsTokenKind::Semicolon)
+            }
+            '{' => self.simple_token(JsTokenKind::LBrace),
+            '}' => self.simple_token(JsTokenKind::RBrace),
+            '(' => self.simple_token(JsTokenKind::LParen),
+            ')' => self.simple_token(JsTokenKind::RParen),
+            '[' => self.simple_token(JsTokenKind::LBracket),
+            ']' => self.simple_token(JsTokenKind::RBracket),
+            ';' => self.simple_token(JsTokenKind::Semicolon),
+            ',' => self.simple_token(JsTokenKind::Comma),
+            ':' => self.simple_token(JsTokenKind::Colon),
+            '?' => self.read_question(),
+            '.' => self.read_dot(),
+            '+' => self.read_plus(),
+            '-' => self.read_minus(),
+            '*' => self.read_star(),
+            '%' => self.read_percent(),
+            '=' => self.read_equals(),
+            '!' => self.read_bang(),
+            '<' => self.read_lt(),
+            '>' => self.read_gt(),
+            '&' => self.read_amp(),
+            '|' => self.read_pipe(),
+            '^' => self.simple_token(JsTokenKind::Caret),
+            '~' => self.simple_token(JsTokenKind::Tilde),
+            '#' => self.read_hash(),
+            '`' => self.read_template(),
+            '\'' | '"' => self.read_string(c),
+            '/' if !self.regex_allowed => self.read_slash(),
+            '/' => self.read_regex_or_slash(),
+            _ if c.is_ascii_digit() => self.read_number(),
+            _ if is_ident_start(c) => self.read_ident_or_keyword(),
+            _ => {
+                self.advance();
+                self.make_token(JsTokenKind::Error)
+            }
         }
     }
 
-    /// Skips whitespace, `//` line comments, and `/* */` block comments.
     fn skip_trivia(&mut self) {
         loop {
-            self.cursor.skip_whitespace();
-            if self.cursor.peek() == Some('/') && self.cursor.peek_at(1) == Some('/') {
-                self.cursor.take_while(|c| c != '\n');
-            } else if self.cursor.peek() == Some('/') && self.cursor.peek_at(1) == Some('*') {
-                self.cursor.advance();
-                self.cursor.advance();
-                while !(self.cursor.peek() == Some('*') && self.cursor.peek_at(1) == Some('/')) {
-                    if self.cursor.is_eof() {
-                        return;
-                    }
-                    self.cursor.advance();
-                }
-                self.cursor.advance();
-                self.cursor.advance();
+            self.skip_whitespace();
+            if self.peek() == '/' && self.peek_at(1) == Some('/') {
+                self.skip_line_comment();
+            } else if self.peek() == '/' && self.peek_at(1) == Some('*') {
+                self.skip_block_comment();
             } else {
                 break;
             }
         }
     }
 
-    /// Reads a single- or double-quoted string literal.
-    ///
-    /// The returned raw text is the content between the quotes, with escape
-    /// sequences left unprocessed (callers that need literal string values
-    /// must unescape them separately).
-    fn read_string(&mut self, start: usize, quote: char) -> Token<JsTokenKind> {
-        self.cursor.advance(); // opening quote
+    fn skip_whitespace(&mut self) {
+        while let Some(c) = self.peek() {
+            match c {
+                ' ' | '\t' => self.advance(),
+                '\n' => {
+                    self.advance();
+                    self.line += 1;
+                    self.column = 1;
+                }
+                '\r' => {
+                    self.advance();
+                    if self.peek() == Some('\n') {
+                        self.advance();
+                    }
+                    self.line += 1;
+                    self.column = 1;
+                }
+                _ => break,
+            }
+        }
+    }
+
+    fn skip_line_comment(&mut self) {
+        self.advance();
+        self.advance();
+        while let Some(c) = self.peek() {
+            if c == '\n' || c == '\r' {
+                break;
+            }
+            self.advance();
+        }
+    }
+
+    fn skip_block_comment(&mut self) {
+        self.advance();
+        self.advance();
+        while !self.is_eof() {
+            if self.peek() == '*' && self.peek_at(1) == Some('/') {
+                self.advance();
+                self.advance();
+                return;
+            }
+            self.advance();
+        }
+    }
+
+    // ---- token readers ----------------------------------------------------
+
+    fn simple_token(&mut self, kind: JsTokenKind) -> JsToken {
+        self.advance();
+        self.make_token(kind)
+    }
+
+    fn read_question(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('?') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::NullishAssign)
+                } else {
+                    self.make_token(JsTokenKind::Nullish)
+                }
+            }
+            Some('.') if self.peek_at(1).map_or(true, |c| !c.is_ascii_digit()) => {
+                self.advance();
+                self.make_token(JsTokenKind::QuestionDot)
+            }
+            _ => self.make_token(JsTokenKind::Question),
+        }
+    }
+
+    fn read_dot(&mut self) -> JsToken {
+        self.advance();
+        if self.peek() == Some('.') && self.peek_at(1) == Some('.') {
+            self.advance();
+            self.advance();
+            return self.make_token(JsTokenKind::Ellipsis);
+        }
+        if self.peek().map_or(false, |c| c.is_ascii_digit()) {
+            self.read_number_after_dot();
+            return self.make_token(JsTokenKind::Number);
+        }
+        self.make_token(JsTokenKind::Dot)
+    }
+
+    fn read_plus(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('+') => { self.advance(); self.make_token(JsTokenKind::Increment) }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::PlusAssign) }
+            _ => self.make_token(JsTokenKind::Plus),
+        }
+    }
+
+    fn read_minus(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('-') => { self.advance(); self.make_token(JsTokenKind::Decrement) }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::MinusAssign) }
+            _ => self.make_token(JsTokenKind::Minus),
+        }
+    }
+
+    fn read_star(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('*') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::StarStarAssign)
+                } else {
+                    self.make_token(JsTokenKind::StarStar)
+                }
+            }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::StarAssign) }
+            _ => self.make_token(JsTokenKind::Star),
+        }
+    }
+
+    fn read_percent(&mut self) -> JsToken {
+        self.advance();
+        if self.peek() == Some('=') {
+            self.advance();
+            self.make_token(JsTokenKind::PercentAssign)
+        } else {
+            self.make_token(JsTokenKind::Percent)
+        }
+    }
+
+    fn read_equals(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('=') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::EqEqEq)
+                } else {
+                    self.make_token(JsTokenKind::EqEq)
+                }
+            }
+            Some('>') => { self.advance(); self.make_token(JsTokenKind::Arrow) }
+            _ => self.make_token(JsTokenKind::Assign),
+        }
+    }
+
+    fn read_bang(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('=') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::NotEqEq)
+                } else {
+                    self.make_token(JsTokenKind::NotEq)
+                }
+            }
+            _ => self.make_token(JsTokenKind::Bang),
+        }
+    }
+
+    fn read_lt(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('<') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::LtLtAssign)
+                } else {
+                    self.make_token(JsTokenKind::LtLt)
+                }
+            }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::LtEq) }
+            _ => self.make_token(JsTokenKind::Lt),
+        }
+    }
+
+    fn read_gt(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('>') => {
+                self.advance();
+                if self.peek() == Some('>') {
+                    self.advance();
+                    if self.peek() == Some('=') {
+                        self.advance();
+                        self.make_token(JsTokenKind::GtGtGtAssign)
+                    } else {
+                        self.make_token(JsTokenKind::GtGtGt)
+                    }
+                } else if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::GtGtAssign)
+                } else {
+                    self.make_token(JsTokenKind::GtGt)
+                }
+            }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::GtEq) }
+            _ => self.make_token(JsTokenKind::Gt),
+        }
+    }
+
+    fn read_amp(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('&') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::AmpAmpAssign)
+                } else {
+                    self.make_token(JsTokenKind::AmpAmp)
+                }
+            }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::AmpAssign) }
+            _ => self.make_token(JsTokenKind::Amp),
+        }
+    }
+
+    fn read_pipe(&mut self) -> JsToken {
+        self.advance();
+        match self.peek() {
+            Some('|') => {
+                self.advance();
+                if self.peek() == Some('=') {
+                    self.advance();
+                    self.make_token(JsTokenKind::PipePipeAssign)
+                } else {
+                    self.make_token(JsTokenKind::PipePipe)
+                }
+            }
+            Some('=') => { self.advance(); self.make_token(JsTokenKind::PipeAssign) }
+            _ => self.make_token(JsTokenKind::Pipe),
+        }
+    }
+
+    fn read_hash(&mut self) -> JsToken {
+        self.advance();
+        let start = self.pos;
+        while self.peek().map_or(false, is_ident_part) {
+            self.advance();
+        }
+        if self.pos > start {
+            self.make_token(JsTokenKind::PrivateIdentifier)
+        } else {
+            self.make_token(JsTokenKind::Error)
+        }
+    }
+
+    fn read_string(&mut self, quote: char) -> JsToken {
+        self.advance();
+        let mut value = String::new();
         loop {
-            match self.cursor.peek() {
+            match self.peek() {
                 None => break,
                 Some('\\') => {
-                    self.cursor.advance();
-                    self.cursor.advance();
+                    self.advance();
+                    value.push(self.read_escape());
                 }
                 Some(c) if c == quote => {
-                    self.cursor.advance();
+                    self.advance();
                     break;
                 }
+                Some('\n') | Some('\r') => break,
+                Some(c) => {
+                    self.advance();
+                    value.push(c);
+                }
+            }
+        }
+        self.make_token_value(JsTokenKind::String, TokenValue::String(value))
+    }
+
+    fn read_template(&mut self) -> JsToken {
+        self.advance();
+        loop {
+            match self.peek() {
+                None => return self.make_token(JsTokenKind::UnterminatedTemplate),
+                Some('`') => {
+                    self.advance();
+                    return self.make_token(JsTokenKind::TemplateString);
+                }
+                Some('\\') => {
+                    self.advance();
+                    self.advance();
+                }
+                Some('$') if self.peek_at(1) == Some('{') => {
+                    self.advance();
+                    self.advance();
+                    self.skip_balanced_braces();
+                }
                 Some(_) => {
-                    self.cursor.advance();
+                    self.advance();
                 }
             }
         }
-        let raw = self.raw_since(start);
-        let inner = raw
-            .strip_prefix(quote)
-            .and_then(|s| s.strip_suffix(quote))
-            .unwrap_or(raw);
-        Token::new(JsTokenKind::String, self.cursor.span_since(start), inner)
     }
 
-    /// Reads a backtick-delimited template literal, including any nested
-    /// `${ ... }` interpolations. The raw text includes the surrounding
-    /// backticks; splitting it into static and dynamic parts is the
-    /// responsibility of the parser (see `crate::parser::split_template`).
-    fn read_template(&mut self, start: usize) -> Token<JsTokenKind> {
-        self.cursor.advance(); // opening backtick
-        skip_template_body(&mut self.cursor);
-        let raw = self.raw_since(start);
-        Token::new(
-            JsTokenKind::TemplateString,
-            self.cursor.span_since(start),
-            raw,
-        )
+    fn skip_balanced_braces(&mut self) {
+        let mut depth: u32 = 1;
+        while depth > 0 {
+            match self.peek() {
+                None => break,
+                Some('{') => { depth += 1; self.advance(); }
+                Some('}') => { depth -= 1; self.advance(); }
+                Some('\'' | '"') => {
+                    let q = self.peek().unwrap();
+                    self.advance();
+                    while self.peek().map_or(false, |c| c != q) {
+                        if self.peek() == Some('\\') { self.advance(); }
+                        self.advance();
+                    }
+                    self.advance();
+                }
+                Some('`') => {
+                    self.advance();
+                    loop {
+                        match self.peek() {
+                            None | Some('`') => { self.advance(); break; }
+                            Some('\\') => { self.advance(); self.advance(); }
+                            Some('$') if self.peek_at(1) == Some('{') => {
+                                self.advance();
+                                self.advance();
+                                self.skip_balanced_braces();
+                            }
+                            Some(_) => { self.advance(); }
+                        }
+                    }
+                }
+                Some(_) => { self.advance(); }
+            }
+        }
     }
 
-    /// Reads a numeric literal: decimal, fractional, exponent, or `0x` hex.
-    fn read_number(&mut self, start: usize) -> Token<JsTokenKind> {
-        if self.cursor.peek() == Some('0') && matches!(self.cursor.peek_at(1), Some('x' | 'X')) {
-            self.cursor.advance();
-            self.cursor.advance();
-            self.cursor
-                .take_while(|c| c.is_ascii_hexdigit() || c == '_');
+    fn read_escape(&mut self) -> char {
+        match self.peek() {
+            None => '\\',
+            Some('n') => { self.advance(); '\n' }
+            Some('t') => { self.advance(); '\t' }
+            Some('r') => { self.advance(); '\r' }
+            Some('0') => { self.advance(); '\0' }
+            Some('\'') => { self.advance(); '\'' }
+            Some('\"') => { self.advance(); '"' }
+            Some('\\') => { self.advance(); '\\' }
+            Some('`') => { self.advance(); '`' }
+            Some('x') => {
+                self.advance();
+                let hi = self.read_hex_digit();
+                let lo = self.read_hex_digit();
+                ((hi << 4) | lo) as u8 as char
+            }
+            Some('u') => {
+                self.advance();
+                if self.peek() == Some('{') {
+                    self.advance();
+                    let mut code = 0u32;
+                    while let Some(c) = self.peek() {
+                        if c == '}' { self.advance(); break; }
+                        code = code * 16 + self.read_hex_digit() as u32;
+                    }
+                    char::from_u32(code).unwrap_or('\u{FFFD}')
+                } else {
+                    let mut code = 0u32;
+                    for _ in 0..4 {
+                        code = code * 16 + self.read_hex_digit() as u32;
+                    }
+                    char::from_u32(code).unwrap_or('\u{FFFD}')
+                }
+            }
+            Some(c) => { self.advance(); c }
+        }
+    }
+
+    fn read_hex_digit(&mut self) -> u8 {
+        match self.peek() {
+            Some(c) if c.is_ascii_hexdigit() => {
+                let v = c.to_digit(16).unwrap_or(0) as u8;
+                self.advance();
+                v
+            }
+            _ => 0,
+        }
+    }
+
+    fn read_number(&mut self) -> JsToken {
+        if self.peek() == Some('0') {
+            match self.peek_at(1) {
+                Some('x' | 'X') => {
+                    self.advance(); self.advance();
+                    self.take_while(|c| c.is_ascii_hexdigit() || c == '_');
+                    let raw = self.slice();
+                    let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
+                    let value = u64::from_str_radix(&cleaned, 16).unwrap_or(0) as f64;
+                    return self.make_token_value(JsTokenKind::Number, TokenValue::Number(value));
+                }
+                Some('o' | 'O') => {
+                    self.advance(); self.advance();
+                    self.take_while(|c| c.is_ascii_octdigit() || c == '_');
+                    let raw = self.slice();
+                    let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
+                    let value = u64::from_str_radix(&cleaned, 8).unwrap_or(0) as f64;
+                    return self.make_token_value(JsTokenKind::Number, TokenValue::Number(value));
+                }
+                Some('b' | 'B') => {
+                    self.advance(); self.advance();
+                    self.take_while(|c| c == '0' || c == '1' || c == '_');
+                    let raw = self.slice();
+                    let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
+                    let value = u64::from_str_radix(&cleaned, 2).unwrap_or(0) as f64;
+                    return self.make_token_value(JsTokenKind::Number, TokenValue::Number(value));
+                }
+                _ => {}
+            }
+        }
+
+        self.take_while(|c| c.is_ascii_digit() || c == '_');
+        if self.peek() == Some('.') && self.peek_at(1).map_or(false, |c| c.is_ascii_digit()) {
+            self.advance();
+            self.take_while(|c| c.is_ascii_digit() || c == '_');
+        }
+        if matches!(self.peek(), Some('e' | 'E')) {
+            self.advance();
+            if matches!(self.peek(), Some('+' | '-')) {
+                self.advance();
+            }
+            self.take_while(|c| c.is_ascii_digit());
+        }
+
+        let is_bigint = self.peek() == Some('n') && !self.slice().contains('.')
+            && !self.slice().contains('e') && !self.slice().contains('E');
+        if is_bigint {
+            self.advance();
+            let raw = self.slice();
+            let cleaned: String = raw[..raw.len()-1].chars().filter(|c| *c != '_').collect();
+            let value = cleaned.parse::<u128>().unwrap_or(0);
+            return self.make_token_value(JsTokenKind::BigInt, TokenValue::BigInt(value));
+        }
+
+        let raw = self.slice();
+        let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
+        let value = cleaned.parse::<f64>().unwrap_or(0.0);
+        self.make_token_value(JsTokenKind::Number, TokenValue::Number(value))
+    }
+
+    fn read_number_after_dot(&mut self) {
+        self.take_while(|c| c.is_ascii_digit() || c == '_');
+        if matches!(self.peek(), Some('e' | 'E')) {
+            self.advance();
+            if matches!(self.peek(), Some('+' | '-')) {
+                self.advance();
+            }
+            self.take_while(|c| c.is_ascii_digit());
+        }
+    }
+
+    fn read_ident_or_keyword(&mut self) -> JsToken {
+        self.take_while(is_ident_part);
+        let raw = self.slice();
+        match keyword_from_str(&raw) {
+            Some(kind) => self.make_token(kind),
+            None => self.make_token_value(JsTokenKind::Identifier, TokenValue::Ident(raw)),
+        }
+    }
+
+    fn read_slash(&mut self) -> JsToken {
+        self.advance();
+        if self.peek() == Some('=') {
+            self.advance();
+            self.make_token(JsTokenKind::SlashAssign)
         } else {
-            self.cursor.take_while(|c| c.is_ascii_digit() || c == '_');
-            if self.cursor.peek() == Some('.') {
-                self.cursor.advance();
-                self.cursor.take_while(|c| c.is_ascii_digit() || c == '_');
-            }
-            if matches!(self.cursor.peek(), Some('e' | 'E')) {
-                self.cursor.advance();
-                if matches!(self.cursor.peek(), Some('+' | '-')) {
-                    self.cursor.advance();
+            self.make_token(JsTokenKind::Slash)
+        }
+    }
+
+    fn read_regex_or_slash(&mut self) -> JsToken {
+        self.advance();
+        loop {
+            match self.peek() {
+                None | Some('\n') | Some('\r') => break,
+                Some('/') => {
+                    self.advance();
+                    while self.peek().map_or(false, is_ident_part) {
+                        self.advance();
+                    }
+                    return self.make_token(JsTokenKind::Regex);
                 }
-                self.cursor.take_while(|c| c.is_ascii_digit());
+                Some('\\') => {
+                    self.advance();
+                    self.advance();
+                }
+                Some('[') => {
+                    self.advance();
+                    loop {
+                        match self.peek() {
+                            None | Some('\n') | Some('\r') => break,
+                            Some(']') => { self.advance(); break; }
+                            Some('\\') => { self.advance(); self.advance(); }
+                            Some(_) => { self.advance(); }
+                        }
+                    }
+                }
+                Some(_) => { self.advance(); }
             }
         }
-        let raw = self.raw_since(start);
-        Token::new(JsTokenKind::Number, self.cursor.span_since(start), raw)
+        self.make_token(JsTokenKind::Slash)
     }
 
-    /// Reads an identifier and resolves it to a keyword token if reserved.
-    fn read_ident_or_keyword(&mut self, start: usize) -> Token<JsTokenKind> {
-        self.cursor.take_while(is_ident_part);
-        let raw = self.raw_since(start);
-        let kind = keyword_from_str(raw).unwrap_or(JsTokenKind::Identifier);
-        Token::new(kind, self.cursor.span_since(start), raw)
+    // ---- helpers ----------------------------------------------------------
+
+    fn peek(&self) -> Option<char> {
+        self.source[self.pos..].chars().next()
     }
 
-    /// Reads a punctuation or operator token, greedily matching the longest
-    /// operator that starts at the current position.
-    fn read_punct(&mut self, start: usize) -> Token<JsTokenKind> {
-        let c = self
-            .cursor
-            .advance()
-            .expect("caller checked cursor is not eof");
-        let kind = match c {
-            '(' => JsTokenKind::LParen,
-            ')' => JsTokenKind::RParen,
-            '{' => JsTokenKind::LBrace,
-            '}' => JsTokenKind::RBrace,
-            '[' => JsTokenKind::LBracket,
-            ']' => JsTokenKind::RBracket,
-            ';' => JsTokenKind::Semicolon,
-            ',' => JsTokenKind::Comma,
-            ':' => JsTokenKind::Colon,
-            '.' => JsTokenKind::Dot,
-            '?' => {
-                if self.cursor.peek() == Some('?') {
-                    self.cursor.advance();
-                    JsTokenKind::Nullish
-                } else {
-                    JsTokenKind::Question
-                }
-            }
-            '+' => {
-                if self.cursor.peek() == Some('+') {
-                    self.cursor.advance();
-                    JsTokenKind::Increment
-                } else if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::PlusAssign
-                } else {
-                    JsTokenKind::Plus
-                }
-            }
-            '-' => {
-                if self.cursor.peek() == Some('-') {
-                    self.cursor.advance();
-                    JsTokenKind::Decrement
-                } else if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::MinusAssign
-                } else {
-                    JsTokenKind::Minus
-                }
-            }
-            '*' => {
-                if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::StarAssign
-                } else {
-                    JsTokenKind::Star
-                }
-            }
-            '/' => {
-                if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::SlashAssign
-                } else {
-                    JsTokenKind::Slash
-                }
-            }
-            '%' => {
-                if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::PercentAssign
-                } else {
-                    JsTokenKind::Percent
-                }
-            }
-            '=' => {
-                if self.cursor.peek() == Some('=') && self.cursor.peek_at(1) == Some('=') {
-                    self.cursor.advance();
-                    self.cursor.advance();
-                    JsTokenKind::EqEqEq
-                } else if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::EqEq
-                } else if self.cursor.peek() == Some('>') {
-                    self.cursor.advance();
-                    JsTokenKind::Arrow
-                } else {
-                    JsTokenKind::Assign
-                }
-            }
-            '!' => {
-                if self.cursor.peek() == Some('=') && self.cursor.peek_at(1) == Some('=') {
-                    self.cursor.advance();
-                    self.cursor.advance();
-                    JsTokenKind::NotEqEq
-                } else if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::NotEq
-                } else {
-                    JsTokenKind::Bang
-                }
-            }
-            '<' => {
-                if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::LtEq
-                } else {
-                    JsTokenKind::Lt
-                }
-            }
-            '>' => {
-                if self.cursor.peek() == Some('=') {
-                    self.cursor.advance();
-                    JsTokenKind::GtEq
-                } else {
-                    JsTokenKind::Gt
-                }
-            }
-            '&' if self.cursor.peek() == Some('&') => {
-                self.cursor.advance();
-                JsTokenKind::AmpAmp
-            }
-            '|' if self.cursor.peek() == Some('|') => {
-                self.cursor.advance();
-                JsTokenKind::PipePipe
-            }
-            _ => JsTokenKind::Identifier,
-        };
-        let raw = self.raw_since(start);
-        Token::new(kind, self.cursor.span_since(start), raw)
+    fn peek_at(&self, offset: usize) -> Option<char> {
+        self.source[self.pos..].chars().nth(offset)
     }
-}
 
-/// Skips over a template literal body (the opening backtick must already be
-/// consumed) up to and including its closing backtick. Any `${ ... }`
-/// interpolation is skipped as an opaque, brace-balanced region so it may
-/// contain arbitrary expressions, including nested template literals.
-fn skip_template_body(cursor: &mut Cursor<'_>) {
-    loop {
-        match cursor.peek() {
-            None => break,
-            Some('`') => {
-                cursor.advance();
+    fn advance(&mut self) -> Option<char> {
+        let c = self.source[self.pos..].chars().next()?;
+        let byte_len = c.len_utf8();
+        self.pos += byte_len;
+        self.column += 1;
+        Some(c)
+    }
+
+    fn is_eof(&self) -> bool {
+        self.pos >= self.source.len()
+    }
+
+    fn slice(&self) -> &'a str {
+        &self.source[self.start..self.pos]
+    }
+
+    fn span(&self) -> SourceSpan {
+        SourceSpan {
+            start: motarjim_span::SourceLocation {
+                offset: self.start as u32,
+                line: self.line,
+                column: self.column.saturating_sub(1),
+            },
+            end: motarjim_span::SourceLocation {
+                offset: self.pos as u32,
+                line: self.line,
+                column: self.column,
+            },
+        }
+    }
+
+    fn make_token(&self, kind: JsTokenKind) -> JsToken {
+        JsToken::new(kind, self.span(), self.slice())
+    }
+
+    fn make_token_value(&self, kind: JsTokenKind, value: TokenValue) -> JsToken {
+        JsToken::new(kind, self.span(), self.slice()).with_value(value)
+    }
+
+    fn take_while(&mut self, mut f: impl FnMut(char) -> bool) {
+        while let Some(c) = self.peek() {
+            if f(c) {
+                self.advance();
+            } else {
                 break;
             }
-            Some('\\') => {
-                cursor.advance();
-                cursor.advance();
-            }
-            Some('$') if cursor.peek_at(1) == Some('{') => {
-                cursor.advance();
-                cursor.advance();
-                skip_balanced_braces(cursor);
-            }
-            Some(_) => {
-                cursor.advance();
-            }
         }
     }
 }
 
-/// Skips a `${ ... }` interpolation body (the opening `{` must already be
-/// consumed) up to and including its matching closing `}`. String and
-/// template literals encountered inside are skipped atomically so their
-/// contents never miscount the brace depth.
-fn skip_balanced_braces(cursor: &mut Cursor<'_>) {
-    let mut depth: u32 = 1;
-    while depth > 0 {
-        match cursor.peek() {
-            None => break,
-            Some('{') => {
-                depth += 1;
-                cursor.advance();
-            }
-            Some('}') => {
-                depth -= 1;
-                cursor.advance();
-            }
-            Some(quote @ ('\'' | '"')) => {
-                cursor.advance();
-                skip_string_body(cursor, quote);
-            }
-            Some('`') => {
-                cursor.advance();
-                skip_template_body(cursor);
-            }
-            Some(_) => {
-                cursor.advance();
-            }
-        }
-    }
-}
-
-/// Skips a quoted string body (the opening quote must already be consumed)
-/// up to and including its closing quote.
-fn skip_string_body(cursor: &mut Cursor<'_>, quote: char) {
-    loop {
-        match cursor.peek() {
-            None => break,
-            Some('\\') => {
-                cursor.advance();
-                cursor.advance();
-            }
-            Some(c) if c == quote => {
-                cursor.advance();
-                break;
-            }
-            Some(_) => {
-                cursor.advance();
-            }
-        }
-    }
-}
-
-/// Returns `true` if `c` is a valid identifier start character.
 fn is_ident_start(c: char) -> bool {
     c.is_alphabetic() || c == '_' || c == '$'
 }
 
-/// Returns `true` if `c` is a valid identifier continuation character.
 fn is_ident_part(c: char) -> bool {
-    is_ident_start(c) || c.is_ascii_digit()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn kinds(src: &str) -> Vec<JsTokenKind> {
-        JsLexer::new(src)
-            .tokenize()
-            .iter()
-            .map(|t| t.kind)
-            .collect()
-    }
-
-    #[test]
-    fn test_var_decl() {
-        let k = kinds("let x = 1;");
-        assert_eq!(
-            k,
-            vec![
-                JsTokenKind::Let,
-                JsTokenKind::Identifier,
-                JsTokenKind::Assign,
-                JsTokenKind::Number,
-                JsTokenKind::Semicolon,
-                JsTokenKind::Eof,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_arrow_function() {
-        let k = kinds("(x) => x + 1");
-        assert!(k.contains(&JsTokenKind::Arrow));
-    }
-
-    #[test]
-    fn test_string_literal() {
-        let mut lexer = JsLexer::new(r#"'hello'"#);
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens[0].kind, JsTokenKind::String);
-        assert_eq!(tokens[0].raw, "hello");
-    }
-
-    #[test]
-    fn test_template_literal_raw_includes_backticks() {
-        let mut lexer = JsLexer::new("`hi ${name}!`");
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens[0].kind, JsTokenKind::TemplateString);
-        assert_eq!(tokens[0].raw, "`hi ${name}!`");
-    }
-
-    #[test]
-    fn test_template_literal_with_nested_braces_in_string() {
-        let mut lexer = JsLexer::new(r#"`${ "{" }`"#);
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens[0].kind, JsTokenKind::TemplateString);
-        assert_eq!(tokens[0].kind, JsTokenKind::TemplateString);
-    }
-
-    #[test]
-    fn test_template_literal_nested_template() {
-        let mut lexer = JsLexer::new("`a${`b${c}`}d`");
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens[0].kind, JsTokenKind::TemplateString);
-        assert_eq!(tokens[0].raw, "`a${`b${c}`}d`");
-    }
-
-    #[test]
-    fn test_operators() {
-        let k = kinds("a === b !== c <= d >= e && f || g ?? h");
-        assert!(k.contains(&JsTokenKind::EqEqEq));
-        assert!(k.contains(&JsTokenKind::NotEqEq));
-        assert!(k.contains(&JsTokenKind::LtEq));
-        assert!(k.contains(&JsTokenKind::GtEq));
-        assert!(k.contains(&JsTokenKind::AmpAmp));
-        assert!(k.contains(&JsTokenKind::PipePipe));
-        assert!(k.contains(&JsTokenKind::Nullish));
-    }
-
-    #[test]
-    fn test_increment_decrement() {
-        let k = kinds("i++; --j;");
-        assert!(k.contains(&JsTokenKind::Increment));
-        assert!(k.contains(&JsTokenKind::Decrement));
-    }
-
-    #[test]
-    fn test_line_comment_skipped() {
-        let k = kinds("let x = 1; // comment\nlet y = 2;");
-        assert_eq!(k.iter().filter(|t| **t == JsTokenKind::Let).count(), 2);
-    }
-
-    #[test]
-    fn test_block_comment_skipped() {
-        let k = kinds("let /* comment */ x = 1;");
-        assert_eq!(k[0], JsTokenKind::Let);
-        assert_eq!(k[1], JsTokenKind::Identifier);
-    }
-
-    #[test]
-    fn test_hex_number() {
-        let mut lexer = JsLexer::new("0xFF");
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens[0].kind, JsTokenKind::Number);
-        assert_eq!(tokens[0].raw, "0xFF");
-    }
-
-    #[test]
-    fn test_float_with_exponent() {
-        let mut lexer = JsLexer::new("1.5e10");
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens[0].kind, JsTokenKind::Number);
-        assert_eq!(tokens[0].raw, "1.5e10");
-    }
-
-    #[test]
-    fn test_import_export_keywords() {
-        let k = kinds("import x from 'mod'; export default x;");
-        assert_eq!(
-            k,
-            vec![
-                JsTokenKind::Import,
-                JsTokenKind::Identifier,
-                JsTokenKind::From,
-                JsTokenKind::String,
-                JsTokenKind::Semicolon,
-                JsTokenKind::Export,
-                JsTokenKind::Default,
-                JsTokenKind::Identifier,
-                JsTokenKind::Semicolon,
-                JsTokenKind::Eof,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_dollar_sign_identifier() {
-        let k = kinds("$el.addEventListener");
-        assert_eq!(k[0], JsTokenKind::Identifier);
-    }
-
-    #[test]
-    fn test_empty_input() {
-        let mut lexer = JsLexer::new("");
-        let tokens = lexer.tokenize();
-        assert_eq!(tokens.len(), 1);
-        assert_eq!(tokens[0].kind, JsTokenKind::Eof);
-    }
+    is_ident_start(c) || c.is_ascii_digit() || c == '\u{200C}' || c == '\u{200D}'
 }

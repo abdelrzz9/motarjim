@@ -495,18 +495,18 @@ impl FlutterGenerator {
     fn emit_main_axis_alignment(
         &self,
         w: &mut CodeWriter,
-        justify: &Option<motarjim_ast::style::JustifyContent>,
+        justify: &Option<motarjim_ast_html::JustifyContent>,
     ) {
         if let Some(ref jc) = justify {
             let value = match jc {
-                motarjim_ast::style::JustifyContent::FlexStart => "MainAxisAlignment.start",
-                motarjim_ast::style::JustifyContent::FlexEnd => "MainAxisAlignment.end",
-                motarjim_ast::style::JustifyContent::Center => "MainAxisAlignment.center",
-                motarjim_ast::style::JustifyContent::SpaceBetween => {
+                motarjim_ast_html::JustifyContent::FlexStart => "MainAxisAlignment.start",
+                motarjim_ast_html::JustifyContent::FlexEnd => "MainAxisAlignment.end",
+                motarjim_ast_html::JustifyContent::Center => "MainAxisAlignment.center",
+                motarjim_ast_html::JustifyContent::SpaceBetween => {
                     "MainAxisAlignment.spaceBetween"
                 }
-                motarjim_ast::style::JustifyContent::SpaceAround => "MainAxisAlignment.spaceAround",
-                motarjim_ast::style::JustifyContent::SpaceEvenly => "MainAxisAlignment.spaceEvenly",
+                motarjim_ast_html::JustifyContent::SpaceAround => "MainAxisAlignment.spaceAround",
+                motarjim_ast_html::JustifyContent::SpaceEvenly => "MainAxisAlignment.spaceEvenly",
             };
             w.write_line(&format!("mainAxisAlignment: {value},"));
         }
@@ -516,15 +516,15 @@ impl FlutterGenerator {
     fn emit_cross_axis_alignment(
         &self,
         w: &mut CodeWriter,
-        align: &Option<motarjim_ast::style::AlignItems>,
+        align: &Option<motarjim_ast_html::AlignItems>,
     ) {
         if let Some(ref ai) = align {
             let value = match ai {
-                motarjim_ast::style::AlignItems::FlexStart => "CrossAxisAlignment.start",
-                motarjim_ast::style::AlignItems::FlexEnd => "CrossAxisAlignment.end",
-                motarjim_ast::style::AlignItems::Center => "CrossAxisAlignment.center",
-                motarjim_ast::style::AlignItems::Stretch => "CrossAxisAlignment.stretch",
-                motarjim_ast::style::AlignItems::Baseline => "CrossAxisAlignment.baseline",
+                motarjim_ast_html::AlignItems::FlexStart => "CrossAxisAlignment.start",
+                motarjim_ast_html::AlignItems::FlexEnd => "CrossAxisAlignment.end",
+                motarjim_ast_html::AlignItems::Center => "CrossAxisAlignment.center",
+                motarjim_ast_html::AlignItems::Stretch => "CrossAxisAlignment.stretch",
+                motarjim_ast_html::AlignItems::Baseline => "CrossAxisAlignment.baseline",
             };
             w.write_line(&format!("crossAxisAlignment: {value},"));
         }

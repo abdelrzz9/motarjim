@@ -2,6 +2,7 @@
 name = "motarjim-wasm"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 description = "WASM bindings for Motarjim compiler"
 
 [lib]
@@ -12,6 +13,7 @@ motarjim-core = { workspace = true, features = ["wasm"] }
 motarjim-diag = { workspace = true }
 motarjim-config = { workspace = true }
 motarjim-fs = { workspace = true }
+motarjim-span = { workspace = true }
 wasm-bindgen = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

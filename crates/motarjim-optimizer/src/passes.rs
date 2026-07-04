@@ -363,7 +363,7 @@ impl Default for RemoveUnusedStyles {
 
 /// Helper: returns true when a `Background` is entirely empty (all fields `None`).
 #[must_use]
-const fn is_background_empty(bg: &motarjim_ast::style::Background) -> bool {
+const fn is_background_empty(bg: &motarjim_ast_html::Background) -> bool {
     bg.color.is_none()
         && bg.image.is_none()
         && bg.position.is_none()

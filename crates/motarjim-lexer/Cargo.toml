@@ -8,6 +8,7 @@ description = "HTML and CSS lexer/tokenizer for Motarjim compiler"
 [dependencies]
 motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
+motarjim-span = { workspace = true }
 smol_str = { workspace = true }
 smallvec = { workspace = true }
 

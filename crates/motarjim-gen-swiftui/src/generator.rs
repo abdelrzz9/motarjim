@@ -348,9 +348,9 @@ impl SwiftUIGenerator {
         let style = &node.computed_style;
         if let Some(ref ai) = style.align_items {
             let value = match ai {
-                motarjim_ast::style::AlignItems::FlexStart => ".top",
-                motarjim_ast::style::AlignItems::FlexEnd => ".bottom",
-                motarjim_ast::style::AlignItems::Center => ".center",
+                motarjim_ast_html::AlignItems::FlexStart => ".top",
+                motarjim_ast_html::AlignItems::FlexEnd => ".bottom",
+                motarjim_ast_html::AlignItems::Center => ".center",
                 _ => ".top",
             };
             w.write_line(&format!(".alignmentGuide(.top) {{ _ in {value} }}"));
@@ -367,9 +367,9 @@ impl SwiftUIGenerator {
         let style = &node.computed_style;
         if let Some(ref ai) = style.align_items {
             let value = match ai {
-                motarjim_ast::style::AlignItems::FlexStart => ".leading",
-                motarjim_ast::style::AlignItems::FlexEnd => ".trailing",
-                motarjim_ast::style::AlignItems::Center => ".center",
+                motarjim_ast_html::AlignItems::FlexStart => ".leading",
+                motarjim_ast_html::AlignItems::FlexEnd => ".trailing",
+                motarjim_ast_html::AlignItems::Center => ".center",
                 _ => ".leading",
             };
             w.write_line(&format!(".frame(maxWidth: .infinity, alignment: {value})"));

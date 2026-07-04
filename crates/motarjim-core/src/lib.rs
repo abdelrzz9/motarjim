@@ -31,7 +31,7 @@ pub mod event;
 pub mod query;
 
 use motarjim_ast::ir::IrTree;
-use motarjim_ast::style::ComputedStyle;
+use motarjim_ast_html::ComputedStyle;
 use motarjim_ast::{Document, NodeId};
 use motarjim_cache::ArtifactCache;
 use motarjim_config::{Config, OutputFormat};

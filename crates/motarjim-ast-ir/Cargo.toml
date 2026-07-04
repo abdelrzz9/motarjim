@@ -1,0 +1,19 @@
+[package]
+name = "motarjim-ast-ir"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+motarjim-ast-html = { workspace = true }
+motarjim-ast-css = { workspace = true }
+serde = { workspace = true, optional = true }
+smallvec.workspace = true
+smol_str.workspace = true
+
+[features]
+serialize = ["serde"]
+default = []

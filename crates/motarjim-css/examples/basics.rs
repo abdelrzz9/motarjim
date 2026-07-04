@@ -1,5 +1,5 @@
 use motarjim_ast::css::{CssRule, CssStylesheet, Declaration, StyleRule};
-use motarjim_ast::selector::{Selector, SimpleSelector};
+use motarjim_ast_css::{Selector, SimpleSelector};
 use motarjim_ast::Element;
 use motarjim_css::{parse_color, parse_length, StyleResolver};
 use smol_str::SmolStr;

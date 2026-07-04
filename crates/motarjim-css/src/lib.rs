@@ -22,8 +22,8 @@
 use std::collections::HashMap;
 
 use motarjim_ast::css::{CssRule, CssStylesheet, Declaration, StyleRule};
-use motarjim_ast::selector::{AttributeOperator, Selector, SimpleSelector};
-use motarjim_ast::style::{
+use motarjim_ast_css::{AttributeOperator, Selector, SimpleSelector};
+use motarjim_ast_html::{
     AlignContent, AlignItems, Background, Border, ComputedStyle, DisplayType, EdgeValues,
     FlexDirection, FlexWrap, FontWeight, JustifyContent, Overflow, PositionType, TextAlign,
 };

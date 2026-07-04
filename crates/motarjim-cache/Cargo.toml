@@ -9,6 +9,7 @@ description = "Compilation cache for Motarjim compiler"
 motarjim-diag = { workspace = true }
 motarjim-fs = { workspace = true }
 motarjim-serialize = { workspace = true }
+motarjim-span = { workspace = true }
 sha2 = { workspace = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }

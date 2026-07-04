@@ -454,21 +454,21 @@ impl ComposeGenerator {
         let style = &node.computed_style;
         if let Some(ref jc) = style.justify_content {
             let value = match jc {
-                motarjim_ast::style::JustifyContent::FlexStart => "Arrangement.Start",
-                motarjim_ast::style::JustifyContent::FlexEnd => "Arrangement.End",
-                motarjim_ast::style::JustifyContent::Center => "Arrangement.Center",
-                motarjim_ast::style::JustifyContent::SpaceBetween => "Arrangement.SpaceBetween",
-                motarjim_ast::style::JustifyContent::SpaceAround => "Arrangement.SpaceAround",
-                motarjim_ast::style::JustifyContent::SpaceEvenly => "Arrangement.SpaceEvenly",
+                motarjim_ast_html::JustifyContent::FlexStart => "Arrangement.Start",
+                motarjim_ast_html::JustifyContent::FlexEnd => "Arrangement.End",
+                motarjim_ast_html::JustifyContent::Center => "Arrangement.Center",
+                motarjim_ast_html::JustifyContent::SpaceBetween => "Arrangement.SpaceBetween",
+                motarjim_ast_html::JustifyContent::SpaceAround => "Arrangement.SpaceAround",
+                motarjim_ast_html::JustifyContent::SpaceEvenly => "Arrangement.SpaceEvenly",
             };
             w.write_line(&format!("horizontalArrangement = {value},"));
         }
         if let Some(ref ai) = style.align_items {
             let value = match ai {
-                motarjim_ast::style::AlignItems::FlexStart => "Alignment.Top",
-                motarjim_ast::style::AlignItems::FlexEnd => "Alignment.Bottom",
-                motarjim_ast::style::AlignItems::Center => "Alignment.CenterVertically",
-                motarjim_ast::style::AlignItems::Stretch => "Alignment.Stretch",
+                motarjim_ast_html::AlignItems::FlexStart => "Alignment.Top",
+                motarjim_ast_html::AlignItems::FlexEnd => "Alignment.Bottom",
+                motarjim_ast_html::AlignItems::Center => "Alignment.CenterVertically",
+                motarjim_ast_html::AlignItems::Stretch => "Alignment.Stretch",
                 _ => "Alignment.Top",
             };
             w.write_line(&format!("verticalAlignment = {value},"));
@@ -488,10 +488,10 @@ impl ComposeGenerator {
         let style = &node.computed_style;
         if let Some(ref ai) = style.align_items {
             let value = match ai {
-                motarjim_ast::style::AlignItems::FlexStart => "Alignment.Start",
-                motarjim_ast::style::AlignItems::FlexEnd => "Alignment.End",
-                motarjim_ast::style::AlignItems::Center => "Alignment.CenterHorizontally",
-                motarjim_ast::style::AlignItems::Stretch => "Alignment.Stretch",
+                motarjim_ast_html::AlignItems::FlexStart => "Alignment.Start",
+                motarjim_ast_html::AlignItems::FlexEnd => "Alignment.End",
+                motarjim_ast_html::AlignItems::Center => "Alignment.CenterHorizontally",
+                motarjim_ast_html::AlignItems::Stretch => "Alignment.Stretch",
                 _ => "Alignment.Start",
             };
             w.write_line(&format!("horizontalAlignment = {value},"));

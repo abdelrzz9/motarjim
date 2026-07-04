@@ -2,7 +2,7 @@ use super::*;
 use crate::helpers::{collapse_whitespace, get_text_content};
 
 use motarjim_ast::ir::LayoutIr;
-use motarjim_ast::style::{FlexDirection, JustifyContent};
+use motarjim_ast_html::{FlexDirection, JustifyContent};
 
 fn default_context() -> PassContext {
     PassContext::default()

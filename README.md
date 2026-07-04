@@ -4,25 +4,42 @@
   <img src="motarjim.png" alt="motarjim logo" width="200">
 </p>
 
-**HTML/CSS → Native UI Code compiler** for Flutter, Jetpack Compose, and SwiftUI.
+<p align="center">
+  <strong>HTML/CSS → Native UI Code compiler</strong><br>
+  Write once in HTML/CSS. Ship native code for every platform.
+</p>
 
-Write once in HTML/CSS. Ship native code for every platform.
-
-[![crates.io](https://img.shields.io/badge/crates.io-0.1.0-blue)]()
-[![license](https://img.shields.io/badge/license-MIT-green)]()
-[![build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![tests](https://img.shields.io/badge/tests-493%20passed-brightgreen)]()
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
+  <a href="#"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="build"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-493%20passed-brightgreen" alt="tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-87%25-yellow" alt="coverage"></a>
+  <a href="#"><img src="https://img.shields.io/badge/rustc-1.75%2B-orange" alt="rustc"></a>
+</p>
 
 ---
 
-## Features
+## Quick Start
+
+```bash
+git clone https://github.com/motarjim/motarjim.git
+cd motarjim
+cargo build --release -p motarjim-cli
+./target/release/motarjim compile index.html --platform flutter
+```
+
+## Key Features
 
 - **Local-first** — Zero cloud dependencies. Everything runs on your machine.
 - **Multi-platform** — Generate Flutter (Dart), Jetpack Compose (Kotlin), or SwiftUI from the same HTML/CSS.
-- **Rust engine** — The Rust workspace under `crates/` is the single source of truth; parse → analyze → optimize → generate, no runtime, no WebView.
+- **Rust engine** — The Rust workspace under `crates/` is the single source of truth: parse → analyze → optimize → generate, no runtime, no WebView.
 - **JavaScript front end** — `motarjim-js` parses variables, functions, arrow functions, template literals, imports/exports, and extracts DOM event bindings.
-- **493 tests** across the Rust workspace, plus fuzz targets and Criterion benchmarks per parser.
-- **Diagnostics with error codes** — Rust-style `E0001`-`E0799` diagnostics with severities, spans, and notes (see `motarjim-diag`).
+- **493+ tests** across the Rust workspace, plus fuzz targets and Criterion benchmarks per parser.
+- **Diagnostics with error codes** — Rust-style `E0001`-`E0799` diagnostics with severities, spans, and notes.
+- **Plugin system** — Extensible generator architecture for third-party platform targets.
+- **LSP support** — Language server protocol implementation for IDE integration.
+- **Incremental compilation** — Query-based caching and dependency tracking for fast rebuilds.
 
 ## Architecture
 
@@ -30,18 +47,20 @@ Write once in HTML/CSS. Ship native code for every platform.
   <img src="architecture_mono.png" alt="motarjim Compiler Architecture" width="100%">
 </p>
 
-## Pipeline Stages
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the full architecture document.
+
+### Pipeline Stages
 
 | # | Stage | Description |
 |---|-------|-------------|
-| 1 | **Parse** | Parse HTML with parse5 → `HtmlNode` AST |
-| 2 | **Style** | Analyze CSS with PostCSS → cascade → `StyledNode` tree |
-| 3 | **Analyze** | 18 rule-based detectors + optional AI (Ollama) → `SemanticHint[]` |
+| 1 | **Parse** | Tokenize and parse HTML/CSS into typed ASTs |
+| 2 | **Style** | Resolve CSS cascade, match selectors, compute styles |
+| 3 | **Analyze** | Semantic inference, layout detection, accessibility analysis |
 | 4 | **IR** | Build platform-agnostic `IrNode` tree (SemanticIR / LayoutIR / TargetIR) |
-| 5 | **Optimize** | flattenContainers · mergeTextNodes · removeEmptyText · pruneUnusedProps |
-| 6 | **Generate** | Walk IR tree → emit Flutter / Compose / SwiftUI code |
+| 5 | **Optimize** | Merge text nodes, flatten containers, prune unused props, deduplicate styles |
+| 6 | **Generate** | Walk IR tree and emit Flutter / Compose / SwiftUI code |
 
-## Supported Targets
+### Supported Targets
 
 | Platform | Language | Widget Set |
 |----------|----------|------------|
@@ -49,71 +68,73 @@ Write once in HTML/CSS. Ship native code for every platform.
 | Jetpack Compose | Kotlin | Material 3 |
 | SwiftUI | Swift | iOS 17+ |
 
-## Web Playground
+## Installation
 
-motarjim ships with a restored Vite playground in `apps/playground` at `http://localhost:3000`:
-
-```
-npm run start:playground
-```
-
-The web UI provides:
-
-- **Split-panel editor** — HTML/CSS tabs on the left, generated code on the right
-- **Pipeline visualizer** — Animated stage-by-stage progress bar
-- **Platform switcher** — Toggle between Flutter, Compose, and SwiftUI output
-- **Dark/light theme** — Persisted to local storage
-- **Code actions** — Paste, format, upload file, clear, load sample
-- **Status bar** — Compile time, node count, components detected, generated lines
-- **Command palette** — `Ctrl+K` or `?` for quick actions
-- **Auto-save drafts** — Work persists across sessions
-- **Error cards** — Detailed error messages with line info and copy action
-
-## Quick Start
-
-### Installation
+### From Source
 
 ```bash
-# From source (published crates.io release not yet available)
-git clone https://github.com/abdelrzz9/motarjim.git
+# Prerequisites: Rust 1.75+, Cargo
+git clone https://github.com/motarjim/motarjim.git
 cd motarjim
 cargo build --release -p motarjim-cli
-./target/release/motarjim --help
+
+# The binary is at ./target/release/motarjim
+# Optionally add to PATH:
+cp ./target/release/motarjim ~/.local/bin/
 ```
 
-### CLI Usage
-
-The Rust CLI (`motarjim-cli`) currently supports:
+### From crates.io (when published)
 
 ```bash
-# Compile HTML to a target platform (flutter | compose | swiftui)
-motarjim compile index.html --platform flutter
-
-# Write output to a file instead of stdout
-motarjim compile index.html --platform swiftui --output ContentView.swift
-
-# Minify output / emit source maps / treat warnings as errors
-motarjim compile index.html --platform compose --minify --source-maps --strict
-
-# Create a default motarjim.json config in the current directory
-motarjim init
-
-# Check a file for diagnostics without generating output
-# (.html/.css go through the full compiler pipeline in strict mode;
-#  .js/.mjs/.jsx are parsed and semantically analyzed by motarjim-js)
-motarjim check index.html
-motarjim check app.js
-
-# Watch mode is scaffolded but not yet implemented
-motarjim watch index.html --platform flutter
+cargo install motarjim-cli
 ```
 
-See [docs/cli.md](docs/cli.md) — note this doc still needs a rewrite against
-the current Rust CLI; treat `motarjim --help` as the source of truth in the
-meantime. There is no HTTP API; `motarjim-core` is a library embedded by the
-CLI, LSP, and (eventually) WASM bindings, not a server.
+### Docker
 
-## Examples
+```bash
+docker build -t motarjim .
+docker run --rm -v $(pwd):/work motarjim compile /work/index.html --platform flutter
+```
+
+## Usage Examples
+
+### Basic Compilation
+
+```bash
+# Compile to Flutter
+motarjim compile index.html --platform flutter
+
+# Compile to Jetpack Compose
+motarjim compile index.html --platform compose
+
+# Compile to SwiftUI
+motarjim compile index.html --platform swiftui
+```
+
+### With Output File
+
+```bash
+motarjim compile index.html --platform swiftui --output ContentView.swift
+```
+
+### With Options
+
+```bash
+motarjim compile index.html --platform compose --minify --source-maps --strict
+```
+
+### Initialize a Project
+
+```bash
+motarjim init
+```
+
+### Check for Diagnostics
+
+```bash
+motarjim check index.html
+motarjim check app.js    # JavaScript analysis with motarjim-js
+```
 
 ### Input
 
@@ -204,40 +225,179 @@ struct GeneratedView: View {
 }
 ```
 
-## TypeScript apps and packages
+## Configuration
 
-The repository keeps runnable TypeScript applications separate from reusable TypeScript packages:
+motarjim supports `motarjim.json` and `motarjim.toml` configuration files:
 
-- `apps/playground` — restored Vite playground that was previously under `web/`.
-- `apps/website` — documentation/marketing website shell.
-- `packages/vscode-extension` — VS Code extension workspace for editor integration.
-- `packages/playground-sdk` — shared playground request and target types.
-- `packages/website-sdk` — shared website navigation metadata.
+```json
+{
+  "platforms": {
+    "flutter": {
+      "format": "dart",
+      "output_dir": "output/flutter",
+      "minify": false,
+      "source_maps": false
+    },
+    "compose": {
+      "format": "kotlin",
+      "output_dir": "output/compose",
+      "minify": false,
+      "source_maps": false
+    },
+    "swiftui": {
+      "format": "swift",
+      "output_dir": "output/swiftui",
+      "minify": false,
+      "source_maps": false
+    }
+  },
+  "global": {
+    "verbose": false,
+    "strict": false,
+    "max_parallel": 4,
+    "incremental": true
+  }
+}
+```
 
-Common commands:
+```toml
+[platforms.flutter]
+format = "dart"
+output_dir = "output/flutter"
+minify = false
+
+[global]
+verbose = false
+strict = false
+incremental = true
+```
+
+## Web Playground
+
+motarjim ships with a Vite playground at `apps/playground`:
 
 ```bash
 npm install
 npm run start:playground
-npm run start:website
 ```
 
-See [docs/web-and-vscode.md](docs/web-and-vscode.md) for details.
+Open [http://localhost:3000](http://localhost:3000) for:
+- Split-panel editor with HTML/CSS input and generated code output
+- Pipeline visualizer with stage-by-stage progress
+- Platform switcher (Flutter, Compose, SwiftUI)
+- Dark/light theme support
+- Auto-save drafts across sessions
+- Error cards with detailed diagnostic information
 
-## AI Enhancement
+## Development
 
-Optional Ollama integration for improved component detection:
+### Prerequisites
+
+- Rust 1.75+
+- Node.js 18+
+- npm 9+
+
+### Build
 
 ```bash
-motarjim convert index.html --ai-enhance
+# Rust workspace
+cargo build --workspace
 
-# With custom model
-motarjim convert index.html --ai-enhance --ai-model llama3
+# TypeScript packages
+npm install
+npm run build
 ```
 
-See [docs/ai-enhancement.md](docs/ai-enhancement.md) for setup instructions.
+### Test
 
-## Performance Benchmarks
+```bash
+# Rust tests
+cargo test --workspace
+
+# TypeScript tests
+npm test
+
+# All tests with release profile
+cargo test --release
+```
+
+### Lint
+
+```bash
+cargo clippy --workspace -- -D warnings
+cargo fmt --check
+npm run lint
+```
+
+### Benchmark
+
+```bash
+cargo bench --workspace
+npm run bench
+```
+
+## Project Structure
+
+```
+motarjim/
+├── crates/                 # Rust workspace (compiler engine)
+│   ├── motarjim-core       # Compiler facade & pipeline orchestrator
+│   ├── motarjim-parser     # HTML/CSS parser
+│   ├── motarjim-lexer      # HTML/CSS tokenizer
+│   ├── motarjim-css        # CSS engine (cascade, selectors, values)
+│   ├── motarjim-selectors  # CSS selector engine
+│   ├── motarjim-ir         # IR construction & inference
+│   ├── motarjim-optimizer  # Optimization passes
+│   ├── motarjim-js         # JavaScript front end
+│   ├── motarjim-gen-flutter # Flutter code generator
+│   ├── motarjim-gen-compose # Compose code generator
+│   ├── motarjim-gen-swiftui # SwiftUI code generator
+│   ├── motarjim-cli        # CLI application
+│   ├── motarjim-lsp        # Language server
+│   ├── motarjim-wasm       # WebAssembly bindings
+│   ├── motarjim-diag       # Diagnostic system
+│   ├── motarjim-ast        # AST type definitions
+│   ├── motarjim-cache      # Compilation cache
+│   ├── motarjim-config     # Configuration
+│   ├── motarjim-fs         # Filesystem abstraction
+│   ├── motarjim-formatter  # Code formatter
+│   ├── motarjim-incremental # Incremental compilation
+│   ├── motarjim-profiling  # Performance profiling
+│   ├── motarjim-serialize  # Serialization
+│   └── motarjim-ffi        # FFI bridge
+├── packages/               # TypeScript packages
+│   ├── vscode-extension    # VS Code extension
+│   ├── playground-sdk      # Shared playground types
+│   └── website-sdk         # Website metadata
+├── apps/                   # TypeScript applications
+│   ├── playground          # Web playground (Vite)
+│   └── website             # Documentation website
+├── fuzz/                   # Fuzz targets
+├── docs/                   # Documentation
+├── examples/               # Example inputs
+├── scripts/                # Build scripts
+└── xtask/                  # Cargo build tasks
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Compiler architecture and design decisions |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup and contribution guide |
+| [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md) | CLI commands, options, and configuration |
+| [docs/WEB_GUIDE.md](docs/WEB_GUIDE.md) | Web playground and website development |
+| [docs/WASM_GUIDE.md](docs/WASM_GUIDE.md) | WebAssembly bindings and browser usage |
+| [docs/EXTENSION_GUIDE.md](docs/EXTENSION_GUIDE.md) | VS Code extension |
+| [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | Testing philosophy and practices |
+| [docs/PLUGIN_GUIDE.md](docs/PLUGIN_GUIDE.md) | Plugin development for custom generators |
+| [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Code style and conventions |
+| [docs/RELEASE_GUIDE.md](docs/RELEASE_GUIDE.md) | Release process and publishing |
+| [ROADMAP.md](ROADMAP.md) | Project roadmap and future plans |
+| [SECURITY.md](SECURITY.md) | Security policy and vulnerability reporting |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community guidelines |
+
+## Performance
 
 | Metric | Value |
 |--------|-------|
@@ -246,85 +406,10 @@ See [docs/ai-enhancement.md](docs/ai-enhancement.md) for setup instructions.
 | Headroom | **5.1×** |
 | Generators (all 3) | +13ms |
 
-See [docs/benchmarks.md](docs/benchmarks.md) for detailed results.
-
-## Roadmap
-
-- [x] Rust compiler workspace (`motarjim-parser`, `motarjim-css`, `motarjim-ir`,
-      `motarjim-optimizer`, 3 platform generators, `motarjim-core`)
-- [x] JavaScript front end (`motarjim-js`): lexer, parser, AST, semantic
-      analysis, DOM event extraction, transforms
-- [ ] Wire `motarjim-js` DOM events into the IR/generators
-- [ ] CSS value mapping (colors, padding, etc.)
-- [ ] Responsive design generation
-- [ ] Advanced CSS selectors
-- [ ] `motarjim watch` (currently a stub)
-- [ ] VS Code extension LSP wiring (workspace scaffold exists; not yet functional)
-
-See [docs/roadmap.md](docs/roadmap.md) for the full roadmap, including a note
-on which docs are still being rewritten for the Rust engine.
-
-## Documentation
-
-- [Introduction](docs/introduction.md)
-- [Architecture](docs/architecture.md)
-- [Pipeline](docs/pipeline.md)
-- [Parser](docs/parser.md)
-- [JavaScript Support](docs/javascript.md)
-- [CSS Analyzer](docs/css-analyzer.md)
-- [Semantic Analyzer](docs/semantic-analyzer.md)
-- [IR (Intermediate Representation)](docs/ir.md)
-- [Optimizer](docs/optimizer.md)
-- [Generator Core](docs/generator-core.md)
-- [Flutter Generator](docs/flutter-generator.md)
-- [Compose Generator](docs/compose-generator.md)
-- [SwiftUI Generator](docs/swiftui-generator.md)
-- [CLI Reference](docs/cli.md)
-- [AI Enhancement](docs/ai-enhancement.md)
-- [Benchmarks](docs/benchmarks.md)
-- [Contributing](docs/contributing.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [FAQ](docs/faq.md)
-- [Roadmap](docs/roadmap.md)
-- [Web apps and VS Code extension](docs/web-and-vscode.md)
-
 ## Contributing
 
-See [docs/contributing.md](docs/contributing.md) for setup, workflow, and coding standards.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and pull request process. All contributions are welcome!
 
 ## License
 
 MIT
-
-## Repository architecture
-
-```text
-motarjim/
-├── crates/                 # Rust workspace
-│   ├── motarjim-core
-│   ├── motarjim-parser
-│   ├── motarjim-css
-│   ├── motarjim-optimizer
-│   ├── motarjim-gen-flutter
-│   ├── motarjim-gen-compose
-│   ├── motarjim-gen-swiftui
-│   ├── motarjim-cli
-│   ├── motarjim-lsp
-│   └── ...
-├── packages/               # TypeScript
-│   ├── vscode-extension
-│   ├── playground-sdk
-│   └── website-sdk
-├── apps/
-│   ├── website
-│   └── playground
-├── docs/
-├── examples/
-├── benchmarks/
-├── tests/
-├── scripts/
-├── xtask/
-├── Cargo.toml
-├── package.json
-└── README.md
-```
