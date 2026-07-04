@@ -36,9 +36,9 @@ use motarjim_ast::{Document, NodeId};
 use motarjim_cache::ArtifactCache;
 use motarjim_config::{Config, OutputFormat};
 use motarjim_css::StyleResolver;
-use motarjim_diag::{Diagnostic, Severity};
 #[cfg(feature = "cancellation")]
 use motarjim_diag::DiagnosticCode;
+use motarjim_diag::{Diagnostic, Severity};
 use motarjim_fs::FileSystem;
 #[cfg(not(feature = "plugin-system"))]
 use motarjim_gen_compose::ComposeGenerator;
@@ -156,17 +156,26 @@ impl std::fmt::Debug for Compiler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut d = f.debug_struct("Compiler");
         d.field("config", &self.config)
-            .field("pass_manager", &format_args!("PassManager({})", self.pass_manager.len()))
+            .field(
+                "pass_manager",
+                &format_args!("PassManager({})", self.pass_manager.len()),
+            )
             .field("profiling_session", &self.profiling_session.label())
             .field("cache", &self.cache)
             .field("incremental", &self.incremental);
         #[cfg(feature = "events")]
         {
-            d.field("event_bus", &format_args!("EventBus({})", self.event_bus.handler_count()));
+            d.field(
+                "event_bus",
+                &format_args!("EventBus({})", self.event_bus.handler_count()),
+            );
         }
         #[cfg(feature = "plugin-system")]
         {
-            d.field("generator_registry", &format_args!("GeneratorRegistry({})", self.generator_registry.len()));
+            d.field(
+                "generator_registry",
+                &format_args!("GeneratorRegistry({})", self.generator_registry.len()),
+            );
         }
         #[cfg(feature = "cancellation")]
         {
@@ -183,11 +192,7 @@ impl Compiler {
         let mut pass_manager = PassManager::new();
         register_default_passes(&mut pass_manager);
 
-        let cache = config
-            .global
-            .cache_dir
-            .clone()
-            .map(ArtifactCache::new);
+        let cache = config.global.cache_dir.clone().map(ArtifactCache::new);
 
         let incremental = if config.global.incremental {
             let dir = config
@@ -258,9 +263,13 @@ impl Compiler {
         profiling.record_phase("parse_html", html_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token
-            .check()
-            .map_err(|e| vec![Diagnostic::new(Severity::Error, DiagnosticCode::new(700, "Compilation cancelled"), e.message)])?;
+        self.cancel_token.check().map_err(|e| {
+            vec![Diagnostic::new(
+                Severity::Error,
+                DiagnosticCode::new(700, "Compilation cancelled"),
+                e.message,
+            )]
+        })?;
 
         // Phase 2: Parse CSS from <style> tags
         let mut css_timer = profiling.start_phase("parse_css");
@@ -272,16 +281,22 @@ impl Compiler {
         profiling.record_phase("parse_css", css_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token
-            .check()
-            .map_err(|e| vec![Diagnostic::new(Severity::Error, DiagnosticCode::new(700, "Compilation cancelled"), e.message)])?;
+        self.cancel_token.check().map_err(|e| {
+            vec![Diagnostic::new(
+                Severity::Error,
+                DiagnosticCode::new(700, "Compilation cancelled"),
+                e.message,
+            )]
+        })?;
 
         // Phase 3: Resolve styles
         #[cfg(feature = "events")]
-        let sheet = stylesheet.clone().unwrap_or_else(|| motarjim_ast::css::CssStylesheet {
-            rules: vec![],
-            source_path: None,
-        });
+        let sheet = stylesheet
+            .clone()
+            .unwrap_or_else(|| motarjim_ast::css::CssStylesheet {
+                rules: vec![],
+                source_path: None,
+            });
         #[cfg(feature = "events")]
         self.emit_event(event::CompilerEvent::BeforeStyle {
             document: ast.clone(),
@@ -324,9 +339,13 @@ impl Compiler {
         profiling.record_phase("resolve_styles", style_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token
-            .check()
-            .map_err(|e| vec![Diagnostic::new(Severity::Error, DiagnosticCode::new(700, "Compilation cancelled"), e.message)])?;
+        self.cancel_token.check().map_err(|e| {
+            vec![Diagnostic::new(
+                Severity::Error,
+                DiagnosticCode::new(700, "Compilation cancelled"),
+                e.message,
+            )]
+        })?;
 
         // Phase 4: Build IR
         #[cfg(feature = "events")]
@@ -350,9 +369,13 @@ impl Compiler {
         profiling.record_phase("build_ir", ir_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token
-            .check()
-            .map_err(|e| vec![Diagnostic::new(Severity::Error, DiagnosticCode::new(700, "Compilation cancelled"), e.message)])?;
+        self.cancel_token.check().map_err(|e| {
+            vec![Diagnostic::new(
+                Severity::Error,
+                DiagnosticCode::new(700, "Compilation cancelled"),
+                e.message,
+            )]
+        })?;
 
         // Phase 5: Optimize IR
         let mut opt_timer = profiling.start_phase("optimize_ir");
@@ -362,9 +385,13 @@ impl Compiler {
         profiling.record_phase("optimize_ir", opt_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token
-            .check()
-            .map_err(|e| vec![Diagnostic::new(Severity::Error, DiagnosticCode::new(700, "Compilation cancelled"), e.message)])?;
+        self.cancel_token.check().map_err(|e| {
+            vec![Diagnostic::new(
+                Severity::Error,
+                DiagnosticCode::new(700, "Compilation cancelled"),
+                e.message,
+            )]
+        })?;
 
         // Phase 6: Generate platform code
         #[cfg(any(feature = "events", feature = "plugin-system"))]
@@ -454,7 +481,10 @@ impl Compiler {
 
     /// Compile multiple targets and return results for each.
     #[must_use]
-    pub fn compile_all(&self, targets: &[CompileTarget]) -> Vec<Result<CompileResult, Vec<Diagnostic>>> {
+    pub fn compile_all(
+        &self,
+        targets: &[CompileTarget],
+    ) -> Vec<Result<CompileResult, Vec<Diagnostic>>> {
         targets
             .iter()
             .map(|target| {
@@ -603,18 +633,17 @@ impl<'a> Pipeline<'a> {
     ///
     /// # Errors
     /// Returns diagnostics if parsing fails.
-    pub fn parse_css(&self, input: &str) -> Result<motarjim_ast::css::CssStylesheet, Vec<Diagnostic>> {
+    pub fn parse_css(
+        &self,
+        input: &str,
+    ) -> Result<motarjim_ast::css::CssStylesheet, Vec<Diagnostic>> {
         let mut parser = CssParser::new(input);
         parser.parse()
     }
 
     /// Build an IR tree from a document and computed styles.
     #[must_use]
-    pub fn build_ir(
-        &self,
-        doc: &Document,
-        styles: &HashMap<NodeId, ComputedStyle>,
-    ) -> IrTree {
+    pub fn build_ir(&self, doc: &Document, styles: &HashMap<NodeId, ComputedStyle>) -> IrTree {
         let builder = IrBuilder::new();
         let diag = motarjim_diag::DiagnosticBag::new();
         builder.build(doc, styles, &diag)

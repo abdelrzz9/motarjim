@@ -593,7 +593,9 @@ fn cmd_check() {
     let mermaid = render_mermaid(&edges);
     let mermaid_path = output_dir.join("dependency-graph.md");
     if mermaid_path.exists() {
-        let existing = if let Ok(c) = fs::read_to_string(&mermaid_path) { c } else {
+        let existing = if let Ok(c) = fs::read_to_string(&mermaid_path) {
+            c
+        } else {
             eprintln!("ERROR: could not read dependency-graph.md");
             std::process::exit(1);
         };
@@ -611,7 +613,9 @@ fn cmd_check() {
     let dot = render_dot(&edges);
     let dot_path = output_dir.join("dependency-graph.dot");
     if dot_path.exists() {
-        let existing = if let Ok(c) = fs::read_to_string(&dot_path) { c } else {
+        let existing = if let Ok(c) = fs::read_to_string(&dot_path) {
+            c
+        } else {
             eprintln!("ERROR: could not read dependency-graph.dot");
             std::process::exit(1);
         };

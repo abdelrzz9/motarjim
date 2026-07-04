@@ -64,8 +64,12 @@ mod tests {
     #[test]
     fn test_layout_strategy_variants() {
         let strategies = [
-            LayoutStrategy::FlexRow, LayoutStrategy::FlexColumn, LayoutStrategy::Grid,
-            LayoutStrategy::Stack, LayoutStrategy::Scroll, LayoutStrategy::None,
+            LayoutStrategy::FlexRow,
+            LayoutStrategy::FlexColumn,
+            LayoutStrategy::Grid,
+            LayoutStrategy::Stack,
+            LayoutStrategy::Scroll,
+            LayoutStrategy::None,
         ];
         assert_eq!(strategies.len(), 6);
     }
@@ -73,14 +77,19 @@ mod tests {
     #[test]
     fn test_layout_constraints() {
         let lc = LayoutConstraints {
-            min_width: None, max_width: None, min_height: None, max_height: None,
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
             aspect_ratio: None,
         };
         assert!(lc.min_width.is_none() && lc.aspect_ratio.is_none());
 
         let lc2 = LayoutConstraints {
-            min_width: Some(100.0), max_width: Some(1200.0),
-            min_height: Some(50.0), max_height: Some(800.0),
+            min_width: Some(100.0),
+            max_width: Some(1200.0),
+            min_height: Some(50.0),
+            max_height: Some(800.0),
             aspect_ratio: Some(16.0 / 9.0),
         };
         assert_eq!(lc2.min_width, Some(100.0));
@@ -96,9 +105,7 @@ mod tests {
     fn test_responsive_variant() {
         let rv = ResponsiveVariant {
             breakpoint: Breakpoint::Mobile,
-            style_override: vec![
-                (SmolStr::new_inline("padding"), "10px".to_string()),
-            ],
+            style_override: vec![(SmolStr::new_inline("padding"), "10px".to_string())],
         };
         assert_eq!(rv.style_override.len(), 1);
     }

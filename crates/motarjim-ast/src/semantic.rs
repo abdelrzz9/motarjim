@@ -85,10 +85,17 @@ mod tests {
     #[test]
     fn test_accessibility_info_defaults() {
         let info = AccessibilityInfo {
-            role: None, label: None, description: None,
-            focused: false, hidden: false, tab_index: None,
-            aria_level: None, aria_expanded: None, aria_controls: None,
-            aria_live: None, aria_busy: false,
+            role: None,
+            label: None,
+            description: None,
+            focused: false,
+            hidden: false,
+            tab_index: None,
+            aria_level: None,
+            aria_expanded: None,
+            aria_controls: None,
+            aria_live: None,
+            aria_busy: false,
         };
         assert!(info.role.is_none() && !info.focused && !info.hidden && !info.aria_busy);
     }

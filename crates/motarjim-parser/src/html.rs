@@ -225,31 +225,24 @@ impl<'a> HtmlParser<'a> {
             .peek_token()
             .is_some_and(|t| t.kind == HtmlTokenKind::TagEnd);
 
-        let (attrs, is_self_closing, pending_text, has_attrs_in_token) =
-            if has_immediate_tag_end {
-                let tag_end = self.consume_token();
-                let is_sc = tag_end.is_some_and(|t| t.raw.contains('/'));
-                (SmallVec::new(), is_sc, None, false)
-            } else {
-                let (attr_str, is_sc, pt, _) = self.scan_tag_close(tag_name_end);
-                let gt_offset = tag_name_end + util::find_tag_close_offset(&self.source[tag_name_end..]);
-                self.skip_tokens_past(gt_offset);
-                // The Text token that contained attributes and potentially content
-                // starts before gt_offset; consume it to avoid duplicate text emission.
-                if let Some(t) = self.peek_token() {
-                    if t.kind == HtmlTokenKind::Text
-                        && (t.span.start.offset as usize) < gt_offset
-                    {
-                        self.consume_token();
-                    }
+        let (attrs, is_self_closing, pending_text, has_attrs_in_token) = if has_immediate_tag_end {
+            let tag_end = self.consume_token();
+            let is_sc = tag_end.is_some_and(|t| t.raw.contains('/'));
+            (SmallVec::new(), is_sc, None, false)
+        } else {
+            let (attr_str, is_sc, pt, _) = self.scan_tag_close(tag_name_end);
+            let gt_offset =
+                tag_name_end + util::find_tag_close_offset(&self.source[tag_name_end..]);
+            self.skip_tokens_past(gt_offset);
+            // The Text token that contained attributes and potentially content
+            // starts before gt_offset; consume it to avoid duplicate text emission.
+            if let Some(t) = self.peek_token() {
+                if t.kind == HtmlTokenKind::Text && (t.span.start.offset as usize) < gt_offset {
+                    self.consume_token();
                 }
-                (
-                    util::parse_attributes_from_str(&attr_str),
-                    is_sc,
-                    pt,
-                    true,
-                )
-            };
+            }
+            (util::parse_attributes_from_str(&attr_str), is_sc, pt, true)
+        };
 
         let node_id = self.alloc_node_id();
         let mut element = Element::new(&tag_name);
@@ -367,7 +360,11 @@ impl<'a> HtmlParser<'a> {
         let after_gt = &remaining[pos + 1..];
         let content_end = after_gt.find('<').unwrap_or(after_gt.len());
         let content = after_gt[..content_end].to_string();
-        let pending_text = if content.is_empty() { None } else { Some(content) };
+        let pending_text = if content.is_empty() {
+            None
+        } else {
+            Some(content)
+        };
 
         let tag_close_offset = start_offset + pos + 1; // byte position after '>'
 
@@ -392,7 +389,9 @@ impl<'a> HtmlParser<'a> {
     /// Expects and consumes a closing tag matching `expected_name`.
     fn expect_close_tag(&mut self, expected_name: &str) {
         loop {
-            let token = if let Some(t) = self.peek_token() { t.clone() } else {
+            let token = if let Some(t) = self.peek_token() {
+                t.clone()
+            } else {
                 self.diagnostics
                     .push_error(codes::PARSER_UNCLOSED_TAG, expected_name);
                 return;
@@ -477,18 +476,12 @@ mod tests {
         assert_eq!(root.children.len(), 1);
         let ul_id = root.children[0];
         let ul = doc.node(ul_id).expect("UL not found");
-        assert_eq!(
-            ul.element.as_ref().map(|e| e.tag_name.as_str()),
-            Some("ul")
-        );
+        assert_eq!(ul.element.as_ref().map(|e| e.tag_name.as_str()), Some("ul"));
         assert_eq!(ul.children.len(), 1);
 
         let li_id = ul.children[0];
         let li = doc.node(li_id).expect("LI not found");
-        assert_eq!(
-            li.element.as_ref().map(|e| e.tag_name.as_str()),
-            Some("li")
-        );
+        assert_eq!(li.element.as_ref().map(|e| e.tag_name.as_str()), Some("li"));
 
         assert!(!li.children.is_empty());
         let text_id = li.children[0];
@@ -522,17 +515,11 @@ mod tests {
         assert_eq!(root.children.len(), 2);
 
         let br = doc.node(root.children[0]).expect("BR not found");
-        assert_eq!(
-            br.element.as_ref().map(|e| e.tag_name.as_str()),
-            Some("br")
-        );
+        assert_eq!(br.element.as_ref().map(|e| e.tag_name.as_str()), Some("br"));
         assert!(br.children.is_empty());
 
         let hr = doc.node(root.children[1]).expect("HR not found");
-        assert_eq!(
-            hr.element.as_ref().map(|e| e.tag_name.as_str()),
-            Some("hr")
-        );
+        assert_eq!(hr.element.as_ref().map(|e| e.tag_name.as_str()), Some("hr"));
         assert!(hr.children.is_empty());
     }
 
@@ -648,10 +635,7 @@ mod tests {
         assert_eq!(section.children.len(), 2);
 
         let h1 = doc.node(section.children[0]).expect("H1 not found");
-        assert_eq!(
-            h1.element.as_ref().map(|e| e.tag_name.as_str()),
-            Some("h1")
-        );
+        assert_eq!(h1.element.as_ref().map(|e| e.tag_name.as_str()), Some("h1"));
 
         if let Some(t) = h1.children.first() {
             let text = doc.node(*t).expect("Text in h1");
@@ -659,9 +643,6 @@ mod tests {
         }
 
         let p = doc.node(section.children[1]).expect("P not found");
-        assert_eq!(
-            p.element.as_ref().map(|e| e.tag_name.as_str()),
-            Some("p")
-        );
+        assert_eq!(p.element.as_ref().map(|e| e.tag_name.as_str()), Some("p"));
     }
 }

@@ -40,6 +40,11 @@ fn main() {
 
     println!("Built IR tree with {} node(s)", ir.nodes.len());
     for node in &ir.nodes {
-        println!("  [{}] semantic={:?}  children={}", node.id.0, node.semantic, node.children.len());
+        println!(
+            "  [{}] semantic={:?}  children={}",
+            node.id.0,
+            node.semantic,
+            node.children.len()
+        );
     }
 }

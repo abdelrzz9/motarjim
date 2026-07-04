@@ -149,7 +149,12 @@ pub mod dart {
     }
 
     /// Writes a Dart class definition.
-    pub fn write_class(w: &mut CodeWriter, name: &str, extends: Option<&str>, body: impl FnOnce(&mut CodeWriter)) {
+    pub fn write_class(
+        w: &mut CodeWriter,
+        name: &str,
+        extends: Option<&str>,
+        body: impl FnOnce(&mut CodeWriter),
+    ) {
         let header = match extends {
             Some(parent) => format!("class {name} extends {parent}"),
             None => format!("class {name}"),
@@ -180,7 +185,13 @@ pub mod kotlin {
     }
 
     /// Writes a Kotlin function.
-    pub fn write_fun(w: &mut CodeWriter, name: &str, params: &str, return_type: &str, body: impl FnOnce(&mut CodeWriter)) {
+    pub fn write_fun(
+        w: &mut CodeWriter,
+        name: &str,
+        params: &str,
+        return_type: &str,
+        body: impl FnOnce(&mut CodeWriter),
+    ) {
         let sig = if return_type.is_empty() {
             format!("fun {name}({params})")
         } else {
@@ -211,7 +222,12 @@ pub mod swift {
     }
 
     /// Writes a Swift struct definition.
-    pub fn write_struct(w: &mut CodeWriter, name: &str, conformances: &[&str], body: impl FnOnce(&mut CodeWriter)) {
+    pub fn write_struct(
+        w: &mut CodeWriter,
+        name: &str,
+        conformances: &[&str],
+        body: impl FnOnce(&mut CodeWriter),
+    ) {
         let header = if conformances.is_empty() {
             format!("struct {name}")
         } else {
@@ -357,7 +373,9 @@ mod tests {
     fn test_kotlin_import() {
         let mut w = kotlin::writer();
         kotlin::write_import(&mut w, "androidx.compose.foundation.layout.*");
-        assert!(w.as_str().contains("import androidx.compose.foundation.layout.*"));
+        assert!(w
+            .as_str()
+            .contains("import androidx.compose.foundation.layout.*"));
     }
 
     #[test]

@@ -31,10 +31,10 @@
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::similar_names)]
 
-/// HTML parser implementation.
-mod html;
 /// CSS parser implementation.
 mod css;
+/// HTML parser implementation.
+mod html;
 /// Shared utility functions.
 mod util;
 
@@ -42,6 +42,6 @@ mod util;
 /// Property-based tests.
 mod proptests;
 
-pub use html::HtmlParser;
 pub use css::CssParser;
-pub use util::{is_void_element, extract_tag_name, parse_attributes_from_str};
+pub use html::HtmlParser;
+pub use util::{extract_tag_name, is_void_element, parse_attributes_from_str};

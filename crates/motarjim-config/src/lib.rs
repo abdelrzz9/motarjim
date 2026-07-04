@@ -167,8 +167,8 @@ impl Config {
     pub fn from_toml(toml_str: &str) -> Result<Self, ConfigError> {
         let toml_value: toml::Value =
             toml::from_str(toml_str).map_err(|e| ConfigError::ParseError(e.to_string()))?;
-        let json_value = serde_json::to_value(toml_value)
-            .map_err(|e| ConfigError::ParseError(e.to_string()))?;
+        let json_value =
+            serde_json::to_value(toml_value).map_err(|e| ConfigError::ParseError(e.to_string()))?;
         Self::from_value(&json_value)
     }
 
@@ -196,8 +196,12 @@ impl Config {
                         };
                         let output_dir = pobj
                             .get("output_dir")
-                            .and_then(|v| v.as_str()).map_or_else(|| PathBuf::from(format!("output/{name}")), PathBuf::from);
-                        let minify = pobj.get("minify").and_then(serde_json::Value::as_bool).unwrap_or(false);
+                            .and_then(|v| v.as_str())
+                            .map_or_else(|| PathBuf::from(format!("output/{name}")), PathBuf::from);
+                        let minify = pobj
+                            .get("minify")
+                            .and_then(serde_json::Value::as_bool)
+                            .unwrap_or(false);
                         let source_maps = pobj
                             .get("source_maps")
                             .and_then(serde_json::Value::as_bool)
@@ -207,7 +211,9 @@ impl Config {
                             .and_then(|v| v.as_object())
                             .map(|o| {
                                 o.iter()
-                                    .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                                    .filter_map(|(k, v)| {
+                                        v.as_str().map(|s| (k.clone(), s.to_string()))
+                                    })
                                     .collect()
                             })
                             .unwrap_or_default();
@@ -233,13 +239,19 @@ impl Config {
                 if let Some(v) = global.get("strict").and_then(serde_json::Value::as_bool) {
                     config.global.strict = v;
                 }
-                if let Some(v) = global.get("max_parallel").and_then(serde_json::Value::as_u64) {
+                if let Some(v) = global
+                    .get("max_parallel")
+                    .and_then(serde_json::Value::as_u64)
+                {
                     config.global.max_parallel = v as usize;
                 }
                 if let Some(v) = global.get("cache_dir").and_then(|v| v.as_str()) {
                     config.global.cache_dir = Some(PathBuf::from(v));
                 }
-                if let Some(v) = global.get("incremental").and_then(serde_json::Value::as_bool) {
+                if let Some(v) = global
+                    .get("incremental")
+                    .and_then(serde_json::Value::as_bool)
+                {
                     config.global.incremental = v;
                 }
                 if let Some(opts) = global.get("options").and_then(|v| v.as_object()) {
@@ -284,7 +296,9 @@ impl ConfigBuilder {
     /// Creates a new config builder with defaults.
     #[must_use]
     pub fn new() -> Self {
-        Self { config: Config::default() }
+        Self {
+            config: Config::default(),
+        }
     }
 
     /// Sets the output format for a platform.

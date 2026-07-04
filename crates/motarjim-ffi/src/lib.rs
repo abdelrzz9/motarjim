@@ -19,8 +19,8 @@
 use std::ffi::{CStr, CString};
 use std::sync::Arc;
 
-use motarjim_core::{CompileOptions, Compiler};
 use motarjim_config::OutputFormat;
+use motarjim_core::{CompileOptions, Compiler};
 use motarjim_fs::RealFileSystem;
 
 /// Opaque handle to a Motarjim compiler instance.
@@ -235,8 +235,7 @@ mod tests {
             let platform = std::ffi::CString::new("dart").unwrap();
             let json_str = compile_helper(compiler, &input, &platform);
 
-            let value: serde_json::Value =
-                serde_json::from_str(&json_str).expect("valid JSON");
+            let value: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(true));
             assert!(value["output"].as_str().map_or(false, |o| !o.is_empty()));
             assert!(value["stats"]["nodes_parsed"].as_u64().unwrap_or(0) > 0);
@@ -255,8 +254,7 @@ mod tests {
             let platform = std::ffi::CString::new("swift").unwrap();
             let json_str = compile_helper(compiler, &input, &platform);
 
-            let value: serde_json::Value =
-                serde_json::from_str(&json_str).expect("valid JSON");
+            let value: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(true));
 
             motarjim_compiler_free(compiler);
@@ -273,8 +271,7 @@ mod tests {
             let platform = std::ffi::CString::new("compose").unwrap();
             let json_str = compile_helper(compiler, &input, &platform);
 
-            let value: serde_json::Value =
-                serde_json::from_str(&json_str).expect("valid JSON");
+            let value: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(true));
 
             motarjim_compiler_free(compiler);
@@ -292,10 +289,11 @@ mod tests {
             let result = CStr::from_ptr(result_ptr).to_str().unwrap().to_string();
             motarjim_free_string(result_ptr);
 
-            let value: serde_json::Value =
-                serde_json::from_str(&result).expect("valid JSON");
+            let value: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(false));
-            assert!(value["error"].as_str().map_or(false, |e| e.contains("null compiler")));
+            assert!(value["error"]
+                .as_str()
+                .map_or(false, |e| e.contains("null compiler")));
         }
     }
 
@@ -306,16 +304,16 @@ mod tests {
 
         unsafe {
             let platform = std::ffi::CString::new("dart").unwrap();
-            let result_ptr =
-                motarjim_compile(compiler, std::ptr::null(), platform.as_ptr());
+            let result_ptr = motarjim_compile(compiler, std::ptr::null(), platform.as_ptr());
             assert!(!result_ptr.is_null());
             let result = CStr::from_ptr(result_ptr).to_str().unwrap().to_string();
             motarjim_free_string(result_ptr);
 
-            let value: serde_json::Value =
-                serde_json::from_str(&result).expect("valid JSON");
+            let value: serde_json::Value = serde_json::from_str(&result).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(false));
-            assert!(value["error"].as_str().map_or(false, |e| e.contains("null input")));
+            assert!(value["error"]
+                .as_str()
+                .map_or(false, |e| e.contains("null input")));
 
             motarjim_compiler_free(compiler);
         }
@@ -331,10 +329,11 @@ mod tests {
             let platform = std::ffi::CString::new("invalid").unwrap();
             let json_str = compile_helper(compiler, &input, &platform);
 
-            let value: serde_json::Value =
-                serde_json::from_str(&json_str).expect("valid JSON");
+            let value: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(false));
-            assert!(value["error"].as_str().map_or(false, |e| e.contains("unsupported platform")));
+            assert!(value["error"]
+                .as_str()
+                .map_or(false, |e| e.contains("unsupported platform")));
 
             motarjim_compiler_free(compiler);
         }

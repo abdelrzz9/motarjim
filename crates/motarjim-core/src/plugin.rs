@@ -62,7 +62,9 @@ impl GeneratorRegistry {
     /// Creates a new empty registry.
     #[must_use]
     pub fn new() -> Self {
-        Self { generators: Vec::new() }
+        Self {
+            generators: Vec::new(),
+        }
     }
 
     /// Registers a generator with this registry.
@@ -73,7 +75,10 @@ impl GeneratorRegistry {
     /// Looks up a generator by name.
     #[must_use]
     pub fn get(&self, name: &str) -> Option<&dyn Generator> {
-        self.generators.iter().find(|g| g.name() == name).map(Box::as_ref)
+        self.generators
+            .iter()
+            .find(|g| g.name() == name)
+            .map(Box::as_ref)
     }
 
     /// Returns a reference to all registered generators.
@@ -130,7 +135,9 @@ impl PluginRegistry {
     /// Creates a new empty plugin registry.
     #[must_use]
     pub fn new() -> Self {
-        Self { generators: GeneratorRegistry::new() }
+        Self {
+            generators: GeneratorRegistry::new(),
+        }
     }
 
     /// Registers a generator with the inner generator registry.
@@ -313,16 +320,28 @@ mod tests {
 
         let mut plugin_registry = PluginRegistry::new();
         plugin_registry.register_plugin(&TestPlugin);
-        assert!(plugin_registry.generator_registry().get("flutter").is_some());
+        assert!(plugin_registry
+            .generator_registry()
+            .get("flutter")
+            .is_some());
     }
 
     #[test]
     fn test_builtin_flutter_generator() {
         let tree = make_tree(
-            vec![make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![], None)],
+            vec![make_node(
+                0,
+                SemanticIr::Root,
+                LayoutIr::FlexColumn,
+                vec![],
+                None,
+            )],
             0,
         );
-        let options = GenerateOptions { minify: false, source_maps: false };
+        let options = GenerateOptions {
+            minify: false,
+            source_maps: false,
+        };
 
         let plugin = FlutterGeneratorPlugin;
         let result = plugin.generate(&tree, &options);
@@ -334,10 +353,19 @@ mod tests {
     #[test]
     fn test_builtin_compose_generator() {
         let tree = make_tree(
-            vec![make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![], None)],
+            vec![make_node(
+                0,
+                SemanticIr::Root,
+                LayoutIr::FlexColumn,
+                vec![],
+                None,
+            )],
             0,
         );
-        let options = GenerateOptions { minify: false, source_maps: false };
+        let options = GenerateOptions {
+            minify: false,
+            source_maps: false,
+        };
 
         let plugin = ComposeGeneratorPlugin;
         let result = plugin.generate(&tree, &options);
@@ -349,10 +377,19 @@ mod tests {
     #[test]
     fn test_builtin_swiftui_generator() {
         let tree = make_tree(
-            vec![make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![], None)],
+            vec![make_node(
+                0,
+                SemanticIr::Root,
+                LayoutIr::FlexColumn,
+                vec![],
+                None,
+            )],
             0,
         );
-        let options = GenerateOptions { minify: false, source_maps: false };
+        let options = GenerateOptions {
+            minify: false,
+            source_maps: false,
+        };
 
         let plugin = SwiftUIGeneratorPlugin;
         let result = plugin.generate(&tree, &options);

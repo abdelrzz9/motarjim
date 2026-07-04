@@ -15,8 +15,7 @@ fn main() {
     });
 
     let mut div = Element::new("div");
-    div.attributes
-        .push(Attribute::new("class", "container"));
+    div.attributes.push(Attribute::new("class", "container"));
 
     doc.nodes.push(HtmlNode {
         id: NodeId(1),

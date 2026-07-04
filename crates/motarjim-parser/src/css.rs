@@ -2,11 +2,13 @@ use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use motarjim_ast::css::{
-    AtRule, CharsetRule, CssRule, CssStylesheet, Declaration, FontFaceRule, ImportRule,
-    Keyframe, KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule,
-    StyleRule, SupportsRule,
+    AtRule, CharsetRule, CssRule, CssStylesheet, Declaration, FontFaceRule, ImportRule, Keyframe,
+    KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
+    SupportsRule,
 };
-use motarjim_ast::selector::{AttributeOperator, PseudoClass, PseudoElement, Selector, SimpleSelector};
+use motarjim_ast::selector::{
+    AttributeOperator, PseudoClass, PseudoElement, Selector, SimpleSelector,
+};
 use motarjim_diag::codes;
 use motarjim_diag::{Diagnostic, DiagnosticBag};
 use motarjim_lexer::css::{CssTokenKind, CssTokenizer};
@@ -173,8 +175,10 @@ impl CssParser {
                             self.consume_token()?.raw.clone()
                         }
                         _ => {
-                            self.diagnostics
-                                .push_error(codes::CSS_UNSUPPORTED_SELECTOR, "Expected class name after '.'");
+                            self.diagnostics.push_error(
+                                codes::CSS_UNSUPPORTED_SELECTOR,
+                                "Expected class name after '.'",
+                            );
                             continue;
                         }
                     };
@@ -187,8 +191,10 @@ impl CssParser {
                             self.consume_token()?.raw.clone()
                         }
                         _ => {
-                            self.diagnostics
-                                .push_error(codes::CSS_UNSUPPORTED_SELECTOR, "Expected id name after '#'");
+                            self.diagnostics.push_error(
+                                codes::CSS_UNSUPPORTED_SELECTOR,
+                                "Expected id name after '#'",
+                            );
                             continue;
                         }
                     };
@@ -205,7 +211,9 @@ impl CssParser {
                 }
                 CssTokenKind::Colon => {
                     self.consume_token();
-                    let is_pseudo_element = self.peek_token().is_some_and(|t| t.kind == CssTokenKind::Colon);
+                    let is_pseudo_element = self
+                        .peek_token()
+                        .is_some_and(|t| t.kind == CssTokenKind::Colon);
                     if is_pseudo_element {
                         self.consume_token();
                         if let Some(pe) = self.parse_pseudo_element() {
@@ -239,9 +247,7 @@ impl CssParser {
     fn parse_attribute_selector(&mut self) -> Option<SimpleSelector> {
         self.consume_token(); // consume '['
         let name = match self.peek_token() {
-            Some(t) if t.kind == CssTokenKind::Ident => {
-                self.consume_token()?.raw
-            }
+            Some(t) if t.kind == CssTokenKind::Ident => self.consume_token()?.raw,
             _ => {
                 self.diagnostics
                     .push_error(codes::CSS_UNSUPPORTED_SELECTOR, "Expected attribute name");
@@ -677,9 +683,7 @@ impl CssParser {
     /// Parses an `@keyframes` rule.
     fn parse_keyframes_rule(&mut self) -> Option<CssRule> {
         let name = match self.peek_token() {
-            Some(t) if t.kind == CssTokenKind::Ident => {
-                self.consume_token()?.raw
-            }
+            Some(t) if t.kind == CssTokenKind::Ident => self.consume_token()?.raw,
             _ => {
                 self.diagnostics
                     .push_error(codes::CSS_PARSE_ERROR, "Expected keyframes name");
@@ -711,7 +715,8 @@ impl CssParser {
                                 if next.kind == CssTokenKind::Ident
                                     || next.kind == CssTokenKind::Percentage
                                 {
-                                    selectors.push(SmolStr::from(self.consume_token()?.raw.clone()));
+                                    selectors
+                                        .push(SmolStr::from(self.consume_token()?.raw.clone()));
                                 }
                             }
                         } else {
@@ -880,10 +885,7 @@ mod tests {
         let sheet = parser.parse().expect("Failed to parse");
         assert!(!sheet.rules.is_empty());
 
-        let has_media = sheet
-            .rules
-            .iter()
-            .any(|r| matches!(r, CssRule::Media(_)));
+        let has_media = sheet.rules.iter().any(|r| matches!(r, CssRule::Media(_)));
         assert!(has_media, "Expected at least one @media rule");
 
         if let CssRule::Media(mr) = &sheet.rules[0] {
@@ -938,9 +940,8 @@ mod tests {
 
     #[test]
     fn test_css_parse_keyframes() {
-        let mut parser = CssParser::new(
-            "@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }",
-        );
+        let mut parser =
+            CssParser::new("@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }");
         let sheet = parser.parse().expect("Failed to parse");
         assert!(!sheet.rules.is_empty());
 
@@ -958,9 +959,8 @@ mod tests {
 
     #[test]
     fn test_css_parse_font_face() {
-        let mut parser = CssParser::new(
-            "@font-face { font-family: 'MyFont'; src: url('font.woff2'); }",
-        );
+        let mut parser =
+            CssParser::new("@font-face { font-family: 'MyFont'; src: url('font.woff2'); }");
         let sheet = parser.parse().expect("Failed to parse");
         let has_font = sheet
             .rules
@@ -971,8 +971,7 @@ mod tests {
 
     #[test]
     fn test_css_parse_supports() {
-        let mut parser =
-            CssParser::new("@supports (display: flex) { div { display: flex; } }");
+        let mut parser = CssParser::new("@supports (display: flex) { div { display: flex; } }");
         let sheet = parser.parse().expect("Failed to parse");
         let has_supports = sheet
             .rules

@@ -14,7 +14,19 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use tower_lsp::jsonrpc::Result;
-use tower_lsp::lsp_types::{Diagnostic, Url, DocumentDiagnosticParams, DocumentDiagnosticReportResult, DocumentDiagnosticReport, RelatedFullDocumentDiagnosticReport, FullDocumentDiagnosticReport, InitializeParams, InitializeResult, ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, CompletionOptions, HoverProviderCapability, OneOf, SemanticTokensServerCapabilities, SemanticTokensOptions, SemanticTokensFullOptions, SemanticTokensLegend, CodeActionProviderCapability, ServerInfo, DidOpenTextDocumentParams, DidChangeTextDocumentParams, DidSaveTextDocumentParams, CompletionParams, CompletionResponse, CompletionItem, InsertTextFormat, HoverParams, Hover, HoverContents, MarkedString, GotoDefinitionParams, GotoDefinitionResponse, SemanticTokensParams, SemanticTokensResult, SemanticTokens, CodeActionParams, CodeActionResponse, Range, Position, DiagnosticSeverity, NumberOrString};
+use tower_lsp::lsp_types::{
+    CodeActionParams, CodeActionProviderCapability, CodeActionResponse, CompletionItem,
+    CompletionOptions, CompletionParams, CompletionResponse, Diagnostic, DiagnosticSeverity,
+    DidChangeTextDocumentParams, DidOpenTextDocumentParams, DidSaveTextDocumentParams,
+    DocumentDiagnosticParams, DocumentDiagnosticReport, DocumentDiagnosticReportResult,
+    FullDocumentDiagnosticReport, GotoDefinitionParams, GotoDefinitionResponse, Hover,
+    HoverContents, HoverParams, HoverProviderCapability, InitializeParams, InitializeResult,
+    InsertTextFormat, MarkedString, NumberOrString, OneOf, Position, Range,
+    RelatedFullDocumentDiagnosticReport, SemanticTokens, SemanticTokensFullOptions,
+    SemanticTokensLegend, SemanticTokensOptions, SemanticTokensParams, SemanticTokensResult,
+    SemanticTokensServerCapabilities, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, Url,
+};
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 pub use motarjim_ast;
@@ -58,7 +70,9 @@ impl Backend {
             Ok(u) => u,
             Err(_) => return,
         };
-        self.client.publish_diagnostics(url, diagnostics, None).await;
+        self.client
+            .publish_diagnostics(url, diagnostics, None)
+            .await;
     }
 
     /// Pull-based diagnostic handler for the `textDocument/diagnostic` request.
@@ -99,15 +113,17 @@ impl LanguageServer for Backend {
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 definition_provider: Some(OneOf::Left(true)),
                 semantic_tokens_provider: Some(
-                    SemanticTokensServerCapabilities::SemanticTokensOptions(SemanticTokensOptions {
-                        full: Some(SemanticTokensFullOptions::Bool(true)),
-                        range: Some(true),
-                        legend: SemanticTokensLegend {
-                            token_types: Vec::new(),
-                            token_modifiers: Vec::new(),
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
+                            range: Some(true),
+                            legend: SemanticTokensLegend {
+                                token_types: Vec::new(),
+                                token_modifiers: Vec::new(),
+                            },
+                            ..SemanticTokensOptions::default()
                         },
-                        ..SemanticTokensOptions::default()
-                    }),
+                    ),
                 ),
                 code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 ..ServerCapabilities::default()
@@ -146,10 +162,7 @@ impl LanguageServer for Backend {
         self.publish_diagnostics_for(&uri).await;
     }
 
-    async fn completion(
-        &self,
-        _params: CompletionParams,
-    ) -> Result<Option<CompletionResponse>> {
+    async fn completion(&self, _params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let items = vec![
             CompletionItem {
                 label: "div".to_string(),
@@ -202,10 +215,7 @@ impl LanguageServer for Backend {
         })))
     }
 
-    async fn code_action(
-        &self,
-        _params: CodeActionParams,
-    ) -> Result<Option<CodeActionResponse>> {
+    async fn code_action(&self, _params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
         Ok(None)
     }
 }
@@ -349,10 +359,7 @@ mod tests {
     #[test]
     fn test_compute_diagnostics_invalid_html() {
         let diags = compute_diagnostics("<div>");
-        assert!(
-            !diags.is_empty(),
-            "unclosed div should produce diagnostics"
-        );
+        assert!(!diags.is_empty(), "unclosed div should produce diagnostics");
     }
 
     #[test]

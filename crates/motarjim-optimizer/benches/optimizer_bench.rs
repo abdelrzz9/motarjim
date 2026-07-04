@@ -2,11 +2,19 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr, TargetIr};
 use motarjim_ast::style::ComputedStyle;
 use motarjim_ast::NodeId;
-use motarjim_optimizer::{CollapseWhitespace, MergeAdjacentText, PassManager, RemoveEmptyNodes, register_default_passes};
+use motarjim_optimizer::{
+    register_default_passes, CollapseWhitespace, MergeAdjacentText, PassManager, RemoveEmptyNodes,
+};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-fn make_node(id: u32, semantic: SemanticIr, layout: LayoutIr, children: SmallVec<[NodeId; 4]>, parent: Option<NodeId>) -> IrNode {
+fn make_node(
+    id: u32,
+    semantic: SemanticIr,
+    layout: LayoutIr,
+    children: SmallVec<[NodeId; 4]>,
+    parent: Option<NodeId>,
+) -> IrNode {
     IrNode {
         id: NodeId(id),
         semantic,
@@ -21,7 +29,12 @@ fn make_node(id: u32, semantic: SemanticIr, layout: LayoutIr, children: SmallVec
     }
 }
 
-fn make_text_node(id: u32, text: &str, children: SmallVec<[NodeId; 4]>, parent: Option<NodeId>) -> IrNode {
+fn make_text_node(
+    id: u32,
+    text: &str,
+    children: SmallVec<[NodeId; 4]>,
+    parent: Option<NodeId>,
+) -> IrNode {
     IrNode {
         id: NodeId(id),
         semantic: SemanticIr::Text,
@@ -39,7 +52,13 @@ fn make_text_node(id: u32, text: &str, children: SmallVec<[NodeId; 4]>, parent: 
 fn make_small_tree() -> IrTree {
     IrTree {
         nodes: vec![
-            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, smallvec::smallvec![NodeId(1), NodeId(2)], None),
+            make_node(
+                0,
+                SemanticIr::Root,
+                LayoutIr::FlexColumn,
+                smallvec::smallvec![NodeId(1), NodeId(2)],
+                None,
+            ),
             make_text_node(1, "Hello    World", SmallVec::new(), Some(NodeId(0))),
             make_text_node(2, "", SmallVec::new(), Some(NodeId(0))),
         ],
@@ -51,12 +70,36 @@ fn make_small_tree() -> IrTree {
 fn make_medium_tree() -> IrTree {
     IrTree {
         nodes: vec![
-            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, smallvec::smallvec![NodeId(1), NodeId(2), NodeId(3), NodeId(4)], None),
-            make_node(1, SemanticIr::Container, LayoutIr::FlexColumn, SmallVec::new(), Some(NodeId(0))),
+            make_node(
+                0,
+                SemanticIr::Root,
+                LayoutIr::FlexColumn,
+                smallvec::smallvec![NodeId(1), NodeId(2), NodeId(3), NodeId(4)],
+                None,
+            ),
+            make_node(
+                1,
+                SemanticIr::Container,
+                LayoutIr::FlexColumn,
+                SmallVec::new(),
+                Some(NodeId(0)),
+            ),
             make_text_node(2, "Hello    World", SmallVec::new(), Some(NodeId(0))),
             make_text_node(3, "Foo", SmallVec::new(), Some(NodeId(0))),
-            make_node(4, SemanticIr::Section, LayoutIr::Stack, smallvec::smallvec![NodeId(5)], Some(NodeId(0))),
-            make_node(5, SemanticIr::Container, LayoutIr::FlexColumn, smallvec::smallvec![NodeId(6)], Some(NodeId(4))),
+            make_node(
+                4,
+                SemanticIr::Section,
+                LayoutIr::Stack,
+                smallvec::smallvec![NodeId(5)],
+                Some(NodeId(0)),
+            ),
+            make_node(
+                5,
+                SemanticIr::Container,
+                LayoutIr::FlexColumn,
+                smallvec::smallvec![NodeId(6)],
+                Some(NodeId(4)),
+            ),
             make_text_node(6, "Bar", SmallVec::new(), Some(NodeId(5))),
         ],
         root_id: NodeId(0),
@@ -71,9 +114,9 @@ fn bench_optimize_small(c: &mut Criterion) {
         b.iter(|| {
             let mut t = black_box(tree.clone());
             let mut pm = PassManager::new();
-            pm.register(Box::new(RemoveEmptyNodes));
-            pm.register(Box::new(CollapseWhitespace));
-            pm.register(Box::new(MergeAdjacentText));
+            pm.register(Box::new(RemoveEmptyNodes::default()));
+            pm.register(Box::new(CollapseWhitespace::default()));
+            pm.register(Box::new(MergeAdjacentText::default()));
             pm.run_all(&mut t)
         });
     });

@@ -12,8 +12,8 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
-use motarjim_core::{CompileOptions, Compiler};
 use motarjim_config::{Config, OutputFormat};
+use motarjim_core::{CompileOptions, Compiler};
 use motarjim_diag::{Diagnostic, Severity};
 use motarjim_fs::RealFileSystem;
 
@@ -79,7 +79,14 @@ pub fn run(args: &CliArgs) -> Result<i32, Box<dyn Error>> {
             source_maps,
             strict,
             output,
-        } => cmd_compile(input, platform, *minify, *source_maps, *strict, output.as_ref()),
+        } => cmd_compile(
+            input,
+            platform,
+            *minify,
+            *source_maps,
+            *strict,
+            output.as_ref(),
+        ),
         Command::Watch { input, platform } => cmd_watch(input, platform),
         Command::Init => cmd_init(),
         Command::Check { input } => cmd_check(input),
@@ -92,7 +99,9 @@ fn parse_platform(s: &str) -> Result<OutputFormat, Box<dyn Error>> {
         "flutter" | "dart" => Ok(OutputFormat::Dart),
         "compose" | "kotlin" => Ok(OutputFormat::Kotlin),
         "swiftui" | "swift" => Ok(OutputFormat::Swift),
-        other => Err(format!("Unknown platform '{other}'. Use flutter, compose, or swiftui").into()),
+        other => {
+            Err(format!("Unknown platform '{other}'. Use flutter, compose, or swiftui").into())
+        }
     }
 }
 
@@ -272,12 +281,18 @@ mod tests {
     #[test]
     fn test_cli_compile_command() {
         let args = CliArgs::try_parse_from(&[
-            "motarjim", "compile", "input.html", "--platform", "flutter"
+            "motarjim",
+            "compile",
+            "input.html",
+            "--platform",
+            "flutter",
         ]);
         assert!(args.is_ok());
         let args = args.unwrap();
         match &args.command {
-            Command::Compile { input, platform, .. } => {
+            Command::Compile {
+                input, platform, ..
+            } => {
                 assert_eq!(input, &PathBuf::from("input.html"));
                 assert_eq!(platform, "flutter");
             }
@@ -306,7 +321,8 @@ mod tests {
 
     #[test]
     fn test_cli_watch_command() {
-        let args = CliArgs::try_parse_from(&["motarjim", "watch", "input.html", "--platform", "swiftui"]);
+        let args =
+            CliArgs::try_parse_from(&["motarjim", "watch", "input.html", "--platform", "swiftui"]);
         assert!(args.is_ok());
         match &args.unwrap().command {
             Command::Watch { input, platform } => {
@@ -320,17 +336,28 @@ mod tests {
     #[test]
     fn test_cli_compile_with_flags() {
         let args = CliArgs::try_parse_from(&[
-            "motarjim", "compile", "in.html",
-            "--platform", "compose",
+            "motarjim",
+            "compile",
+            "in.html",
+            "--platform",
+            "compose",
             "--minify",
             "--source-maps",
             "--strict",
-            "--output", "out.txt",
+            "--output",
+            "out.txt",
         ]);
         assert!(args.is_ok());
         let args = args.unwrap();
         match args.command {
-            Command::Compile { input, platform, minify, source_maps, strict, output } => {
+            Command::Compile {
+                input,
+                platform,
+                minify,
+                source_maps,
+                strict,
+                output,
+            } => {
                 assert_eq!(input, PathBuf::from("in.html"));
                 assert_eq!(platform, "compose");
                 assert!(minify);

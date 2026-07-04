@@ -28,7 +28,10 @@ pub mod codes;
 /// Internal diagnostic types.
 mod diagnostic;
 #[cfg(feature = "color")]
-#[cfg_attr(feature = "color", doc = "Colored terminal diagnostic output (requires the `color` feature).")]
+#[cfg_attr(
+    feature = "color",
+    doc = "Colored terminal diagnostic output (requires the `color` feature)."
+)]
 pub mod emitter;
 /// Internal source span types.
 mod span;

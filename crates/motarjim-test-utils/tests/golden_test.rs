@@ -17,9 +17,7 @@ fn golden_tests_all_platforms() {
     let runner = motarjim_test_utils::GoldenTestRunner::new(golden_dir);
     let update_mode = runner.is_update_mode();
 
-    let tests = runner
-        .discover()
-        .expect("Failed to discover golden tests");
+    let tests = runner.discover().expect("Failed to discover golden tests");
 
     if tests.is_empty() {
         panic!("No golden test fixtures found in tests/golden/html/");
@@ -64,8 +62,7 @@ fn test_discover_fixtures() {
     );
 
     // Verify we have all fixture names
-    let names: std::collections::HashSet<String> =
-        tests.iter().map(|t| t.name.clone()).collect();
+    let names: std::collections::HashSet<String> = tests.iter().map(|t| t.name.clone()).collect();
     assert!(names.contains("simple-div"));
     assert!(names.contains("nested-elements"));
     assert!(names.contains("form-with-inputs"));

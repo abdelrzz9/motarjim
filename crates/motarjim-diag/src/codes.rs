@@ -43,7 +43,8 @@ pub const CSS_UNKNOWN_PROPERTY: DiagnosticCode = DiagnosticCode::new(101, "Unkno
 pub const CSS_INVALID_VALUE: DiagnosticCode = DiagnosticCode::new(102, "Invalid CSS value");
 
 /// An unsupported CSS selector.
-pub const CSS_UNSUPPORTED_SELECTOR: DiagnosticCode = DiagnosticCode::new(103, "Unsupported selector");
+pub const CSS_UNSUPPORTED_SELECTOR: DiagnosticCode =
+    DiagnosticCode::new(103, "Unsupported selector");
 
 // Semantic codes (E0200-E0299)
 
@@ -69,15 +70,18 @@ pub const IR_UNSUPPORTED_LAYOUT: DiagnosticCode = DiagnosticCode::new(400, "Unsu
 // Generator codes (E0500-E0599)
 
 /// An unsupported feature for the target platform.
-pub const GEN_UNSUPPORTED_FEATURE: DiagnosticCode = DiagnosticCode::new(500, "Unsupported feature for target");
+pub const GEN_UNSUPPORTED_FEATURE: DiagnosticCode =
+    DiagnosticCode::new(500, "Unsupported feature for target");
 
 // Config codes (E0600-E0699)
 
 /// A configuration file could not be found.
-pub const CONFIG_FILE_NOT_FOUND: DiagnosticCode = DiagnosticCode::new(600, "Configuration file not found");
+pub const CONFIG_FILE_NOT_FOUND: DiagnosticCode =
+    DiagnosticCode::new(600, "Configuration file not found");
 
 /// A configuration file could not be parsed.
-pub const CONFIG_PARSE_ERROR: DiagnosticCode = DiagnosticCode::new(601, "Configuration parse error");
+pub const CONFIG_PARSE_ERROR: DiagnosticCode =
+    DiagnosticCode::new(601, "Configuration parse error");
 
 #[cfg(test)]
 mod tests {

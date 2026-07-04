@@ -13,16 +13,21 @@ pub struct Specificity {
 
 impl Specificity {
     /// Zero specificity.
-    pub const ZERO: Self = Self { ids: 0, classes: 0, types: 0 };
+    pub const ZERO: Self = Self {
+        ids: 0,
+        classes: 0,
+        types: 0,
+    };
 
     /// Compute specificity for a selector.
     #[must_use]
     pub fn of(selector: &Selector) -> Self {
         match selector {
             Selector::Simple(s) => Self::of_simple(s),
-            Selector::Compound(ss) => {
-                ss.iter().map(Self::of_simple).fold(Self::ZERO, |a, b| a + b)
-            }
+            Selector::Compound(ss) => ss
+                .iter()
+                .map(Self::of_simple)
+                .fold(Self::ZERO, |a, b| a + b),
             Selector::Complex(cx) => {
                 let mut total = Self::ZERO;
                 for (sel, _) in &cx.sequence {
@@ -37,13 +42,23 @@ impl Specificity {
     /// Returns the specificity of a single simple selector.
     const fn of_simple(sel: &SimpleSelector) -> Self {
         match sel {
-            SimpleSelector::Id(_) => Self { ids: 1, classes: 0, types: 0 },
-            SimpleSelector::Class(_) | SimpleSelector::Attribute(_) | SimpleSelector::PseudoClass(_) => {
-                Self { ids: 0, classes: 1, types: 0 }
-            }
-            SimpleSelector::Type(_) | SimpleSelector::PseudoElement(_) => {
-                Self { ids: 0, classes: 0, types: 1 }
-            }
+            SimpleSelector::Id(_) => Self {
+                ids: 1,
+                classes: 0,
+                types: 0,
+            },
+            SimpleSelector::Class(_)
+            | SimpleSelector::Attribute(_)
+            | SimpleSelector::PseudoClass(_) => Self {
+                ids: 0,
+                classes: 1,
+                types: 0,
+            },
+            SimpleSelector::Type(_) | SimpleSelector::PseudoElement(_) => Self {
+                ids: 0,
+                classes: 0,
+                types: 1,
+            },
             SimpleSelector::Universal => Self::ZERO,
         }
     }
@@ -74,7 +89,10 @@ impl MatchedSelector {
     #[must_use]
     pub fn new(selector: Selector) -> Self {
         let specificity = Specificity::of(&selector);
-        Self { selector, specificity }
+        Self {
+            selector,
+            specificity,
+        }
     }
 }
 
@@ -86,24 +104,52 @@ mod tests {
     #[test]
     fn test_specificity_type() {
         let s = parse_selector("div").unwrap();
-        assert_eq!(Specificity::of(&s), Specificity { ids: 0, classes: 0, types: 1 });
+        assert_eq!(
+            Specificity::of(&s),
+            Specificity {
+                ids: 0,
+                classes: 0,
+                types: 1
+            }
+        );
     }
 
     #[test]
     fn test_specificity_class() {
         let s = parse_selector(".class").unwrap();
-        assert_eq!(Specificity::of(&s), Specificity { ids: 0, classes: 1, types: 0 });
+        assert_eq!(
+            Specificity::of(&s),
+            Specificity {
+                ids: 0,
+                classes: 1,
+                types: 0
+            }
+        );
     }
 
     #[test]
     fn test_specificity_id() {
         let s = parse_selector("#id").unwrap();
-        assert_eq!(Specificity::of(&s), Specificity { ids: 1, classes: 0, types: 0 });
+        assert_eq!(
+            Specificity::of(&s),
+            Specificity {
+                ids: 1,
+                classes: 0,
+                types: 0
+            }
+        );
     }
 
     #[test]
     fn test_specificity_compound() {
         let s = parse_selector("div#id.class").unwrap();
-        assert_eq!(Specificity::of(&s), Specificity { ids: 1, classes: 1, types: 1 });
+        assert_eq!(
+            Specificity::of(&s),
+            Specificity {
+                ids: 1,
+                classes: 1,
+                types: 1
+            }
+        );
     }
 }

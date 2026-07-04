@@ -47,7 +47,9 @@ fn calculate_hash<H: Hash>(value: &H) -> u64 {
 #[must_use]
 fn make_query_key(type_id: TypeId, key_hash: u64) -> QueryKey {
     let tid_hash = calculate_hash(&type_id);
-    tid_hash.wrapping_mul(0x9E3779B97F4A7C15).wrapping_add(key_hash)
+    tid_hash
+        .wrapping_mul(0x9E3779B97F4A7C15)
+        .wrapping_add(key_hash)
 }
 
 /// Specifies the caching behavior and invalidation triggers for a query.
@@ -214,7 +216,10 @@ impl QueryCache {
             InvalidationPattern::OnDependencyChange => {
                 self.results.retain(|_type_id, entries| {
                     entries.retain(|_key, cached| {
-                        !cached.dependencies.iter().any(|dep| changed_files.contains(dep))
+                        !cached
+                            .dependencies
+                            .iter()
+                            .any(|dep| changed_files.contains(dep))
                     });
                     !entries.is_empty()
                 });

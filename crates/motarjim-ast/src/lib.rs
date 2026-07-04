@@ -12,30 +12,30 @@
 //! These types are pure data with no logic — they are shared by the parser,
 //! CSS engine, IR builder, optimizer, and generators.
 
-mod html;
 pub mod css;
+mod html;
+pub mod ir;
 pub mod layout;
 pub mod selector;
-pub mod style;
 pub mod semantic;
-pub mod ir;
+pub mod style;
 
+pub use css::{
+    AtRule, CharsetRule, CssRule, CssStylesheet, Declaration, FontFaceRule, ImportRule, Keyframe,
+    KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
+    SupportsRule,
+};
 pub use html::{
     Attribute, Document, DocumentTypeNode, Element, HtmlNode, NodeId, NodeType, SemanticDocument,
     StyledDocument, StyledNode,
 };
-pub use selector::{AttributeOperator, Combinator, PseudoClass, PseudoElement, Selector, SimpleSelector};
-pub use css::{
-    AtRule, CharsetRule, CssRule, CssStylesheet, Declaration, FontFaceRule, ImportRule,
-    Keyframe, KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule,
-    StyleRule, SupportsRule,
-};
+pub use ir::{HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr};
 pub use layout::{Breakpoint, LayoutConstraints, LayoutStrategy, ResponsiveVariant};
+pub use selector::{
+    AttributeOperator, Combinator, PseudoClass, PseudoElement, Selector, SimpleSelector,
+};
+pub use semantic::{A11yViolation, AccessibilityInfo, SemanticRole};
 pub use style::{
     AlignContent, AlignItems, Background, Border, ComputedStyle, DisplayType, EdgeValues,
     FlexDirection, FlexWrap, FontWeight, JustifyContent, Overflow, PositionType, TextAlign,
-};
-pub use semantic::{AccessibilityInfo, A11yViolation, SemanticRole};
-pub use ir::{
-    HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr,
 };

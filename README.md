@@ -307,3 +307,36 @@ See [docs/contributing.md](docs/contributing.md) for setup, workflow, and coding
 ## License
 
 MIT
+
+## Repository architecture
+
+```text
+motarjim/
+├── crates/                 # Rust workspace
+│   ├── motarjim-core
+│   ├── motarjim-parser
+│   ├── motarjim-css
+│   ├── motarjim-optimizer
+│   ├── motarjim-gen-flutter
+│   ├── motarjim-gen-compose
+│   ├── motarjim-gen-swiftui
+│   ├── motarjim-cli
+│   ├── motarjim-lsp
+│   └── ...
+├── packages/               # TypeScript
+│   ├── vscode-extension
+│   ├── playground-sdk
+│   └── website-sdk
+├── apps/
+│   ├── website
+│   └── playground
+├── docs/
+├── examples/
+├── benchmarks/
+├── tests/
+├── scripts/
+├── xtask/
+├── Cargo.toml
+├── package.json
+└── README.md
+```

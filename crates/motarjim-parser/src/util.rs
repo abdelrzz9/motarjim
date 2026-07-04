@@ -5,8 +5,8 @@ use motarjim_ast::Attribute;
 
 /// HTML void elements that cannot have children.
 const VOID_ELEMENTS: &[&str] = &[
-    "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
-    "meta", "param", "source", "track", "wbr",
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+    "track", "wbr",
 ];
 
 /// Returns `true` if the given tag name is a void HTML element.
@@ -85,7 +85,7 @@ pub fn parse_attributes_from_str(input: &str) -> SmallVec<[Attribute; 8]> {
 
         let value = if pos < len && bytes[pos] == b'=' {
             pos += 1; // consume '='
-            // Skip whitespace after '='
+                      // Skip whitespace after '='
             while pos < len && bytes[pos].is_ascii_whitespace() {
                 pos += 1;
             }
@@ -105,10 +105,7 @@ pub fn parse_attributes_from_str(input: &str) -> SmallVec<[Attribute; 8]> {
                 val.to_string()
             } else {
                 let val_start = pos;
-                while pos < len
-                    && !bytes[pos].is_ascii_whitespace()
-                    && bytes[pos] != b'>'
-                {
+                while pos < len && !bytes[pos].is_ascii_whitespace() && bytes[pos] != b'>' {
                     pos += 1;
                 }
                 input[val_start..pos].to_string()

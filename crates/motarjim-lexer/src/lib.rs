@@ -18,18 +18,18 @@
 //! assert!(!tokens.is_empty());
 //! ```
 
-/// Generic token type used by both HTML and CSS tokenizers.
-mod token;
 /// Character cursor for zero-copy tokenization with position tracking.
 mod cursor;
+/// Generic token type used by both HTML and CSS tokenizers.
+mod token;
 
-/// HTML tokenizer module with `HtmlTokenKind` and `HtmlTokenizer`.
-pub mod html;
 /// CSS tokenizer module with `CssTokenKind` and `CssTokenizer`.
 pub mod css;
+/// HTML tokenizer module with `HtmlTokenKind` and `HtmlTokenizer`.
+pub mod html;
 
 #[cfg(test)]
 mod proptests;
 
-pub use token::Token;
 pub use cursor::Cursor;
+pub use token::Token;

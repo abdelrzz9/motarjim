@@ -18,8 +18,6 @@
 //! assert!(matches!(selector, Selector::Compound(_)));
 //! ```
 
-/// CSS selector types (Selector, SimpleSelector, etc.).
-mod types;
 /// Display implementations for selector types.
 mod display;
 /// Selector parse error type.
@@ -28,11 +26,13 @@ mod error;
 mod parser;
 /// Specificity and matched selector.
 mod specificity;
+/// CSS selector types (Selector, SimpleSelector, etc.).
+mod types;
 
 #[cfg(test)]
 mod proptests;
 
-pub use types::*;
 pub use error::SelectorParseError;
 pub use parser::parse_selector;
 pub use specificity::{MatchedSelector, Specificity};
+pub use types::*;

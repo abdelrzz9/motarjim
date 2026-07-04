@@ -137,7 +137,10 @@ fn parse_complex_or_compound(input: &str) -> Result<Selector, SelectorParseError
     }
 
     let final_sel = parse_simple_or_compound(input[current_start..].trim())?;
-    Ok(Selector::Complex(ComplexSelector { sequence: seq, final_selector: Box::new(final_sel) }))
+    Ok(Selector::Complex(ComplexSelector {
+        sequence: seq,
+        final_selector: Box::new(final_sel),
+    }))
 }
 
 /// Parses a simple or compound selector from the input string.
@@ -222,7 +225,12 @@ fn parse_simple_or_compound(input: &str) -> Result<Selector, SelectorParseError>
     }
 
     Ok(if simple_selectors.len() == 1 {
-        Selector::Simple(simple_selectors.into_iter().next().expect("simple_selectors.len() == 1"))
+        Selector::Simple(
+            simple_selectors
+                .into_iter()
+                .next()
+                .expect("simple_selectors.len() == 1"),
+        )
     } else {
         Selector::Compound(simple_selectors)
     })
@@ -347,16 +355,21 @@ fn find_bracket_end(chars: &[char]) -> Result<usize, SelectorParseError> {
 /// Parses an attribute selector (e.g. `[attr]`, `[attr=value]`).
 fn parse_attribute_selector(input: &str) -> Result<AttributeSelector, SelectorParseError> {
     let input = input.trim();
-    let (name, rest) = if let Some(pos) =
-        input.find(|c: char| c.is_whitespace() || "~^$*|!=".contains(c))
-    {
-        (&input[..pos], input[pos..].trim())
-    } else {
-        return Ok(AttributeSelector { name: input.to_string(), value: None });
-    };
+    let (name, rest) =
+        if let Some(pos) = input.find(|c: char| c.is_whitespace() || "~^$*|!=".contains(c)) {
+            (&input[..pos], input[pos..].trim())
+        } else {
+            return Ok(AttributeSelector {
+                name: input.to_string(),
+                value: None,
+            });
+        };
 
     if rest.is_empty() {
-        return Ok(AttributeSelector { name: name.to_string(), value: None });
+        return Ok(AttributeSelector {
+            name: name.to_string(),
+            value: None,
+        });
     }
 
     let (operator, after_op) = if let Some(r) = rest.strip_prefix("~=") {
@@ -375,7 +388,11 @@ fn parse_attribute_selector(input: &str) -> Result<AttributeSelector, SelectorPa
         return Err(SelectorParseError::InvalidAttributeOperator);
     };
 
-    let value = after_op.trim().trim_matches('"').trim_matches('\'').to_string();
+    let value = after_op
+        .trim()
+        .trim_matches('"')
+        .trim_matches('\'')
+        .to_string();
     Ok(AttributeSelector {
         name: name.to_string(),
         value: Some(AttributeValue { operator, value }),
@@ -396,7 +413,10 @@ mod tests {
     #[test]
     fn test_class_selector() {
         let s = parse_selector(".container").unwrap();
-        assert_eq!(s, Selector::Simple(SimpleSelector::Class("container".to_string())));
+        assert_eq!(
+            s,
+            Selector::Simple(SimpleSelector::Class("container".to_string()))
+        );
     }
 
     #[test]

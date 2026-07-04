@@ -41,7 +41,9 @@ impl<'a> HtmlTokenizer<'a> {
     /// Creates a new HTML tokenizer for the given source.
     #[must_use]
     pub const fn new(source: &'a str) -> Self {
-        Self { cursor: Cursor::new(source) }
+        Self {
+            cursor: Cursor::new(source),
+        }
     }
 
     /// Tokenizes the entire input and returns all tokens.
@@ -51,7 +53,9 @@ impl<'a> HtmlTokenizer<'a> {
             let token = self.next_token();
             let is_eof = token.kind == HtmlTokenKind::Eof;
             tokens.push(token);
-            if is_eof { break; }
+            if is_eof {
+                break;
+            }
         }
         tokens
     }
@@ -147,8 +151,9 @@ impl<'a> HtmlTokenizer<'a> {
                 )
             }
             _ => {
-                let name =
-                    self.cursor.take_while(|c| !c.is_ascii_whitespace() && c != '>' && c != '/');
+                let name = self
+                    .cursor
+                    .take_while(|c| !c.is_ascii_whitespace() && c != '>' && c != '/');
                 Token::new(
                     HtmlTokenKind::OpenTagStart,
                     self.cursor.span_since(start),

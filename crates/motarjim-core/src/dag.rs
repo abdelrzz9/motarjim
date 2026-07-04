@@ -34,9 +34,7 @@ use std::sync::Arc;
 
 use motarjim_ast::css::CssStylesheet;
 use motarjim_ast::ir::IrTree;
-use motarjim_ast::{
-    ComputedStyle, Document, NodeId, StyledDocument, StyledNode,
-};
+use motarjim_ast::{ComputedStyle, Document, NodeId, StyledDocument, StyledNode};
 use motarjim_diag::{Diagnostic, DiagnosticBag, Severity};
 use rayon::prelude::*;
 
@@ -265,7 +263,10 @@ impl CompilationNode {
     pub fn new(
         phase: Phase,
         dependencies: Vec<Phase>,
-        run: impl Fn(&CompilationContext) -> Result<PhaseOutput, Vec<Diagnostic>> + Send + Sync + 'static,
+        run: impl Fn(&CompilationContext) -> Result<PhaseOutput, Vec<Diagnostic>>
+            + Send
+            + Sync
+            + 'static,
     ) -> Self {
         Self {
             phase,
@@ -402,23 +403,22 @@ impl CompilationDag {
     /// Returns the first batch of fatal diagnostics if any phase fails.
     /// Phases after the failing one are not executed.
     pub fn execute(&self, context: &mut CompilationContext) -> Result<(), Vec<Diagnostic>> {
-        let order = self
-            .topological_order()
-            .map_err(|e| vec![Diagnostic::new(
+        let order = self.topological_order().map_err(|e| {
+            vec![Diagnostic::new(
                 Severity::Error,
                 motarjim_diag::DiagnosticCode::new(999, "Dag error"),
                 e,
-            )])?;
+            )]
+        })?;
 
         for phase in &order {
-            context
-                .cancel_token
-                .check()
-                .map_err(|_| vec![Diagnostic::new(
+            context.cancel_token.check().map_err(|_| {
+                vec![Diagnostic::new(
                     Severity::Error,
                     motarjim_diag::DiagnosticCode::new(700, "Cancelled"),
                     "Compilation cancelled",
-                )])?;
+                )]
+            })?;
 
             let node = &self.nodes[phase];
             let output = (node.run)(context)?;
@@ -437,14 +437,17 @@ impl CompilationDag {
     /// # Errors
     /// Collects all fatal diagnostics and returns early if any phase
     /// in a level fails.
-    pub fn execute_parallel(&self, context: &mut CompilationContext) -> Result<(), Vec<Diagnostic>> {
-        let levels = self
-            .compute_levels()
-            .map_err(|e| vec![Diagnostic::new(
+    pub fn execute_parallel(
+        &self,
+        context: &mut CompilationContext,
+    ) -> Result<(), Vec<Diagnostic>> {
+        let levels = self.compute_levels().map_err(|e| {
+            vec![Diagnostic::new(
                 Severity::Error,
                 motarjim_diag::DiagnosticCode::new(999, "Dag error"),
                 e,
-            )])?;
+            )]
+        })?;
 
         let mut all_errors: Vec<Diagnostic> = Vec::new();
 
@@ -453,14 +456,13 @@ impl CompilationDag {
                 continue;
             }
 
-            context
-                .cancel_token
-                .check()
-                .map_err(|_| vec![Diagnostic::new(
+            context.cancel_token.check().map_err(|_| {
+                vec![Diagnostic::new(
                     Severity::Error,
                     motarjim_diag::DiagnosticCode::new(700, "Cancelled"),
                     "Compilation cancelled",
-                )])?;
+                )]
+            })?;
 
             // Execute this level's phases in parallel.
             // Each phase receives a shared reference to the context but
@@ -526,7 +528,11 @@ impl CompilationDag {
         // ReadFiles: a no-op in the default setup (sources are already in context).
         dag.add_node(CompilationNode::new(Phase::ReadFiles, vec![], |ctx| {
             ctx.cancel_token.check().map_err(|_| {
-                vec![Diagnostic::new(Severity::Error, motarjim_diag::DiagnosticCode::new(700, "Cancelled"), "Compilation cancelled")]
+                vec![Diagnostic::new(
+                    Severity::Error,
+                    motarjim_diag::DiagnosticCode::new(700, "Cancelled"),
+                    "Compilation cancelled",
+                )]
             })?;
             Ok(PhaseOutput::Code(ctx.html_source.clone()))
         }))
@@ -977,8 +983,7 @@ mod tests {
         let mut dag = CompilationDag::new();
         dag.add_node(make_ok_node(Phase::ParseHtml, vec![]))
             .unwrap();
-        dag.add_node(make_ok_node(Phase::ParseCss, vec![]))
-            .unwrap();
+        dag.add_node(make_ok_node(Phase::ParseCss, vec![])).unwrap();
         dag.add_node(make_ok_node(
             Phase::CascadeStyles,
             vec![Phase::ParseHtml, Phase::ParseCss],
@@ -1004,11 +1009,8 @@ mod tests {
     #[test]
     fn test_topological_order_missing_dependency() {
         let mut dag = CompilationDag::new();
-        dag.add_node(make_ok_node(
-            Phase::BuildIr,
-            vec![Phase::ParseHtml],
-        ))
-        .unwrap();
+        dag.add_node(make_ok_node(Phase::BuildIr, vec![Phase::ParseHtml]))
+            .unwrap();
         assert!(dag.topological_order().is_err());
     }
 
@@ -1021,8 +1023,7 @@ mod tests {
         let mut dag = CompilationDag::new();
         dag.add_node(make_ok_node(Phase::ParseHtml, vec![]))
             .unwrap();
-        dag.add_node(make_ok_node(Phase::ParseCss, vec![]))
-            .unwrap();
+        dag.add_node(make_ok_node(Phase::ParseCss, vec![])).unwrap();
         dag.add_node(make_ok_node(
             Phase::CascadeStyles,
             vec![Phase::ParseHtml, Phase::ParseCss],
@@ -1044,17 +1045,14 @@ mod tests {
             Phase::CssSelectorMatching,
             vec![Phase::ParseHtml],
         ))
-            .unwrap();
+        .unwrap();
         dag.add_node(make_ok_node(
             Phase::CascadeStyles,
             vec![Phase::CssSelectorMatching],
         ))
-            .unwrap();
-        dag.add_node(make_ok_node(
-            Phase::BuildIr,
-            vec![Phase::CascadeStyles],
-        ))
         .unwrap();
+        dag.add_node(make_ok_node(Phase::BuildIr, vec![Phase::CascadeStyles]))
+            .unwrap();
         let levels = dag.compute_levels().unwrap();
         assert_eq!(levels.len(), 4);
         assert_eq!(levels[0], vec![Phase::ParseHtml]);
@@ -1077,9 +1075,7 @@ mod tests {
         let mut ctx = empty_context();
         dag.execute(&mut ctx).unwrap();
         assert_eq!(
-            ctx.inputs
-                .get(&Phase::ParseHtml)
-                .and_then(|o| o.as_code()),
+            ctx.inputs.get(&Phase::ParseHtml).and_then(|o| o.as_code()),
             Some("hello")
         );
     }
@@ -1091,23 +1087,28 @@ mod tests {
             Ok(PhaseOutput::Code("parsed".to_string()))
         }))
         .unwrap();
-        dag.add_node(CompilationNode::new(Phase::BuildIr, vec![Phase::ParseHtml], |ctx| {
-            let input = ctx
-                .inputs
-                .get(&Phase::ParseHtml)
-                .and_then(|o| o.as_code())
-                .ok_or_else(|| {
-                    vec![Diagnostic::new(Severity::Error, motarjim_diag::DiagnosticCode::new(999, "Missing"), "")]
-                })?;
-            Ok(PhaseOutput::Code(format!("built from {}", input)))
-        }))
+        dag.add_node(CompilationNode::new(
+            Phase::BuildIr,
+            vec![Phase::ParseHtml],
+            |ctx| {
+                let input = ctx
+                    .inputs
+                    .get(&Phase::ParseHtml)
+                    .and_then(|o| o.as_code())
+                    .ok_or_else(|| {
+                        vec![Diagnostic::new(
+                            Severity::Error,
+                            motarjim_diag::DiagnosticCode::new(999, "Missing"),
+                            "",
+                        )]
+                    })?;
+                Ok(PhaseOutput::Code(format!("built from {}", input)))
+            },
+        ))
         .unwrap();
         let mut ctx = empty_context();
         dag.execute(&mut ctx).unwrap();
-        let output = ctx
-            .inputs
-            .get(&Phase::BuildIr)
-            .and_then(|o| o.as_code());
+        let output = ctx.inputs.get(&Phase::BuildIr).and_then(|o| o.as_code());
         assert_eq!(output, Some("built from parsed"));
     }
 
@@ -1147,8 +1148,7 @@ mod tests {
         let mut dag = CompilationDag::new();
         dag.add_node(make_ok_node(Phase::ParseHtml, vec![]))
             .unwrap();
-        dag.add_node(make_ok_node(Phase::ParseCss, vec![]))
-            .unwrap();
+        dag.add_node(make_ok_node(Phase::ParseCss, vec![])).unwrap();
         let mut ctx = empty_context();
         dag.execute_parallel(&mut ctx).unwrap();
         assert!(ctx.inputs.contains_key(&Phase::ParseHtml));
@@ -1160,8 +1160,7 @@ mod tests {
         let mut dag = CompilationDag::new();
         dag.add_node(make_ok_node(Phase::ParseHtml, vec![]))
             .unwrap();
-        dag.add_node(make_ok_node(Phase::ParseCss, vec![]))
-            .unwrap();
+        dag.add_node(make_ok_node(Phase::ParseCss, vec![])).unwrap();
         dag.add_node(make_ok_node(
             Phase::CascadeStyles,
             vec![Phase::ParseHtml, Phase::ParseCss],
@@ -1179,8 +1178,7 @@ mod tests {
         let mut dag = CompilationDag::new();
         dag.add_node(make_failing_node(Phase::ParseHtml, vec![]))
             .unwrap();
-        dag.add_node(make_ok_node(Phase::ParseCss, vec![]))
-            .unwrap();
+        dag.add_node(make_ok_node(Phase::ParseCss, vec![])).unwrap();
         let mut ctx = empty_context();
         let result = dag.execute_parallel(&mut ctx);
         assert!(result.is_err());
@@ -1196,17 +1194,25 @@ mod tests {
         let mut dag = CompilationDag::new();
 
         let c1 = Arc::clone(&counter);
-        dag.add_node(CompilationNode::new(Phase::SemanticInference, vec![], move |_| {
-            c1.fetch_add(1, Ordering::SeqCst);
-            Ok(PhaseOutput::Code("sem".to_string()))
-        }))
+        dag.add_node(CompilationNode::new(
+            Phase::SemanticInference,
+            vec![],
+            move |_| {
+                c1.fetch_add(1, Ordering::SeqCst);
+                Ok(PhaseOutput::Code("sem".to_string()))
+            },
+        ))
         .unwrap();
 
         let c2 = Arc::clone(&counter);
-        dag.add_node(CompilationNode::new(Phase::LayoutInference, vec![], move |_| {
-            c2.fetch_add(1, Ordering::SeqCst);
-            Ok(PhaseOutput::Code("lay".to_string()))
-        }))
+        dag.add_node(CompilationNode::new(
+            Phase::LayoutInference,
+            vec![],
+            move |_| {
+                c2.fetch_add(1, Ordering::SeqCst);
+                Ok(PhaseOutput::Code("lay".to_string()))
+            },
+        ))
         .unwrap();
 
         let mut ctx = empty_context();
@@ -1320,7 +1326,10 @@ mod tests {
             .get(&Phase::GenerateFlutter)
             .and_then(|o| o.as_code());
         assert!(flutter_code.is_some());
-        assert!(!flutter_code.unwrap().is_empty(), "Flutter code should not be empty");
+        assert!(
+            !flutter_code.unwrap().is_empty(),
+            "Flutter code should not be empty"
+        );
     }
 
     #[test]
@@ -1333,7 +1342,11 @@ mod tests {
         // Note: parallel execution requires all phase closures to be Sync,
         // which they are because they only capture Send + Sync data.
         let result = dag.execute_parallel(&mut ctx);
-        assert!(result.is_ok(), "Parallel DAG execution failed: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Parallel DAG execution failed: {:?}",
+            result
+        );
         assert!(ctx.inputs.contains_key(&Phase::GenerateFlutter));
         assert!(ctx.inputs.contains_key(&Phase::GenerateCompose));
         assert!(ctx.inputs.contains_key(&Phase::GenerateSwiftui));
@@ -1364,9 +1377,7 @@ mod tests {
             .unwrap();
         let result = dag.add_node(make_ok_node(Phase::ParseHtml, vec![]));
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("already registered"));
+        assert!(result.unwrap_err().contains("already registered"));
     }
 
     #[test]
@@ -1389,16 +1400,20 @@ mod tests {
         }))
         .unwrap();
 
-        dag.add_node(CompilationNode::new(Phase::BuildIr, vec![Phase::ParseHtml], |ctx| {
-            ctx.cancel_token.check().map_err(|_| {
-                vec![Diagnostic::new(
-                    Severity::Error,
-                    motarjim_diag::DiagnosticCode::new(700, "Cancelled"),
-                    "cancelled",
-                )]
-            })?;
-            Ok(PhaseOutput::Code("done".to_string()))
-        }))
+        dag.add_node(CompilationNode::new(
+            Phase::BuildIr,
+            vec![Phase::ParseHtml],
+            |ctx| {
+                ctx.cancel_token.check().map_err(|_| {
+                    vec![Diagnostic::new(
+                        Severity::Error,
+                        motarjim_diag::DiagnosticCode::new(700, "Cancelled"),
+                        "cancelled",
+                    )]
+                })?;
+                Ok(PhaseOutput::Code("done".to_string()))
+            },
+        ))
         .unwrap();
 
         let mut ctx = CompilationContext::new("<div></div>".to_string(), None);
