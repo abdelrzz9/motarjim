@@ -935,3 +935,670 @@ cargo fmt --check
 10. **Incremental compilation** — dependency tracking + cache
 11. **Parallelism** — rayon for CSS matching, code generation
 12. **Professional diagnostics** — colored output, source snippets, suggestions, codes
+
+---
+
+## 10. Enhanced Design Constraints
+
+### 10.1 Every Crate is a Reusable Library
+
+Every `motarjim-*` crate must be publishable to crates.io independently.
+Each crate has:
+
+- **Stable public API** — `pub` items are minimal, well-considered, and documented.
+  Internal items use `pub(crate)` or private visibility.
+- **Feature-gated optional functionality** — see Section 10.2.
+- **`#[deny(missing_docs)]`** on all public items.
+- **`#[forbid(unsafe_code)]`** unless benchmark-proven necessary.
+- **`#![warn(clippy::all, clippy::pedantic, clippy::nursery)]`**.
+- **95%+ line coverage** measured by `tarpaulin` or `llvm-cov`.
+- **Criterion benchmarks** in a `benches/` directory.
+- **Doc-tests** (`/// ``` ... ``` `) for all public functions.
+- **Examples directory** (`examples/`) with runnable standalone examples.
+
+### 10.2 Feature Flags
+
+Each optional capability is gated behind a Cargo feature flag:
+
+```toml
+[features]
+default = ["native"]
+
+# Compilation targets
+native = ["motarjim-cli"]
+wasm    = ["motarjim-core/wasm"]
+ffi     = ["motarjim-core/ffi"]
+
+# Optional capabilities
+ai        = ["motarjim-core/ai"]
+lsp       = ["motarjim-lsp"]
+profiling = ["motarjim-profiling"]
+plugins   = ["motarjim-core/plugin-system"]
+cache     = ["motarjim-cache"]
+
+# Generator features (users can select which platforms to support)
+gen-flutter = ["motarjim-gen-flutter"]
+gen-compose = ["motarjim-gen-compose"]
+gen-swiftui = ["motarjim-gen-swiftui"]
+```
+
+Per-crate feature flags:
+
+| Crate | Features |
+|-------|----------|
+| `motarjim-core` | `wasm`, `ffi`, `ai`, `plugin-system`, `cache` |
+| `motarjim-cli` | `watch` (file watcher), `tui` (terminal UI) |
+| `motarjim-lsp` | `completion`, `hover`, `semantic-tokens` |
+| `motarjim-cache` | `s3`, `redis` (remote cache backends) |
+| `motarjim-profiling` | `trace` (tracing subscriber), `flamegraph` |
+| `motarjim-diag` | `color` (colored output), `json` (JSON diagnostic output) |
+
+### 10.3 Compilation Targets
+
+```
+motarjim-core
+├── Native CLI    (motarjim-cli, default feature)
+├── WebAssembly   (wasm-pack, wasm feature, browser playground)
+└── Dynamic Lib   (cdylib crate type, ffi feature, VS Code extension via NAPI-RS)
+```
+
+The same compiler core powers all three targets. The CLI, WASM bindings, and FFI
+layer are thin wrappers. No compiler logic is duplicated.
+
+### 10.4 Plugin System
+
+Generators are plugins, not built-in modules. The core defines:
+
+```rust
+/// Trait implemented by all generators (Flutter, Compose, SwiftUI, React Native, etc.)
+pub trait Generator: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn generate(&self, ir: &IrTree, options: &GenerateOptions) -> Result<String, DiagnosticBag>;
+}
+
+/// Registry of all registered generators
+pub struct GeneratorRegistry {
+    generators: Vec<Box<dyn Generator>>,
+}
+
+impl GeneratorRegistry {
+    pub fn register(&mut self, gen: Box<dyn Generator>);
+    pub fn get(&self, name: &str) -> Option<&dyn Generator>;
+    pub fn all(&self) -> &[Box<dyn Generator>];
+}
+```
+
+Third-party generators (React Native, .NET MAUI, Qt, React, Tauri, etc.)
+can be added as separate crates without touching the compiler core:
+
+```rust
+// Third-party crate: motarjim-gen-react-native
+pub struct ReactNativeGenerator;
+
+impl Generator for ReactNativeGenerator {
+    fn name(&self) -> &'static str { "react-native" }
+    fn generate(&self, ir: &IrTree, options: &GenerateOptions) -> Result<String, DiagnosticBag> {
+        // Emit TypeScript/JSX
+    }
+}
+```
+
+### 10.5 Event System
+
+Each compilation phase emits lifecycle events. Plugins and the LSP hook into
+these events to observe, modify, or cancel compilation.
+
+```rust
+pub enum CompilerEvent {
+    BeforeParse { source: SourceFile },
+    AfterParse { result: Result<Document, DiagnosticBag> },
+    BeforeStyle { document: Document, stylesheet: Stylesheet },
+    AfterStyle { result: Result<StyledDocument, DiagnosticBag> },
+    BeforeSemantics { styled: StyledDocument },
+    AfterSemantics { result: Result<SemanticDocument, DiagnosticBag> },
+    BeforeIr { semantic: SemanticDocument },
+    AfterIr { result: Result<IrTree, DiagnosticBag> },
+    BeforeOptimize { tree: IrTree, pass: &'static str },
+    AfterOptimize { result: Result<IrTree, DiagnosticBag>, pass: &'static str },
+    BeforeGenerate { tree: IrTree, target: Target },
+    AfterGenerate { result: Result<String, DiagnosticBag>, target: Target },
+    /// Cancellation requested by IDE/user
+    CancelRequested { phase: &'static str },
+}
+
+pub trait EventHandler: Send + Sync {
+    fn handle(&self, event: &CompilerEvent) -> Result<(), EventError>;
+}
+
+pub struct EventBus {
+    handlers: Vec<Box<dyn EventHandler>>,
+}
+
+impl EventBus {
+    pub fn subscribe(&mut self, handler: Box<dyn EventHandler>);
+    pub fn emit(&self, event: CompilerEvent) -> Result<(), EventError>;
+}
+```
+
+### 10.6 Query System (Incremental Cache)
+
+Inspired by incremental compilers (rustc's query system, Salsa, Roc):
+
+```rust
+pub trait Query: Send + Sync {
+    type Key: Eq + Hash + Clone + Send;
+    type Value: Clone + Send;
+
+    fn description(&self) -> &'static str;
+    fn execute(&self, key: &Self::Key, context: &QueryContext) -> Self::Value;
+    fn invalidation_pattern(&self) -> InvalidationPattern;
+}
+
+pub enum InvalidationPattern {
+    /// Re-execute when any input file changes
+    OnFileChange,
+    /// Re-execute when specific dependencies change
+    OnDependencyChange,
+    /// Always re-execute (never cached)
+    AlwaysExecute,
+    /// Re-execute when a specific set of files change
+    OnFileSetChange(Vec<FilePattern>),
+}
+
+pub struct QueryContext {
+    pub cache: Arc<QueryCache>,
+    pub diagnostics: Arc<Mutex<DiagnosticBag>>,
+    pub cancellation: Arc<AtomicBool>,
+}
+
+pub struct QueryCache {
+    // Internal: dependency graph + memoized results
+    results: DashMap<TypeId, DashMap<QueryKey, CachedValue>>,
+}
+```
+
+Registered queries:
+
+| Query | Key | Value | Invalidation |
+|-------|-----|-------|-------------|
+| `ParseHtml` | FilePath | Document | OnFileChange |
+| `ParseCss` | FilePath | Stylesheet | OnFileChange |
+| `ResolveSelectors` | NodeId | Vec<MatchedRule> | OnDependencyChange |
+| `CascadeStyles` | NodeId | ResolvedStyles | OnDependencyChange |
+| `ComputeStyle` | NodeId | ComputedStyle | OnDependencyChange |
+| `InferSemantics` | NodeId | SemanticIR | OnDependencyChange |
+| `InferLayout` | NodeId | LayoutIR | OnDependencyChange |
+| `BuildIr` | (Document, Stylesheet) | IrTree | OnDependencyChange |
+| `OptimizeTree` | IrTree | IrTree | AlwaysExecute |
+| `GenerateCode` | (IrTree, Target) | String | AlwaysExecute |
+
+### 10.7 Dependency Graph (Compilation DAG)
+
+Rather than a sequential pipeline, compilation is a Directed Acyclic Graph (DAG):
+
+```
+                  ┌─────────────┐
+                  │  Read Files  │
+                  └──────┬──────┘
+                         │
+                  ┌──────▼──────┐
+                  │  Parse HTML  │◄─────┐
+                  └──────┬──────┘      │
+                         │             │
+                  ┌──────▼──────┐      │
+                  │  Parse CSS   │──────┘
+                  └──────┬──────┘
+                         │
+                  ┌──────▼──────┐
+                  │CSS Selector │
+                  │  Matching   │ (parallel per node)
+                  └──────┬──────┘
+                         │
+                  ┌──────▼──────┐
+                  │   Cascade   │
+                  │   Styles    │ (parallel per node)
+                  └──────┬──────┘
+                         │
+              ┌──────────┼──────────┐
+              │          │          │
+       ┌──────▼────┐ ┌──▼───┐ ┌───▼────┐
+       │  Semantic  │ │Layout│ │Access. │ (parallel)
+       │  Infer.   │ │Infer.│ │Analyze │
+       └──────┬────┘ └──┬───┘ └───┬────┘
+              │          │          │
+              └──────────┼──────────┘
+                         │
+                  ┌──────▼──────┐
+                  │  Build IR   │
+                  └──────┬──────┘
+                         │
+                  ┌──────▼──────┐
+                  │  Optimizer  │
+                  │  (pass DAG) │
+                  └──────┬──────┘
+                         │
+              ┌──────────┼──────────┐
+              │          │          │
+       ┌──────▼────┐ ┌──▼───┐ ┌───▼────┐
+       │  Generate  │ │Generate││Generate│ (parallel per platform)
+       │  Flutter   │ │Compose ││ SwiftUI│
+       └────────────┘ └───────┘ └────────┘
+```
+
+The DAG is computed once, then each node is scheduled independently.
+Parallelism is automatic: independent nodes (e.g. semantic inference vs layout
+inference vs accessibility analysis) execute concurrently via rayon.
+
+### 10.8 Optimization Pass Declaration
+
+Every optimization pass is a struct that implements `OptimizationPass`:
+
+```rust
+pub trait OptimizationPass: Send + Sync {
+    fn name(&self) -> &'static str;
+    fn description(&self) -> &'static str;
+    fn prerequisites(&self) -> Vec<&'static str>;
+    fn invalidated_by(&self) -> Vec<&'static str>;
+    fn estimated_cost(&self) -> PassCost;
+    fn statistics(&self) -> PassStatistics;
+    fn run(&self, tree: &mut IrTree, context: &PassContext) -> Result<(), DiagnosticBag>;
+}
+
+pub enum PassCost {
+    O1,     // Trivial (constant time per node)
+    OLogN,  // Logarithmic
+    ON,     // Linear
+    ONLogN, // Linearithmic
+    ON2,    // Quadratic (rare, only for small trees)
+}
+
+#[derive(Default)]
+pub struct PassStatistics {
+    pub nodes_visited: AtomicUsize,
+    pub nodes_modified: AtomicUsize,
+    pub nodes_removed: AtomicUsize,
+    pub memory_freed: AtomicUsize,
+    pub duration_ns: AtomicU64,
+}
+
+impl PassStatistics {
+    pub fn snapshot(&self) -> PassStatsSnapshot { /* ... */ }
+    pub fn reset(&self) { /* ... */ }
+}
+```
+
+All registered passes:
+
+| Pass | Prerequisites | Invalidates | Cost | Description |
+|------|--------------|-------------|------|-------------|
+| `merge_text_nodes` | none | `ir_tree` | ON | Merge adjacent text nodes |
+| `remove_empty_nodes` | none | `ir_tree` | ON | Remove empty containers/text |
+| `flatten_containers` | none | `ir_tree` | ON | Flatten single-child wrappers |
+| `remove_redundant_nesting` | `flatten_containers` | `ir_tree` | ON | Remove nested same-type |
+| `simplify_layout` | `flatten_containers` | `ir_tree`, `layout` | ON | Simplify layout wrappers |
+| `merge_semantic_nodes` | `simplify_layout` | `ir_tree`, `semantics` | ONLogN | Merge same-intent siblings |
+| `style_deduplication` | none | `computed_style` | ONLogN | Deduplicate identical styles |
+| `constant_folding` | none | `computed_style` | ON | Fold constant expressions |
+| `dead_node_elimination` | `remove_empty_nodes` | `ir_tree` | ON | Remove unreachable nodes |
+| `merge_nested_containers` | `flatten_containers` | `ir_tree` | ON | Merge nested same-type |
+
+### 10.9 Telemetry System
+
+Every compilation phase emits structured telemetry:
+
+```rust
+pub struct PhaseTelemetry {
+    pub phase: &'static str,
+    pub duration: Duration,
+    pub allocations: u64,
+    pub allocation_bytes: u64,
+    pub cache_hits: u64,
+    pub cache_misses: u64,
+    pub diagnostics_emitted: u64,
+    pub nodes_input: u64,
+    pub nodes_output: u64,
+    pub peak_memory: u64,
+}
+
+pub trait TelemetrySubscriber: Send + Sync {
+    fn on_phase_complete(&self, telemetry: &PhaseTelemetry);
+    fn on_cache_query(&self, query: &str, hit: bool, duration: Duration);
+    fn on_event(&self, event: &CompilerEvent);
+}
+
+pub struct TelemetryBus {
+    subscribers: Vec<Box<dyn TelemetrySubscriber>>,
+}
+```
+
+Default subscribers:
+
+- **ConsoleSubscriber** — prints phase timings to stderr (human-readable)
+- **JsonSubscriber** — writes structured JSON to a file (for analysis)
+- **PrometheusSubscriber** — exposes metrics via `/metrics` HTTP endpoint (for monitoring)
+- **ChromeTraceSubscriber** — generates `chrome://tracing` compatible output
+
+### 10.10 Cancellation Support
+
+Every long-running operation checks a cancellation token:
+
+```rust
+#[derive(Clone)]
+pub struct CancelToken {
+    cancelled: Arc<AtomicBool>,
+}
+
+impl CancelToken {
+    pub fn new() -> Self;
+    pub fn cancel(&self);
+    pub fn is_cancelled(&self) -> bool;
+    pub fn check(&self) -> Result<(), Cancelled>;
+}
+```
+
+Usage in phases:
+
+```rust
+impl OptimizationPass for MergeTextNodes {
+    fn run(&self, tree: &mut IrTree, context: &PassContext) -> Result<(), DiagnosticBag> {
+        for node in tree.walk_mut() {
+            context.cancel_token.check()?;  // Returns Err(Cancelled) if cancelled
+            // ... optimization logic ...
+        }
+        Ok(())
+    }
+}
+```
+
+LSP integration: when the user edits a file, the previous compilation is cancelled
+and a new one starts. No work is wasted.
+
+### 10.11 Multithreading Architecture
+
+```rust
+// === Thread pool ===
+// All parallel work uses a single rayon thread pool sized to available cores.
+
+pub static COMPILER_POOL: Lazy< rayon::ThreadPool> = Lazy::new(|| {
+    rayon::ThreadPoolBuilder::new()
+        .thread_name(|i| format!("motarjim-worker-{}", i))
+        .build()
+        .expect("Failed to create compiler thread pool")
+});
+
+// === Parallel CSS matching ===
+fn match_selectors(doc: &Document, sheet: &Stylesheet) -> StyledDocument {
+    COMPILER_POOL.install(|| {
+        doc.nodes.par_iter().map(|node| {
+            let matched = sheet.rules.par_iter()
+                .filter(|rule| matches_any_selector(&rule.selectors, node))
+                .collect();
+            (node.id(), matched)
+        }).collect()
+    })
+}
+
+// === Parallel IR building ===
+fn build_ir(styled: &StyledDocument) -> IrTree {
+    // Semantic, layout, and accessibility inference all run in parallel
+    let (semantics, layout, a11y) = rayon::join(
+        || infer_all_semantics(styled),
+        || infer_all_layouts(styled),
+        || analyze_all_accessibility(styled),
+    );
+    // Then combine results
+}
+
+// === Parallel code generation ===
+fn generate_all(tree: &IrTree, targets: &[Target]) -> Vec<(Target, String)> {
+    targets.par_iter().map(|target| {
+        let code = match target {
+            Target::Flutter => gen_flutter::generate(tree),
+            Target::Compose => gen_compose::generate(tree),
+            Target::SwiftUI => gen_swiftui::generate(tree),
+        };
+        (*target, code)
+    }).collect()
+}
+```
+
+### 10.12 No Global Mutable State
+
+```rust
+// FORBIDDEN:
+static NODE_COUNTER: AtomicU64 = AtomicU64::new(0);  // No global counters
+
+// REQUIRED:
+pub struct CompilerSession {
+    pub id: Uuid,
+    pub arena: Arena<AstNode>,
+    pub interner: Interner,
+    pub diagnostics: DiagnosticBag,
+    pub cancel_token: CancelToken,
+    pub telemetry: TelemetryBus,
+}
+```
+
+Every compiler operation takes `&CompilerSession` or `&mut CompilerSession`.
+No `static`, `lazy_static`, `once_cell`, or `Sync` singletons contain compiler state.
+
+### 10.13 No Unsafe Without Proof
+
+```rust
+// FORBIDDEN without benchmark justification:
+#[forbid(unsafe_code)]
+pub mod motarjim_ast { /* ... */ }
+
+// ALLOWED only when:
+// 1. There is a criterion benchmark proving the safe alternative is slower
+// 2. The unsafe block is minimal and documented with SAFETY:
+// 3. Miri passes for the unsafe path
+// 4. The unsafe code is in a dedicated `unsafe_utils` module
+
+// Example:
+/// SAFETY: `ptr` must be non-null, aligned, and point to a valid `AstNode`.
+/// Benchmarks show this saves 12% in parse throughput (see benches/parse.rs:140).
+pub unsafe fn arena_index_to_ref<'a>(ptr: *const AstNode) -> &'a AstNode {
+    &*ptr
+}
+```
+
+### 10.14 Justified Allocations
+
+Every allocation site should be justified:
+
+```rust
+// AVOID: Heap allocation for every string
+let tag_name = String::from("div");  // Heap alloc
+
+// PREFER: Borrow from source when possible
+let tag_name: &str = &source[start..end];  // Zero-copy
+
+// PREFER: Interned symbols for repeated identifiers
+pub struct Symbol(u32);  // 4 bytes instead of heap string
+
+impl Interner {
+    pub fn intern(&mut self, s: &str) -> Symbol;
+    pub fn resolve(&self, sym: Symbol) -> &str;
+}
+
+// PREFER: Arena allocation for AST nodes
+pub struct AstArena {
+    nodes: Vec<AstNode>,     // Contiguous storage, no per-node alloc
+    bump: bumpalo::Bump,     // Bump allocator for variable-length data
+}
+
+// PREFER: SmallVec for small collections
+use smallvec::SmallVec;
+
+pub struct HtmlNode {
+    pub children: SmallVec<[NodeId; 4]>,  // No heap alloc for ≤4 children
+}
+```
+
+### 10.15 Crate Size Limits
+
+| Crate | Max Lines | Notes |
+|-------|-----------|-------|
+| `motarjim-ast` | 2,000 | Pure type definitions, no logic |
+| `motarjim-diag` | 1,500 | Diagnostic types + emitters |
+| `motarjim-lexer` | 2,500 | HTML + CSS tokenizers |
+| `motarjim-parser` | 2,500 | Recursive descent parser |
+| `motarjim-css` | 3,000 | Full CSS engine (parser, cascade, computed) |
+| `motarjim-selectors` | 1,500 | Selector parser + matching |
+| `motarjim-ir` | 2,000 | IR builder + transformations |
+| `motarjim-optimizer` | 1,500 | Pass manager + each pass in own file |
+| `motarjim-formatter` | 1,500 | Code writer + platform rules |
+| `motarjim-gen-flutter` | 2,500 | Widget emitter + modifiers |
+| `motarjim-gen-compose` | 2,500 | Composable emitter + modifiers |
+| `motarjim-gen-swiftui` | 2,500 | View emitter + modifiers |
+| `motarjim-cli` | 2,000 | Commands + config (thin) |
+| `motarjim-lsp` | 3,000 | LSP server + handlers |
+| `motarjim-cache` | 1,500 | Cache storage + invalidation |
+| `motarjim-incremental` | 2,000 | Dependency tracking + rebuild |
+| `motarjim-core` | 2,000 | Facade, no logic (delegates) |
+
+If a crate exceeds its limit, it must be split into sub-crates.
+Example: `motarjim-css` at 3,500 lines → split into
+`motarjim-css-parser` + `motarjim-css-engine`.
+
+### 10.16 Documentation Requirements
+
+Every public item MUST have a doc comment:
+
+```rust
+/// Represents a parsed HTML document.
+///
+/// The document is the root of the HTML AST. It contains the `<html>` element
+/// as its single child, which in turn contains `<head>` and `<body>`.
+///
+/// # Example
+///
+/// ```rust
+/// use motarjim_ast::Document;
+/// let doc = Document::empty();
+/// assert!(doc.html().is_none());
+/// ```
+pub struct Document { /* ... */ }
+```
+
+Enforced by:
+```rust
+#![deny(missing_docs)]
+```
+
+Additionally:
+- Every public module must have a `//!` module-level doc comment
+- Every `pub fn` must document: arguments, return value, panic conditions, errors
+- Every `pub trait` must document: intended usage, implementor requirements
+- Every `pub enum` must document each variant
+- Every `pub unsafe fn` must include a `# Safety` section
+- Every `pub unsafe trait` must include a `# Safety` section
+
+### 10.17 Auto-Generated Architecture Diagrams
+
+Architecture documentation is derived from the code, not maintained manually:
+
+```rust
+// xtask/src/main.rs
+
+fn generate_diagrams() -> Result<()> {
+    // 1. Parse all Cargo.toml files to extract dependency edges
+    let deps = extract_dependency_graph("../crates")?;
+
+    // 2. Generate Mermaid.js dependency graph
+    let mermaid = render_mermaid(&deps);
+    std::fs::write("../docs/architecture/dependency-graph.md", mermaid)?;
+
+    // 3. Generate Graphviz DOT file for visual rendering
+    let dot = render_dot(&deps);
+    std::fs::write("../docs/architecture/dependency-graph.dot", dot)?;
+
+    // 4. Generate module hierarchy from lib.rs files
+    let modules = extract_module_tree("../crates")?;
+    let module_diagram = render_module_tree(&modules);
+    std::fs::write("../docs/architecture/module-hierarchy.md", module_diagram)?;
+
+    // 5. Generate public API surface report
+    let api_surface = extract_public_api("../crates")?;
+    std::fs::write("../docs/api/public-surface.md", api_surface)?;
+
+    // 6. Generate pass dependency graph from OptimizationPass impls
+    let passes = extract_pass_registrations("../crates")?;
+    let pass_dag = render_pass_dag(&passes);
+    std::fs::write("../docs/architecture/pass-graph.md", pass_dag)?;
+
+    Ok(())
+}
+```
+
+This runs in CI and fails if diagrams are out of date.
+
+---
+
+## 11. Revised Migration Rules
+
+1. **Never perform mechanical translation** from TypeScript to Rust.
+   Each subsystem is redesigned in Rust, not transcribed.
+
+2. **Preserve behavior through golden tests** before replacing implementations.
+   Before touching a subsystem, capture its current output as golden test fixtures.
+
+3. **Migrate one subsystem at a time.** Each migration is a self-contained PR:
+   - Capture golden tests for old implementation
+   - Write new Rust implementation with its own tests
+   - Verify Rust output matches golden tests
+   - Wire Rust into TypeScript pipeline via FFI
+   - Delete old TypeScript implementation only after parity is proven
+
+4. **Keep the project buildable after every commit.**
+   No commit may leave the project in a broken state. Use feature flags to
+   gate incomplete work.
+
+5. **Delete TypeScript compiler code only after Rust reaches feature parity
+   and passes all existing tests.**
+
+6. **If an existing design is flawed, redesign it instead of copying it.**
+   The current architecture has 20 documented problems. Do not reproduce them.
+   Design for the correct abstraction, not the existing one.
+
+---
+
+## 12. Success Criteria
+
+The final architecture is considered successful when:
+
+1. **10+ year maintainability**
+   - No crate exceeds 3,000 lines
+   - Every public item is documented
+   - Dependency graph is acyclic and layered
+   - Adding a new generator requires zero changes to compiler core
+
+2. **Scale: millions of HTML nodes**
+   - Parsing: 1M nodes < 500ms
+   - CSS matching: 1M nodes with 10K rules < 2s
+   - Code generation: 1M node IR < 1s per target
+   - Memory: 1M node AST < 500MB
+
+3. **Extensibility: third-party generators**
+   - A new generator (e.g. React Native) can be added as a separate crate
+   - No compiler core changes needed
+   - Generator gets full access to typed IR, query system, and event bus
+
+4. **Multiple build targets**
+   - Native CLI binary
+   - WebAssembly module (browser playground)
+   - Dynamic library (VS Code extension via NAPI-RS, language bindings)
+
+5. **Engineering quality matching:**
+   - **rustc**: query-based incremental compilation, span tracking, diagnostics
+   - **SWC/Biome**: parsing throughput, WASM support, plugin architecture
+   - **Turbopack**: incremental caching, parallel computation, developer experience
+   - **LLVM**: pass system, IR abstraction, target independence
+
+6. **Every architectural decision prioritizes:**
+   - **Correctness** — tested via golden, fuzz, property-based, and integration tests
+   - **Extensibility** — plugins, events, queries, no hardcoded generators
+   - **Performance** — parallel, zero-copy, arena-allocated, cached
+   - **Testability** — every phase independently testable and benchmarkable
+   - **Developer experience** — documented API, auto-generated diagrams, LSP support
