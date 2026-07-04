@@ -71,11 +71,28 @@ settingsBtn.innerHTML = icon('settings');
 settingsBtn.setAttribute('aria-label', 'Settings');
 settingsBtn.setAttribute('title', 'Settings');
 
+/* Theme toggle */
+function getTheme() {
+  return window.localStorage.getItem('motarjim:theme') || 'dark';
+}
+
+function setTheme(theme) {
+  document.documentElement.classList.toggle('light', theme === 'light');
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+  window.localStorage.setItem('motarjim:theme', theme);
+}
+
+setTheme(getTheme());
+
 const themeBtn = document.createElement('button');
 themeBtn.className = 'topnav-btn';
 themeBtn.innerHTML = icon('theme');
 themeBtn.setAttribute('aria-label', 'Toggle theme');
 themeBtn.setAttribute('title', 'Toggle theme');
+themeBtn.addEventListener('click', () => {
+  const current = getTheme();
+  setTheme(current === 'dark' ? 'light' : 'dark');
+});
 
 /* Compile button */
 const compileBtn = document.createElement('button');
@@ -342,6 +359,42 @@ store.on('target', (target) => {
     btn.setAttribute('aria-pressed', 'true');
   }
 });
+
+/* ==========================================================================
+   AUTO-SAVE DRAFTS
+   ========================================================================== */
+function saveDraft() {
+  try {
+    const draft = {
+      html: editorPanel.getHTML(),
+      css: editorPanel.getCSS(),
+      savedAt: Date.now(),
+    };
+    window.localStorage.setItem('motarjim:draft', JSON.stringify(draft));
+  } catch { /* storage full */ }
+}
+
+let saveTimer = null;
+store.on('html', () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 1000);
+});
+store.on('css', () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 1000);
+});
+
+function restoreDraft() {
+  try {
+    const raw = window.localStorage.getItem('motarjim:draft');
+    if (raw) {
+      const draft = JSON.parse(raw);
+      if (draft.html) editorPanel.setHTML(draft.html);
+      if (draft.css) editorPanel.setCSS(draft.css);
+    }
+  } catch { /* ignore */ }
+}
+restoreDraft();
 
 /* ==========================================================================
    KEYBOARD SHORTCUTS

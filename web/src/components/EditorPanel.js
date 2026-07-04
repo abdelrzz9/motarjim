@@ -173,6 +173,22 @@ export function createEditorPanel() {
   htmlTextarea.addEventListener('scroll', syncScroll);
   cssTextarea.addEventListener('scroll', syncScroll);
 
+  /* ----- Tab key handling ----- */
+  function handleTabKey(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const ta = e.target;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      ta.value = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
+      ta.selectionStart = ta.selectionEnd = start + 2;
+      ta.dispatchEvent(new Event('input'));
+    }
+  }
+
+  htmlTextarea.addEventListener('keydown', handleTabKey);
+  cssTextarea.addEventListener('keydown', handleTabKey);
+
   /* ----- Tab switching ----- */
   function switchTab(tab) {
     activeTab = tab;
