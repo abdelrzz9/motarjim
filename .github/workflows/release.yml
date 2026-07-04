@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macOS-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Archive binary
+        run: |
+          cp target/${{ matrix.target }}/release/motarjim${{ matrix.os == 'windows-latest' && '.exe' || '' }} .
+          tar czf motarjim-${{ matrix.target }}.tar.gz motarjim${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: motarjim-${{ matrix.target }}
+          path: motarjim-${{ matrix.target }}.tar.gz
+
+  publish-crates:
+    name: Publish to crates.io
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish
+        run: |
+          cargo publish -p motarjim-span
+          cargo publish -p motarjim-errors
+          cargo publish -p motarjim-ast-html
+          cargo publish -p motarjim-ast-css
+          cargo publish -p motarjim-ast-ir
+          cargo publish -p motarjim-ast
+          cargo publish -p motarjim-diag
+          # Publish remaining crates in dependency order
+          for crate in motarjim-fs motarjim-serialize motarjim-profiling motarjim-config motarjim-cache motarjim-lexer motarjim-selectors motarjim-parser motarjim-css motarjim-js motarjim-ir motarjim-optimizer motarjim-formatter motarjim-incremental motarjim-gen-flutter motarjim-gen-compose motarjim-gen-swiftui motarjim-core motarjim-cli motarjim-lsp motarjim-ffi motarjim-wasm motarjim-test-utils; do
+            cargo publish -p $crate
+          done
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  create-release:
+    name: Create Release
+    needs: [build, publish-crates]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            motarjim-*/*.tar.gz
+          generate_release_notes: true

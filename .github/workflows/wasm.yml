@@ -1,0 +1,26 @@
+name: WASM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crates/motarjim-wasm/**'
+      - 'Cargo.toml'
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Build WASM
+        run: wasm-pack build crates/motarjim-wasm --target web
+      - name: Check size
+        run: ls -lh crates/motarjim-wasm/pkg/
