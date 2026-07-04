@@ -29,7 +29,7 @@ Write once in HTML/CSS. Ship native code for every platform.
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="motarjim Compiler Architecture" width="100%">
+  <img src="architecture_mono.png" alt="motarjim Compiler Architecture" width="100%">
 </p>
 
 ## Pipeline Stages
