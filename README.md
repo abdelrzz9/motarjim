@@ -219,6 +219,54 @@ struct GeneratedView: View {
 }
 ```
 
+## Web UI
+
+motarjim ships with a web-based playground and API server for interactive use.
+
+### Starting the Web UI
+
+```bash
+# From the project root
+npm start -w web
+
+# Or from the web directory
+cd web && npm start
+
+# Visit http://localhost:3000
+```
+
+The web UI provides a side-by-side editor where you paste HTML + CSS, pick a target platform (Flutter / Compose / SwiftUI), and see the generated code instantly.
+
+### API Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/convert` | Convert HTML/CSS to native UI code |
+| `GET` | `/api/health` | Health check |
+
+#### POST /api/convert
+
+```json
+{
+  "html": "<button>Click me</button>",
+  "css": "button { background: blue; }",
+  "target": "flutter"
+}
+```
+
+Response:
+```json
+{
+  "code": "import 'package:flutter/material.dart';...",
+  "stats": {
+    "htmlNodes": 3,
+    "componentsDetected": 1,
+    "generatedLines": 9,
+    "duration": 0.009
+  }
+}
+```
+
 ## AI Enhancement
 
 Optional Ollama integration for improved component detection:
