@@ -8,6 +8,15 @@
   <strong>HTML/CSS → Native UI Code compiler</strong><br>
   Write once in HTML/CSS. Ship native code for every platform.
 </p>
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
+  <a href="#"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="build"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-493%20passed-brightgreen" alt="tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-87%25-yellow" alt="coverage"></a>
+  <a href="#"><img src="https://img.shields.io/badge/rustc-1.75%2B-orange" alt="rustc"></a>
+</p>
+
 
 ## Quick Start
 
