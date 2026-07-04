@@ -22,13 +22,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v4
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
       - name: Archive binary
+        shell: bash
         run: |
-          cp target/${{ matrix.target }}/release/motarjim${{ matrix.os == 'windows-latest' && '.exe' || '' }} .
-          tar czf motarjim-${{ matrix.target }}.tar.gz motarjim${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          EXE=""
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then EXE=".exe"; fi
+          cp "target/${{ matrix.target }}/release/motarjim${EXE}" .
+          tar czf "motarjim-${{ matrix.target }}.tar.gz" "motarjim${EXE}"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -42,19 +45,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Publish
+      - name: Publish crates in dependency order
         run: |
+          set -e
+          # Foundation crates (no path deps on other workspace crates)
           cargo publish -p motarjim-span
           cargo publish -p motarjim-errors
+          cargo publish -p motarjim-profiling
+          cargo publish -p motarjim-fs
+          cargo publish -p motarjim-serialize
+          # AST & DIAG layer
           cargo publish -p motarjim-ast-html
           cargo publish -p motarjim-ast-css
           cargo publish -p motarjim-ast-ir
           cargo publish -p motarjim-ast
           cargo publish -p motarjim-diag
-          # Publish remaining crates in dependency order
-          for crate in motarjim-fs motarjim-serialize motarjim-profiling motarjim-config motarjim-cache motarjim-lexer motarjim-selectors motarjim-parser motarjim-css motarjim-js motarjim-ir motarjim-optimizer motarjim-formatter motarjim-incremental motarjim-gen-flutter motarjim-gen-compose motarjim-gen-swiftui motarjim-core motarjim-cli motarjim-lsp motarjim-ffi motarjim-wasm motarjim-test-utils; do
-            cargo publish -p $crate
-          done
+          # Compiler frontend
+          cargo publish -p motarjim-lexer
+          cargo publish -p motarjim-selectors
+          cargo publish -p motarjim-parser
+          cargo publish -p motarjim-css
+          cargo publish -p motarjim-js
+          # IR & optimization
+          cargo publish -p motarjim-ir
+          cargo publish -p motarjim-optimizer
+          cargo publish -p motarjim-formatter
+          # Code generation
+          cargo publish -p motarjim-gen-flutter
+          cargo publish -p motarjim-gen-compose
+          cargo publish -p motarjim-gen-swiftui
+          # Infrastructure
+          cargo publish -p motarjim-config
+          cargo publish -p motarjim-cache
+          cargo publish -p motarjim-incremental
+          # CLI & LSP (depend on core)
+          cargo publish -p motarjim-core
+          cargo publish -p motarjim-cli
+          cargo publish -p motarjim-lsp
+          cargo publish -p motarjim-ffi
+          cargo publish -p motarjim-wasm
+          cargo publish -p motarjim-test-utils
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
@@ -67,7 +97,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             motarjim-*/*.tar.gz
