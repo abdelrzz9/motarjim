@@ -268,6 +268,18 @@ export function createOutputPanel() {
     }
   });
 
+  actionEls.playground?.addEventListener('click', () => {
+    const code = store.get('code');
+    const target = store.get('target');
+    if (!code) { notify('Nothing to open — compile something first', 'info'); return; }
+    const ext = TARGETS.find(t => t.id === target)?.ext || 'txt';
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    notify('Code opened in new tab', 'success', 2000);
+  });
+
   showEmpty();
 
   return {
