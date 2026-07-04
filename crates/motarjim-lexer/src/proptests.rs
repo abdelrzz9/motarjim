@@ -1,8 +1,8 @@
 #![cfg(test)]
 
+use crate::css::{CssTokenKind, CssTokenizer};
+use crate::html::{HtmlTokenKind, HtmlTokenizer};
 use proptest::prelude::*;
-use crate::html::{HtmlTokenizer, HtmlTokenKind};
-use crate::css::{CssTokenizer, CssTokenKind};
 
 proptest! {
     #[test]

@@ -138,25 +138,45 @@ impl EdgeValues {
     /// Creates edge values with the same value on all sides.
     #[must_use]
     pub const fn all(value: f64) -> Self {
-        Self { top: value, right: value, bottom: value, left: value }
+        Self {
+            top: value,
+            right: value,
+            bottom: value,
+            left: value,
+        }
     }
 
     /// Creates edge values with individual values per side.
     #[must_use]
     pub const fn new(top: f64, right: f64, bottom: f64, left: f64) -> Self {
-        Self { top, right, bottom, left }
+        Self {
+            top,
+            right,
+            bottom,
+            left,
+        }
     }
 
     /// Creates edge values from vertical/horizontal pairs.
     #[must_use]
     pub const fn symmetric(vertical: f64, horizontal: f64) -> Self {
-        Self { top: vertical, right: horizontal, bottom: vertical, left: horizontal }
+        Self {
+            top: vertical,
+            right: horizontal,
+            bottom: vertical,
+            left: horizontal,
+        }
     }
 }
 
 impl Default for EdgeValues {
     fn default() -> Self {
-        Self { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
+        Self {
+            top: 0.0,
+            right: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+        }
     }
 }
 
@@ -240,19 +260,51 @@ impl Default for ComputedStyle {
         Self {
             display: DisplayType::Block,
             position: PositionType::Static,
-            width: None, height: None, min_width: None, min_height: None,
-            max_width: None, max_height: None,
-            margin: EdgeValues::default(), padding: EdgeValues::default(),
-            flex_direction: None, flex_wrap: None, flex_grow: 0.0, flex_shrink: 1.0,
-            flex_basis: None, justify_content: None, align_items: None,
-            align_content: None, align_self: None, gap: None, row_gap: None,
-            column_gap: None, grid_template_columns: None, grid_template_rows: None,
-            grid_column: None, grid_row: None, color: None, background: None,
-            border: None, font_family: None, font_size: None, font_weight: None,
-            font_style: None, line_height: None, text_align: None,
-            text_decoration: None, opacity: 1.0, overflow: None, cursor: None,
-            box_shadow: None, transform: None, transition: None, visibility: true,
-            z_index: None, pointer_events: None, resize: None, user_select: None,
+            width: None,
+            height: None,
+            min_width: None,
+            min_height: None,
+            max_width: None,
+            max_height: None,
+            margin: EdgeValues::default(),
+            padding: EdgeValues::default(),
+            flex_direction: None,
+            flex_wrap: None,
+            flex_grow: 0.0,
+            flex_shrink: 1.0,
+            flex_basis: None,
+            justify_content: None,
+            align_items: None,
+            align_content: None,
+            align_self: None,
+            gap: None,
+            row_gap: None,
+            column_gap: None,
+            grid_template_columns: None,
+            grid_template_rows: None,
+            grid_column: None,
+            grid_row: None,
+            color: None,
+            background: None,
+            border: None,
+            font_family: None,
+            font_size: None,
+            font_weight: None,
+            font_style: None,
+            line_height: None,
+            text_align: None,
+            text_decoration: None,
+            opacity: 1.0,
+            overflow: None,
+            cursor: None,
+            box_shadow: None,
+            transform: None,
+            transition: None,
+            visibility: true,
+            z_index: None,
+            pointer_events: None,
+            resize: None,
+            user_select: None,
             appearance: None,
         }
     }
@@ -304,7 +356,14 @@ mod tests {
     #[test]
     fn test_enum_variants() {
         assert_eq!(
-            [DisplayType::Block, DisplayType::Inline, DisplayType::Flex, DisplayType::Grid, DisplayType::None].len(),
+            [
+                DisplayType::Block,
+                DisplayType::Inline,
+                DisplayType::Flex,
+                DisplayType::Grid,
+                DisplayType::None
+            ]
+            .len(),
             5
         );
         assert!(matches!(FontWeight::Custom(450), FontWeight::Custom(v) if v == 450));

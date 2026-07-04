@@ -288,8 +288,14 @@ mod tests {
     #[test]
     fn test_semantic_ir_variants() {
         assert!(matches!(SemanticIr::Button, SemanticIr::Button));
-        assert!(matches!(SemanticIr::Heading { level: 2 }, SemanticIr::Heading { level: 2 }));
-        assert!(matches!(SemanticIr::Custom(SmolStr::new_inline("carousel")), SemanticIr::Custom(_)));
+        assert!(matches!(
+            SemanticIr::Heading { level: 2 },
+            SemanticIr::Heading { level: 2 }
+        ));
+        assert!(matches!(
+            SemanticIr::Custom(SmolStr::new_inline("carousel")),
+            SemanticIr::Custom(_)
+        ));
     }
 
     #[test]
@@ -302,15 +308,24 @@ mod tests {
     #[test]
     fn test_target_ir_variants() {
         assert!(matches!(
-            TargetIr::Flutter { widget: SmolStr::new_inline("Row"), properties: vec![] },
+            TargetIr::Flutter {
+                widget: SmolStr::new_inline("Row"),
+                properties: vec![]
+            },
             TargetIr::Flutter { .. }
         ));
         assert!(matches!(
-            TargetIr::Compose { composable: SmolStr::new_inline("Row"), properties: vec![] },
+            TargetIr::Compose {
+                composable: SmolStr::new_inline("Row"),
+                properties: vec![]
+            },
             TargetIr::Compose { .. }
         ));
         assert!(matches!(
-            TargetIr::SwiftUI { view: SmolStr::new_inline("HStack"), properties: vec![] },
+            TargetIr::SwiftUI {
+                view: SmolStr::new_inline("HStack"),
+                properties: vec![]
+            },
             TargetIr::SwiftUI { .. }
         ));
     }

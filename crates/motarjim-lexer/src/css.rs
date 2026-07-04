@@ -77,7 +77,9 @@ impl<'a> CssTokenizer<'a> {
     /// Creates a new CSS tokenizer.
     #[must_use]
     pub const fn new(source: &'a str) -> Self {
-        Self { cursor: Cursor::new(source) }
+        Self {
+            cursor: Cursor::new(source),
+        }
     }
 
     /// Tokenizes the entire input and returns all tokens.
@@ -87,7 +89,9 @@ impl<'a> CssTokenizer<'a> {
             let token = self.next_token();
             let is_eof = token.kind == CssTokenKind::Eof;
             tokens.push(token);
-            if is_eof { break; }
+            if is_eof {
+                break;
+            }
         }
         tokens
     }
@@ -105,32 +109,95 @@ impl<'a> CssTokenizer<'a> {
         let c = self.cursor.peek().expect("not EOF, so character exists");
 
         let (kind, raw) = match c {
-            '{' => { self.cursor.advance(); (CssTokenKind::OpenBrace, "{") }
-            '}' => { self.cursor.advance(); (CssTokenKind::CloseBrace, "}") }
-            '(' => { self.cursor.advance(); (CssTokenKind::OpenParen, "(") }
-            ')' => { self.cursor.advance(); (CssTokenKind::CloseParen, ")") }
-            ';' => { self.cursor.advance(); (CssTokenKind::Semicolon, ";") }
-            ',' => { self.cursor.advance(); (CssTokenKind::Comma, ",") }
-            ':' => { self.cursor.advance(); (CssTokenKind::Colon, ":") }
-            '~' => { self.cursor.advance(); (CssTokenKind::Tilde, "~") }
-            '>' => { self.cursor.advance(); (CssTokenKind::GreaterThan, ">") }
-            '+' => { self.cursor.advance(); (CssTokenKind::Plus, "+") }
-            '[' => { self.cursor.advance(); (CssTokenKind::OpenBracket, "[") }
-            ']' => { self.cursor.advance(); (CssTokenKind::CloseBracket, "]") }
-            '=' => { self.cursor.advance(); (CssTokenKind::Equals, "=") }
-            '|' => { self.cursor.advance(); (CssTokenKind::Pipe, "|") }
-            '^' => { self.cursor.advance(); (CssTokenKind::Caret, "^") }
-            '$' => { self.cursor.advance(); (CssTokenKind::Dollar, "$") }
-            '*' => { self.cursor.advance(); (CssTokenKind::Star, "*") }
-            '.' => { self.cursor.advance(); (CssTokenKind::Dot, ".") }
-            '#' => { self.cursor.advance(); (CssTokenKind::Hash, "#") }
+            '{' => {
+                self.cursor.advance();
+                (CssTokenKind::OpenBrace, "{")
+            }
+            '}' => {
+                self.cursor.advance();
+                (CssTokenKind::CloseBrace, "}")
+            }
+            '(' => {
+                self.cursor.advance();
+                (CssTokenKind::OpenParen, "(")
+            }
+            ')' => {
+                self.cursor.advance();
+                (CssTokenKind::CloseParen, ")")
+            }
+            ';' => {
+                self.cursor.advance();
+                (CssTokenKind::Semicolon, ";")
+            }
+            ',' => {
+                self.cursor.advance();
+                (CssTokenKind::Comma, ",")
+            }
+            ':' => {
+                self.cursor.advance();
+                (CssTokenKind::Colon, ":")
+            }
+            '~' => {
+                self.cursor.advance();
+                (CssTokenKind::Tilde, "~")
+            }
+            '>' => {
+                self.cursor.advance();
+                (CssTokenKind::GreaterThan, ">")
+            }
+            '+' => {
+                self.cursor.advance();
+                (CssTokenKind::Plus, "+")
+            }
+            '[' => {
+                self.cursor.advance();
+                (CssTokenKind::OpenBracket, "[")
+            }
+            ']' => {
+                self.cursor.advance();
+                (CssTokenKind::CloseBracket, "]")
+            }
+            '=' => {
+                self.cursor.advance();
+                (CssTokenKind::Equals, "=")
+            }
+            '|' => {
+                self.cursor.advance();
+                (CssTokenKind::Pipe, "|")
+            }
+            '^' => {
+                self.cursor.advance();
+                (CssTokenKind::Caret, "^")
+            }
+            '$' => {
+                self.cursor.advance();
+                (CssTokenKind::Dollar, "$")
+            }
+            '*' => {
+                self.cursor.advance();
+                (CssTokenKind::Star, "*")
+            }
+            '.' => {
+                self.cursor.advance();
+                (CssTokenKind::Dot, ".")
+            }
+            '#' => {
+                self.cursor.advance();
+                (CssTokenKind::Hash, "#")
+            }
             '"' | '\'' => return self.read_string(),
             '@' => {
                 self.cursor.advance();
                 let name = self.cursor.take_while(|c| c.is_alphanumeric() || c == '-');
-                return Token::new(CssTokenKind::AtKeyword, self.cursor.span_since(start), format!("@{name}"));
+                return Token::new(
+                    CssTokenKind::AtKeyword,
+                    self.cursor.span_since(start),
+                    format!("@{name}"),
+                );
             }
-            _ if c.is_ascii_digit() || (c == '.' && self.cursor.peek_at(1).is_some_and(|d| d.is_ascii_digit())) => {
+            _ if c.is_ascii_digit()
+                || (c == '.' && self.cursor.peek_at(1).is_some_and(|d| d.is_ascii_digit())) =>
+            {
                 return self.read_numeric();
             }
             _ if is_ident_start(c) => {
@@ -140,11 +207,18 @@ impl<'a> CssTokenizer<'a> {
                     return self.read_url();
                 }
                 if lower == "important" {
-                    return Token::new(CssTokenKind::Important, self.cursor.span_since(start), ident);
+                    return Token::new(
+                        CssTokenKind::Important,
+                        self.cursor.span_since(start),
+                        ident,
+                    );
                 }
                 return Token::new(CssTokenKind::Ident, self.cursor.span_since(start), ident);
             }
-            _ => { self.cursor.advance(); (CssTokenKind::Ident, " ") }
+            _ => {
+                self.cursor.advance();
+                (CssTokenKind::Ident, " ")
+            }
         };
 
         Token::new(kind, self.cursor.span_since(start), raw)
@@ -153,10 +227,17 @@ impl<'a> CssTokenizer<'a> {
     /// Reads a CSS quoted string token.
     fn read_string(&mut self) -> Token<CssTokenKind> {
         let start = self.cursor.pos();
-        let quote = self.cursor.advance().expect("quoted string must have opening quote");
+        let quote = self
+            .cursor
+            .advance()
+            .expect("quoted string must have opening quote");
         let content = self.cursor.take_while(|c| c != quote);
         self.cursor.advance(); // consume closing quote
-        Token::new(CssTokenKind::String, self.cursor.span_since(start), content.to_string())
+        Token::new(
+            CssTokenKind::String,
+            self.cursor.span_since(start),
+            content.to_string(),
+        )
     }
 
     /// Reads a CSS numeric token (number, dimension, or percentage).
@@ -165,12 +246,20 @@ impl<'a> CssTokenizer<'a> {
         self.cursor.take_while(|c| c.is_ascii_digit() || c == '.');
         if self.cursor.peek().is_some_and(is_ident_start) {
             let unit = self.cursor.take_while(is_ident_part);
-            Token::new(CssTokenKind::Dimension, self.cursor.span_since(start), unit.to_string())
+            Token::new(
+                CssTokenKind::Dimension,
+                self.cursor.span_since(start),
+                unit.to_string(),
+            )
         } else if self.cursor.peek() == Some('%') {
             self.cursor.advance();
             Token::new(CssTokenKind::Percentage, self.cursor.span_since(start), "%")
         } else {
-            Token::new(CssTokenKind::Number, self.cursor.span_since(start), String::new())
+            Token::new(
+                CssTokenKind::Number,
+                self.cursor.span_since(start),
+                String::new(),
+            )
         }
     }
 
@@ -178,8 +267,14 @@ impl<'a> CssTokenizer<'a> {
     fn read_url(&mut self) -> Token<CssTokenKind> {
         let start = self.cursor.pos();
         self.cursor.take_while(|c| c != ')');
-        if self.cursor.peek() == Some(')') { self.cursor.advance(); }
-        Token::new(CssTokenKind::Url, self.cursor.span_since(start), String::new())
+        if self.cursor.peek() == Some(')') {
+            self.cursor.advance();
+        }
+        Token::new(
+            CssTokenKind::Url,
+            self.cursor.span_since(start),
+            String::new(),
+        )
     }
 
     /// Skips whitespace and `/* ... */` comments in the CSS source.
@@ -187,12 +282,16 @@ impl<'a> CssTokenizer<'a> {
         loop {
             self.cursor.skip_whitespace();
             if self.cursor.peek() == Some('/') && self.cursor.peek_at(1) == Some('*') {
-                self.cursor.advance(); self.cursor.advance();
+                self.cursor.advance();
+                self.cursor.advance();
                 while !(self.cursor.peek() == Some('*') && self.cursor.peek_at(1) == Some('/')) {
-                    if self.cursor.is_eof() { break; }
+                    if self.cursor.is_eof() {
+                        break;
+                    }
                     self.cursor.advance();
                 }
-                self.cursor.advance(); self.cursor.advance();
+                self.cursor.advance();
+                self.cursor.advance();
             } else {
                 break;
             }

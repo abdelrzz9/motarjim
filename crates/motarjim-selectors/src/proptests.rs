@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used)]
-use proptest::prelude::*;
 use crate::{parse_selector, Specificity};
+use proptest::prelude::*;
 
 proptest! {
     #[test]

@@ -64,7 +64,10 @@ impl DiagnosticEmitter {
         let _ = writeln!(
             output,
             "{}{}{}{}[E{:04}]:{} {}",
-            bold, severity_color, diagnostic.severity.as_str(), reset,
+            bold,
+            severity_color,
+            diagnostic.severity.as_str(),
+            reset,
             diagnostic.code.number,
             reset,
             diagnostic.message
@@ -76,12 +79,7 @@ impl DiagnosticEmitter {
                 let _ = writeln!(
                     output,
                     " {} {}-->{} {}:{}:{}",
-                    severity_color,
-                    bold,
-                    reset,
-                    sf.path,
-                    span.start.line,
-                    span.start.column
+                    severity_color, bold, reset, sf.path, span.start.line, span.start.column
                 );
                 let _ = writeln!(output, "  {severity_color}");
                 output.push_str(&sf.snippet(span, 2));
@@ -145,8 +143,8 @@ mod tests {
                 offset: 4,
             },
         };
-        let diag = Diagnostic::new(Severity::Warning, codes::CSS_PARSE_ERROR, "css issue")
-            .with_span(span);
+        let diag =
+            Diagnostic::new(Severity::Warning, codes::CSS_PARSE_ERROR, "css issue").with_span(span);
         let output = emitter.emit_to_string(&diag, Some(&sf));
         assert!(output.contains("warning"));
         assert!(output.contains("E0100"));
@@ -158,13 +156,9 @@ mod tests {
     #[test]
     fn test_emit_to_string_with_suggestions_and_notes() {
         let emitter = DiagnosticEmitter::new();
-        let diag = Diagnostic::new(
-            Severity::Hint,
-            codes::A11Y_MISSING_ALT,
-            "missing alt text",
-        )
-        .with_suggestion("Add an alt attribute")
-        .with_note("This is important for screen readers");
+        let diag = Diagnostic::new(Severity::Hint, codes::A11Y_MISSING_ALT, "missing alt text")
+            .with_suggestion("Add an alt attribute")
+            .with_note("This is important for screen readers");
         let output = emitter.emit_to_string(&diag, None);
         assert!(output.contains("hint"));
         assert!(output.contains("help:"));
@@ -180,11 +174,7 @@ mod tests {
         bag.push_warning(codes::A11Y_MISSING_ALT, "alt");
         bag.push_error(codes::PARSER_UNEXPECTED_TOKEN, "parse");
         let output = emitter.emit_to_string(
-            &Diagnostic::new(
-                Severity::Info,
-                codes::CONFIG_FILE_NOT_FOUND,
-                "config",
-            ),
+            &Diagnostic::new(Severity::Info, codes::CONFIG_FILE_NOT_FOUND, "config"),
             None,
         );
         // Just verify it produces output without panicking

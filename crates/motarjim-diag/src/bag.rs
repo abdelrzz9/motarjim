@@ -26,29 +26,20 @@ impl DiagnosticBag {
 
     /// Convenience method to push an error diagnostic.
     pub fn push_error(&mut self, code: DiagnosticCode, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(
-            Severity::Error,
-            code,
-            message.into(),
-        ));
+        self.diagnostics
+            .push(Diagnostic::new(Severity::Error, code, message.into()));
     }
 
     /// Convenience method to push a warning diagnostic.
     pub fn push_warning(&mut self, code: DiagnosticCode, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(
-            Severity::Warning,
-            code,
-            message.into(),
-        ));
+        self.diagnostics
+            .push(Diagnostic::new(Severity::Warning, code, message.into()));
     }
 
     /// Convenience method to push an info diagnostic.
     pub fn push_info(&mut self, code: DiagnosticCode, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(
-            Severity::Info,
-            code,
-            message.into(),
-        ));
+        self.diagnostics
+            .push(Diagnostic::new(Severity::Info, code, message.into()));
     }
 
     /// Returns `true` if any diagnostic in the bag has `Error` severity.
@@ -268,8 +259,8 @@ mod tests {
 
 #[cfg(test)]
 mod proptests {
-    use proptest::prelude::*;
     use crate::DiagnosticBag;
+    use proptest::prelude::*;
 
     fn test_code() -> crate::DiagnosticCode {
         crate::DiagnosticCode::new(999, "Test code")

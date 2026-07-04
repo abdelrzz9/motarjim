@@ -5,7 +5,13 @@ use motarjim_ast::NodeId;
 use motarjim_gen_compose::ComposeGenerator;
 use smol_str::SmolStr;
 
-fn make_node(id: u32, semantic: SemanticIr, layout: LayoutIr, children: Vec<u32>, parent: Option<u32>) -> IrNode {
+fn make_node(
+    id: u32,
+    semantic: SemanticIr,
+    layout: LayoutIr,
+    children: Vec<u32>,
+    parent: Option<u32>,
+) -> IrNode {
     IrNode {
         id: NodeId(id),
         semantic,
@@ -35,7 +41,13 @@ fn make_medium_tree() -> IrTree {
     IrTree {
         nodes: vec![
             make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
-            make_node(1, SemanticIr::Column, LayoutIr::FlexColumn, vec![2, 3, 4], Some(0)),
+            make_node(
+                1,
+                SemanticIr::Column,
+                LayoutIr::FlexColumn,
+                vec![2, 3, 4],
+                Some(0),
+            ),
             make_node(2, SemanticIr::Button, LayoutIr::Static, vec![], Some(1)),
             make_node(3, SemanticIr::Text, LayoutIr::Static, vec![], Some(1)),
             make_node(4, SemanticIr::Row, LayoutIr::FlexRow, vec![5, 6], Some(1)),
@@ -65,5 +77,9 @@ fn bench_generate_compose_medium(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_generate_compose_small, bench_generate_compose_medium);
+criterion_group!(
+    benches,
+    bench_generate_compose_small,
+    bench_generate_compose_medium
+);
 criterion_main!(benches);

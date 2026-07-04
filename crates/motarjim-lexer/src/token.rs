@@ -14,6 +14,10 @@ pub struct Token<T> {
 impl<T> Token<T> {
     /// Creates a new token.
     pub fn new(kind: T, span: SourceSpan, raw: impl Into<String>) -> Self {
-        Self { kind, span, raw: raw.into() }
+        Self {
+            kind,
+            span,
+            raw: raw.into(),
+        }
     }
 }

@@ -221,7 +221,8 @@ mod tests {
     fn test_declaration() {
         let decl = Declaration {
             property: SmolStr::new_inline("color"),
-            value: "red".to_string(), important: false,
+            value: "red".to_string(),
+            important: false,
         };
         assert_eq!(decl.property.as_str(), "color");
         assert_eq!(decl.value, "red");
@@ -229,7 +230,8 @@ mod tests {
 
         let imp = Declaration {
             property: SmolStr::new_inline("color"),
-            value: "blue".to_string(), important: true,
+            value: "blue".to_string(),
+            important: true,
         };
         assert!(imp.important);
     }
@@ -254,15 +256,25 @@ mod tests {
     #[test]
     fn test_css_rule_variants() {
         assert!(matches!(
-            CssRule::Style(StyleRule { selectors: Vec::new(), declarations: SmallVec::new() }),
+            CssRule::Style(StyleRule {
+                selectors: Vec::new(),
+                declarations: SmallVec::new()
+            }),
             CssRule::Style(_)
         ));
         assert!(matches!(
-            CssRule::Media(MediaRule { query: MediaQuery { conditions: vec![MediaCondition::Screen] }, rules: Vec::new() }),
+            CssRule::Media(MediaRule {
+                query: MediaQuery {
+                    conditions: vec![MediaCondition::Screen]
+                },
+                rules: Vec::new()
+            }),
             CssRule::Media(_)
         ));
         assert!(matches!(
-            CssRule::FontFace(FontFaceRule { declarations: SmallVec::new() }),
+            CssRule::FontFace(FontFaceRule {
+                declarations: SmallVec::new()
+            }),
             CssRule::FontFace(_)
         ));
     }
@@ -275,7 +287,8 @@ mod tests {
                 selectors: smallvec::smallvec![SmolStr::new_inline("from")],
                 declarations: smallvec::smallvec![Declaration {
                     property: SmolStr::new_inline("opacity"),
-                    value: "0".to_string(), important: false,
+                    value: "0".to_string(),
+                    important: false,
                 }],
             }],
         };

@@ -93,7 +93,10 @@ impl FileSystem for RealFileSystem {
         for entry in std::fs::read_dir(dir)? {
             let entry = entry?;
             let path = entry.path();
-            if path.extension().is_some_and(|ext| ext == extension.trim_start_matches('.')) {
+            if path
+                .extension()
+                .is_some_and(|ext| ext == extension.trim_start_matches('.'))
+            {
                 files.push(path);
             }
         }
@@ -145,8 +148,8 @@ impl FileSystem for VirtualFileSystem {
             .files
             .get(path)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))?;
-        let content_str =
-            String::from_utf8(content.clone()).map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        let content_str = String::from_utf8(content.clone())
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
         Ok(FileEntry::new(path.to_path_buf(), content_str))
     }
 

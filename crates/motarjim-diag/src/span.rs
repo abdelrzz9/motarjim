@@ -150,7 +150,10 @@ mod tests {
             column: 6,
             offset: 5,
         };
-        let span = SourceSpan { start: loc, end: loc };
+        let span = SourceSpan {
+            start: loc,
+            end: loc,
+        };
         let snippet = sf.snippet(&span, 0);
         assert!(snippet.contains("1 |"));
         assert!(snippet.contains("^"));
@@ -164,7 +167,10 @@ mod tests {
             column: 2,
             offset: 7,
         };
-        let span = SourceSpan { start: loc, end: loc };
+        let span = SourceSpan {
+            start: loc,
+            end: loc,
+        };
         let snippet = sf.snippet(&span, 1);
         assert!(snippet.contains("2 |"));
         assert!(snippet.contains("3 |"));

@@ -169,7 +169,11 @@ impl ProfilingSession {
     #[must_use]
     pub fn report(&self) -> String {
         let mut output = format!("Profiling Report: {}\n", self.label);
-        let _ = writeln!(output, "  Allocations: {} ({} bytes)", self.allocations, self.allocation_bytes);
+        let _ = writeln!(
+            output,
+            "  Allocations: {} ({} bytes)",
+            self.allocations, self.allocation_bytes
+        );
         output.push_str("  Phases:\n");
         let mut phases: Vec<_> = self.phases.iter().collect();
         phases.sort_by(|a, b| a.0.cmp(b.0));
@@ -258,7 +262,9 @@ impl TelemetryBus {
     /// Creates a new empty telemetry bus.
     #[must_use]
     pub fn new() -> Self {
-        Self { subscribers: Vec::new() }
+        Self {
+            subscribers: Vec::new(),
+        }
     }
 
     /// Registers a subscriber.
@@ -299,7 +305,12 @@ impl TelemetrySubscriber for ConsoleSubscriber {
 
     fn on_cache_query(&self, query: &str, hit: bool, duration: Duration) {
         let ms = duration.as_secs_f64() * 1000.0;
-        eprintln!("[profiling] cache {}: {} ({:.2}ms)", if hit { "hit" } else { "miss" }, query, ms);
+        eprintln!(
+            "[profiling] cache {}: {} ({:.2}ms)",
+            if hit { "hit" } else { "miss" },
+            query,
+            ms
+        );
     }
 }
 

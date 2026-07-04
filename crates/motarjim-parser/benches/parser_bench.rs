@@ -73,5 +73,12 @@ fn bench_parse_css_large(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_parse_small_html, bench_parse_medium_html, bench_parse_large_html, bench_parse_css_small, bench_parse_css_large);
+criterion_group!(
+    benches,
+    bench_parse_small_html,
+    bench_parse_medium_html,
+    bench_parse_large_html,
+    bench_parse_css_small,
+    bench_parse_css_large
+);
 criterion_main!(benches);

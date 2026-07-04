@@ -101,8 +101,20 @@ impl Element {
     pub fn is_void_element(&self) -> bool {
         matches!(
             self.tag_name.as_str(),
-            "area" | "base" | "br" | "col" | "embed" | "hr" | "img" | "input"
-                | "link" | "meta" | "param" | "source" | "track" | "wbr"
+            "area"
+                | "base"
+                | "br"
+                | "col"
+                | "embed"
+                | "hr"
+                | "img"
+                | "input"
+                | "link"
+                | "meta"
+                | "param"
+                | "source"
+                | "track"
+                | "wbr"
         )
     }
 
@@ -111,11 +123,39 @@ impl Element {
     pub fn is_block_element(&self) -> bool {
         matches!(
             self.tag_name.as_str(),
-            "address" | "article" | "aside" | "blockquote" | "details" | "dialog"
-                | "dd" | "div" | "dl" | "dt" | "fieldset" | "figcaption"
-                | "figure" | "footer" | "form" | "h1" | "h2" | "h3" | "h4"
-                | "h5" | "h6" | "header" | "hgroup" | "hr" | "li" | "main"
-                | "nav" | "ol" | "p" | "pre" | "section" | "table" | "ul"
+            "address"
+                | "article"
+                | "aside"
+                | "blockquote"
+                | "details"
+                | "dialog"
+                | "dd"
+                | "div"
+                | "dl"
+                | "dt"
+                | "fieldset"
+                | "figcaption"
+                | "figure"
+                | "footer"
+                | "form"
+                | "h1"
+                | "h2"
+                | "h3"
+                | "h4"
+                | "h5"
+                | "h6"
+                | "header"
+                | "hgroup"
+                | "hr"
+                | "li"
+                | "main"
+                | "nav"
+                | "ol"
+                | "p"
+                | "pre"
+                | "section"
+                | "table"
+                | "ul"
         )
     }
 
@@ -124,12 +164,49 @@ impl Element {
     pub fn is_inline_element(&self) -> bool {
         matches!(
             self.tag_name.as_str(),
-            "a" | "abbr" | "area" | "b" | "bdi" | "bdo" | "br" | "button"
-                | "cite" | "code" | "data" | "del" | "dfn" | "em" | "i" | "img"
-                | "input" | "ins" | "kbd" | "label" | "link" | "map" | "mark"
-                | "meter" | "output" | "progress" | "q" | "ruby" | "s" | "samp"
-                | "select" | "small" | "source" | "span" | "strong" | "sub"
-                | "sup" | "template" | "textarea" | "time" | "u" | "var" | "video" | "wbr"
+            "a" | "abbr"
+                | "area"
+                | "b"
+                | "bdi"
+                | "bdo"
+                | "br"
+                | "button"
+                | "cite"
+                | "code"
+                | "data"
+                | "del"
+                | "dfn"
+                | "em"
+                | "i"
+                | "img"
+                | "input"
+                | "ins"
+                | "kbd"
+                | "label"
+                | "link"
+                | "map"
+                | "mark"
+                | "meter"
+                | "output"
+                | "progress"
+                | "q"
+                | "ruby"
+                | "s"
+                | "samp"
+                | "select"
+                | "small"
+                | "source"
+                | "span"
+                | "strong"
+                | "sub"
+                | "sup"
+                | "template"
+                | "textarea"
+                | "time"
+                | "u"
+                | "var"
+                | "video"
+                | "wbr"
         )
     }
 }
@@ -281,29 +358,42 @@ mod tests {
         el.classes.push(SmolStr::new_inline("container"));
         assert!(el.has_class("container") && !el.has_class("hidden"));
 
-        el.attributes.push(Attribute::new("href", "https://example.com"));
+        el.attributes
+            .push(Attribute::new("href", "https://example.com"));
         assert_eq!(el.get_attribute("href"), Some("https://example.com"));
         assert_eq!(el.get_attribute("rel"), None);
 
         assert!(Element::new("br").is_void_element() && !Element::new("div").is_void_element());
         assert!(Element::new("div").is_block_element() && !Element::new("span").is_block_element());
-        assert!(Element::new("span").is_inline_element() && !Element::new("div").is_inline_element());
+        assert!(
+            Element::new("span").is_inline_element() && !Element::new("div").is_inline_element()
+        );
     }
 
     #[test]
     fn test_htmlnode() {
         let node = HtmlNode {
-            id: NodeId(1), node_type: NodeType::Element,
-            element: Some(Element::new("div")), value: None,
-            children: SmallVec::new(), parent: None, depth: 0, document_type: None,
+            id: NodeId(1),
+            node_type: NodeType::Element,
+            element: Some(Element::new("div")),
+            value: None,
+            children: SmallVec::new(),
+            parent: None,
+            depth: 0,
+            document_type: None,
         };
         assert_eq!(node.id, NodeId(1));
         assert_eq!(node.node_type, NodeType::Element);
 
         let text = HtmlNode {
-            id: NodeId(2), node_type: NodeType::Text,
-            element: None, value: Some("Hello".to_string()),
-            children: SmallVec::new(), parent: None, depth: 1, document_type: None,
+            id: NodeId(2),
+            node_type: NodeType::Text,
+            element: None,
+            value: Some("Hello".to_string()),
+            children: SmallVec::new(),
+            parent: None,
+            depth: 1,
+            document_type: None,
         };
         assert_eq!(text.node_type, NodeType::Text);
         assert_eq!(text.value.as_deref(), Some("Hello"));
@@ -321,20 +411,34 @@ mod tests {
     fn test_document_root_and_children() {
         let mut doc = Document::new();
         doc.nodes.push(HtmlNode {
-            id: NodeId(0), node_type: NodeType::Element,
-            element: Some(Element::new("root")), value: None,
+            id: NodeId(0),
+            node_type: NodeType::Element,
+            element: Some(Element::new("root")),
+            value: None,
             children: smallvec::smallvec![NodeId(1), NodeId(2)],
-            parent: None, depth: 0, document_type: None,
+            parent: None,
+            depth: 0,
+            document_type: None,
         });
         doc.nodes.push(HtmlNode {
-            id: NodeId(1), node_type: NodeType::Element,
-            element: Some(Element::new("child")), value: None,
-            children: SmallVec::new(), parent: Some(NodeId(0)), depth: 1, document_type: None,
+            id: NodeId(1),
+            node_type: NodeType::Element,
+            element: Some(Element::new("child")),
+            value: None,
+            children: SmallVec::new(),
+            parent: Some(NodeId(0)),
+            depth: 1,
+            document_type: None,
         });
         doc.nodes.push(HtmlNode {
-            id: NodeId(2), node_type: NodeType::Text,
-            element: None, value: Some("hello".to_string()),
-            children: SmallVec::new(), parent: Some(NodeId(0)), depth: 1, document_type: None,
+            id: NodeId(2),
+            node_type: NodeType::Text,
+            element: None,
+            value: Some("hello".to_string()),
+            children: SmallVec::new(),
+            parent: Some(NodeId(0)),
+            depth: 1,
+            document_type: None,
         });
         doc.root_id = NodeId(0);
 
@@ -346,7 +450,16 @@ mod tests {
                 el.tag_name = SmolStr::new_inline("updated");
             }
         }
-        assert_eq!(doc.node(NodeId(0)).unwrap().element.as_ref().unwrap().tag_name.as_str(), "updated");
+        assert_eq!(
+            doc.node(NodeId(0))
+                .unwrap()
+                .element
+                .as_ref()
+                .unwrap()
+                .tag_name
+                .as_str(),
+            "updated"
+        );
 
         let children = doc.children(NodeId(0));
         assert_eq!(children.len(), 2);

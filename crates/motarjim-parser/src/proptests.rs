@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used)]
+use crate::{CssParser, HtmlParser};
 use proptest::prelude::*;
-use crate::{HtmlParser, CssParser};
 
 proptest! {
     #[test]

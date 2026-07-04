@@ -10,7 +10,9 @@ use smallvec::SmallVec;
 fn make_doc_small() -> Document {
     let mut doc = Document::new();
     let mut element = Element::new("div");
-    element.attributes.push(Attribute::new("class", "container"));
+    element
+        .attributes
+        .push(Attribute::new("class", "container"));
     doc.nodes.push(HtmlNode {
         id: NodeId(0),
         node_type: NodeType::Element,
@@ -58,7 +60,8 @@ fn make_doc_medium() -> Document {
         document_type: None,
     });
     let mut btn = Element::new("button");
-    btn.attributes.push(Attribute::new("aria-label", "Click me"));
+    btn.attributes
+        .push(Attribute::new("aria-label", "Click me"));
     doc.nodes.push(HtmlNode {
         id: NodeId(2),
         node_type: NodeType::Element,
@@ -94,7 +97,10 @@ fn make_doc_medium() -> Document {
 }
 
 fn make_styles(doc: &Document) -> HashMap<NodeId, ComputedStyle> {
-    doc.nodes.iter().map(|n| (n.id, ComputedStyle::default())).collect()
+    doc.nodes
+        .iter()
+        .map(|n| (n.id, ComputedStyle::default()))
+        .collect()
 }
 
 fn bench_build_ir_small(c: &mut Criterion) {

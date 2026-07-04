@@ -14,10 +14,7 @@ fn main() {
         Ok(doc) => {
             println!("HTML parsed successfully — {} node(s)", doc.nodes.len());
             for node in &doc.nodes {
-                let tag = node
-                    .element
-                    .as_ref()
-                    .map_or("?", |e| e.tag_name.as_str());
+                let tag = node.element.as_ref().map_or("?", |e| e.tag_name.as_str());
                 println!("  [{:?}] <{}>", node.id, tag);
             }
         }

@@ -10,10 +10,7 @@ fn make_text_node(id: u32, text: &str) -> IrNode {
         layout: LayoutIr::Flow,
         target: TargetIr::Flutter {
             widget: smol_str::SmolStr::new_inline("Text"),
-            properties: vec![(
-                smol_str::SmolStr::new_inline("data"),
-                text.to_string(),
-            )],
+            properties: vec![(smol_str::SmolStr::new_inline("data"), text.to_string())],
         },
         computed_style: ComputedStyle::default(),
         children: smallvec::smallvec![],
@@ -21,7 +18,11 @@ fn make_text_node(id: u32, text: &str) -> IrNode {
     }
 }
 
-fn make_container(id: u32, children: smallvec::SmallVec<[NodeId; 4]>, parent: Option<NodeId>) -> IrNode {
+fn make_container(
+    id: u32,
+    children: smallvec::SmallVec<[NodeId; 4]>,
+    parent: Option<NodeId>,
+) -> IrNode {
     IrNode {
         id: NodeId(id),
         semantic: SemanticIr::Container,

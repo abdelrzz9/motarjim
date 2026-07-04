@@ -22,9 +22,7 @@ impl Selector {
     /// Checks if all simple selectors match the given element (combinators ignored).
     #[must_use]
     pub fn matches(&self, element: &crate::html::Element) -> bool {
-        self.simple_selectors
-            .iter()
-            .all(|s| s.matches(element))
+        self.simple_selectors.iter().all(|s| s.matches(element))
     }
 
     /// Returns the specificity as a 3-tuple (id, class, type).
@@ -84,7 +82,10 @@ impl SimpleSelector {
             Self::Universal => true,
             Self::Type(name) => element.tag_name.as_str() == name.as_str(),
             Self::Class(name) => element.has_class(name.as_str()),
-            Self::Id(name) => element.id.as_ref().is_some_and(|id| id.as_str() == name.as_str()),
+            Self::Id(name) => element
+                .id
+                .as_ref()
+                .is_some_and(|id| id.as_str() == name.as_str()),
             Self::Attribute {
                 name,
                 operator,
@@ -100,26 +101,21 @@ impl SimpleSelector {
                     Some(AttributeOperator::Equals) => {
                         value.as_ref().is_some_and(|v| attr_val == v.as_str())
                     }
-                    Some(AttributeOperator::Includes) => {
-                        value.as_ref().is_some_and(|v| {
-                            attr_val.split_whitespace().any(|part| part == v.as_str())
-                        })
-                    }
-                    Some(AttributeOperator::DashMatch) => {
-                        value.as_ref().is_some_and(|v| {
-                            attr_val == v.as_str()
-                                || attr_val.starts_with(&format!("{}-", v.as_str()))
-                        })
-                    }
-                    Some(AttributeOperator::PrefixMatch) => {
-                        value.as_ref().is_some_and(|v| attr_val.starts_with(v.as_str()))
-                    }
-                    Some(AttributeOperator::SuffixMatch) => {
-                        value.as_ref().is_some_and(|v| attr_val.ends_with(v.as_str()))
-                    }
-                    Some(AttributeOperator::SubstringMatch) => {
-                        value.as_ref().is_some_and(|v| attr_val.contains(v.as_str()))
-                    }
+                    Some(AttributeOperator::Includes) => value.as_ref().is_some_and(|v| {
+                        attr_val.split_whitespace().any(|part| part == v.as_str())
+                    }),
+                    Some(AttributeOperator::DashMatch) => value.as_ref().is_some_and(|v| {
+                        attr_val == v.as_str() || attr_val.starts_with(&format!("{}-", v.as_str()))
+                    }),
+                    Some(AttributeOperator::PrefixMatch) => value
+                        .as_ref()
+                        .is_some_and(|v| attr_val.starts_with(v.as_str())),
+                    Some(AttributeOperator::SuffixMatch) => value
+                        .as_ref()
+                        .is_some_and(|v| attr_val.ends_with(v.as_str())),
+                    Some(AttributeOperator::SubstringMatch) => value
+                        .as_ref()
+                        .is_some_and(|v| attr_val.contains(v.as_str())),
                 }
             }
             Self::PseudoClass(_) | Self::PseudoElement(_) => true,
@@ -252,7 +248,8 @@ mod tests {
     #[test]
     fn test_attribute_selectors() {
         let mut el = Element::new("a");
-        el.attributes.push(Attribute::new("href", "https://example.com"));
+        el.attributes
+            .push(Attribute::new("href", "https://example.com"));
 
         let eq = SimpleSelector::Attribute {
             name: SmolStr::new_inline("href"),
@@ -264,7 +261,9 @@ mod tests {
 
         let exists = SimpleSelector::Attribute {
             name: SmolStr::new_inline("disabled"),
-            operator: None, value: None, case_sensitive: true,
+            operator: None,
+            value: None,
+            case_sensitive: true,
         };
         assert!(!exists.matches(&el));
 
@@ -296,14 +295,16 @@ mod tests {
             Selector {
                 simple_selectors: vec![SimpleSelector::Id(SmolStr::new_inline("main"))],
                 combinators: vec![],
-            }.specificity(),
+            }
+            .specificity(),
             (1, 0, 0)
         );
         assert_eq!(
             Selector {
                 simple_selectors: vec![SimpleSelector::Type(SmolStr::new_inline("div"))],
                 combinators: vec![],
-            }.specificity(),
+            }
+            .specificity(),
             (0, 0, 1)
         );
     }
@@ -311,7 +312,10 @@ mod tests {
     #[test]
     fn test_pseudo_class_variants() {
         assert!(matches!(PseudoClass::Hover, PseudoClass::Hover));
-        assert!(matches!(PseudoClass::NthChild("2n+1".to_string()), PseudoClass::NthChild(_)));
+        assert!(matches!(
+            PseudoClass::NthChild("2n+1".to_string()),
+            PseudoClass::NthChild(_)
+        ));
         assert!(matches!(
             PseudoClass::Not(vec![SimpleSelector::Type(SmolStr::new_inline("span"))]),
             PseudoClass::Not(_)
@@ -321,6 +325,9 @@ mod tests {
     #[test]
     fn test_pseudo_element_variants() {
         assert!(matches!(PseudoElement::Before, PseudoElement::Before));
-        assert!(matches!(PseudoElement::Custom(SmolStr::new_inline("backdrop")), PseudoElement::Custom(_)));
+        assert!(matches!(
+            PseudoElement::Custom(SmolStr::new_inline("backdrop")),
+            PseudoElement::Custom(_)
+        ));
     }
 }

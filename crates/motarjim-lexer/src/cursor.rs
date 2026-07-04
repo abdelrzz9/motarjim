@@ -17,32 +17,49 @@ impl<'a> Cursor<'a> {
     /// Creates a new cursor at the start of the source.
     #[must_use]
     pub const fn new(source: &'a str) -> Self {
-        Self { source, pos: 0, line: 1, col: 1 }
+        Self {
+            source,
+            pos: 0,
+            line: 1,
+            col: 1,
+        }
     }
 
     /// Returns the current byte position.
     #[must_use]
-    pub const fn pos(&self) -> usize { self.pos }
+    pub const fn pos(&self) -> usize {
+        self.pos
+    }
 
     /// Returns the current line number (1-based).
     #[must_use]
-    pub const fn line(&self) -> u32 { self.line }
+    pub const fn line(&self) -> u32 {
+        self.line
+    }
 
     /// Returns the current column number (1-based).
     #[must_use]
-    pub const fn col(&self) -> u32 { self.col }
+    pub const fn col(&self) -> u32 {
+        self.col
+    }
 
     /// Returns the remaining source text.
     #[must_use]
-    pub fn remaining(&self) -> &'a str { &self.source[self.pos..] }
+    pub fn remaining(&self) -> &'a str {
+        &self.source[self.pos..]
+    }
 
     /// Returns `true` if the cursor is at the end of input.
     #[must_use]
-    pub const fn is_eof(&self) -> bool { self.pos >= self.source.len() }
+    pub const fn is_eof(&self) -> bool {
+        self.pos >= self.source.len()
+    }
 
     /// Peeks at the current character without consuming it.
     #[must_use]
-    pub fn peek(&self) -> Option<char> { self.remaining().chars().next() }
+    pub fn peek(&self) -> Option<char> {
+        self.remaining().chars().next()
+    }
 
     /// Peeks ahead by `n` characters.
     #[must_use]
@@ -68,7 +85,9 @@ impl<'a> Cursor<'a> {
     pub fn take_while(&mut self, mut pred: impl FnMut(char) -> bool) -> &'a str {
         let start = self.pos;
         while let Some(c) = self.peek() {
-            if !pred(c) { break; }
+            if !pred(c) {
+                break;
+            }
             self.advance();
         }
         &self.source[start..self.pos]
@@ -80,11 +99,22 @@ impl<'a> Cursor<'a> {
     }
 
     /// Creates a source span from the given start position to the current position.
-    #[must_use] 
+    #[must_use]
     pub const fn span_since(&self, start: usize) -> SourceSpan {
-        let start_loc = SourceLocation { line: 0, column: 0, offset: start as u32 };
-        let end_loc = SourceLocation { line: 0, column: 0, offset: self.pos as u32 };
-        SourceSpan { start: start_loc, end: end_loc }
+        let start_loc = SourceLocation {
+            line: 0,
+            column: 0,
+            offset: start as u32,
+        };
+        let end_loc = SourceLocation {
+            line: 0,
+            column: 0,
+            offset: self.pos as u32,
+        };
+        SourceSpan {
+            start: start_loc,
+            end: end_loc,
+        }
     }
 }
 

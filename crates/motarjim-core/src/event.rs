@@ -28,8 +28,8 @@
 //! ```
 
 use motarjim_ast::css::CssStylesheet;
-use motarjim_ast::{Document, SemanticDocument, StyledDocument};
 use motarjim_ast::ir::IrTree;
+use motarjim_ast::{Document, SemanticDocument, StyledDocument};
 use motarjim_diag::Diagnostic;
 
 /// Lifecycle events emitted during each phase of compilation.
@@ -196,8 +196,8 @@ impl Default for EventBus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     /// A handler that records received events for later inspection.
     #[derive(Default)]

@@ -144,9 +144,9 @@ pub mod binary {
 #[cfg(test)]
 mod tests {
     use super::*;
-use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr, TargetIr};
-use motarjim_ast::style::ComputedStyle;
-use motarjim_ast::NodeId;
+    use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr, TargetIr};
+    use motarjim_ast::style::ComputedStyle;
+    use motarjim_ast::NodeId;
 
     fn sample_tree() -> IrTree {
         IrTree {

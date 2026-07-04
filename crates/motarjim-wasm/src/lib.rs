@@ -8,8 +8,8 @@
 #![warn(clippy::all)]
 #![allow(clippy::pedantic, clippy::nursery)]
 
+use motarjim_core::{CompileOptions, Compiler};
 use wasm_bindgen::prelude::*;
-use motarjim_core::{Compiler, CompileOptions};
 
 /// WASM wrapper for the Motarjim compiler.
 #[wasm_bindgen]
@@ -77,7 +77,9 @@ impl WasmCompiler {
                         "time_ms": result.stats.time_ms,
                     }),
                 })
-                .unwrap_or_else(|e| format!("{{\"success\":false,\"error\":\"Serialize error: {e}\"}}"))
+                .unwrap_or_else(|e| {
+                    format!("{{\"success\":false,\"error\":\"Serialize error: {e}\"}}")
+                })
             }
             Err(diagnostics) => {
                 let errors: Vec<String> = diagnostics
@@ -95,7 +97,7 @@ impl WasmCompiler {
 
     /// Get version info.
     #[wasm_bindgen]
-    #[must_use] 
+    #[must_use]
     pub fn version() -> String {
         env!("CARGO_PKG_VERSION").to_string()
     }

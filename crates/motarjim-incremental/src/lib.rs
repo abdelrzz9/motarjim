@@ -119,9 +119,7 @@ impl IncrementalEngine {
     /// hash differs from the registered value.
     #[must_use]
     pub fn has_changed(&self, path: &Path, hash: [u8; 32]) -> bool {
-        self.files
-            .get(path)
-            .is_none_or(|state| state.hash != hash)
+        self.files.get(path).is_none_or(|state| state.hash != hash)
     }
 
     /// Return the subset of changes that need recompilation.
@@ -192,12 +190,12 @@ impl IncrementalEngine {
                 continue;
             }
             let mut parts = line.splitn(2, ',');
-            let path_str = parts.next().ok_or_else(|| {
-                IncrementalError::CorruptState("missing path field".to_string())
-            })?;
-            let hash_str = parts.next().ok_or_else(|| {
-                IncrementalError::CorruptState("missing hash field".to_string())
-            })?;
+            let path_str = parts
+                .next()
+                .ok_or_else(|| IncrementalError::CorruptState("missing path field".to_string()))?;
+            let hash_str = parts
+                .next()
+                .ok_or_else(|| IncrementalError::CorruptState("missing hash field".to_string()))?;
             let hash = hex_decode(hash_str).ok_or_else(|| {
                 IncrementalError::CorruptState(format!("invalid hex hash: {hash_str}"))
             })?;

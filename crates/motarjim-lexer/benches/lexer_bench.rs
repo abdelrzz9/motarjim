@@ -89,5 +89,12 @@ fn bench_css_tokenize_medium(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_html_tokenize_small, bench_html_tokenize_medium, bench_html_tokenize_large, bench_css_tokenize_small, bench_css_tokenize_medium);
+criterion_group!(
+    benches,
+    bench_html_tokenize_small,
+    bench_html_tokenize_medium,
+    bench_html_tokenize_large,
+    bench_css_tokenize_small,
+    bench_css_tokenize_medium
+);
 criterion_main!(benches);

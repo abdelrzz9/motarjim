@@ -162,8 +162,8 @@ impl GoldenTestRunner {
             return Ok(tests);
         }
 
-        let read_dir =
-            std::fs::read_dir(&html_dir).map_err(|e| std::io::Error::new(e.kind(), e.to_string()))?;
+        let read_dir = std::fs::read_dir(&html_dir)
+            .map_err(|e| std::io::Error::new(e.kind(), e.to_string()))?;
 
         for entry in read_dir {
             let entry =
@@ -190,7 +190,11 @@ impl GoldenTestRunner {
                     }
                 };
 
-                for &platform in &[OutputFormat::Dart, OutputFormat::Kotlin, OutputFormat::Swift] {
+                for &platform in &[
+                    OutputFormat::Dart,
+                    OutputFormat::Kotlin,
+                    OutputFormat::Swift,
+                ] {
                     tests.push(GoldenTest::new(
                         stem.clone(),
                         path.clone(),
@@ -221,7 +225,14 @@ impl GoldenTestRunner {
         let result = test.compile().map_err(|diags| {
             let msgs: Vec<String> = diags
                 .iter()
-                .map(|d| format!("[{}] {}: {}", d.severity().as_str(), d.code().message, d.message()))
+                .map(|d| {
+                    format!(
+                        "[{}] {}: {}",
+                        d.severity().as_str(),
+                        d.code().message,
+                        d.message()
+                    )
+                })
                 .collect();
             format!(
                 "[{platform_label}] {}: Compilation failed: {}",
@@ -257,9 +268,8 @@ impl GoldenTestRunner {
                 )
             })?;
 
-            compare_output(&result.output, &expected).map_err(|diff| {
-                format!("[{platform_label}] {}: {diff}", test.name)
-            })
+            compare_output(&result.output, &expected)
+                .map_err(|diff| format!("[{platform_label}] {}: {diff}", test.name))
         }
     }
 
@@ -365,7 +375,11 @@ pub fn read_golden_output(name: &str, platform: &str) -> Result<String, std::io:
 ///
 /// # Errors
 /// Returns an IO error if the file cannot be written.
-pub fn write_golden_output(name: &str, platform: &str, content: &str) -> Result<(), std::io::Error> {
+pub fn write_golden_output(
+    name: &str,
+    platform: &str,
+    content: &str,
+) -> Result<(), std::io::Error> {
     let ext = platform_extension(platform);
     let path = PathBuf::from("tests/golden/output")
         .join(platform)
@@ -406,8 +420,14 @@ mod tests {
         let result = compare_output("line1\nline2", "line1\nchanged");
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("2|"), "Expected diff to mention line 2, got: {err}");
-        assert!(err.contains("changed"), "Expected diff to contain 'changed', got: {err}");
+        assert!(
+            err.contains("2|"),
+            "Expected diff to mention line 2, got: {err}"
+        );
+        assert!(
+            err.contains("changed"),
+            "Expected diff to contain 'changed', got: {err}"
+        );
     }
 
     #[test]
@@ -427,7 +447,9 @@ mod tests {
             OutputFormat::Dart,
         );
         let path = test.expected_output_path(Path::new("tests/golden"));
-        assert!(path.to_str().map_or(false, |s| s.contains("output/flutter/simple-div.dart")));
+        assert!(path
+            .to_str()
+            .map_or(false, |s| s.contains("output/flutter/simple-div.dart")));
     }
 
     #[test]
@@ -439,7 +461,9 @@ mod tests {
             OutputFormat::Kotlin,
         );
         let path = test.expected_output_path(Path::new("tests/golden"));
-        assert!(path.to_str().map_or(false, |s| s.contains("output/compose/simple-div.kt")));
+        assert!(path
+            .to_str()
+            .map_or(false, |s| s.contains("output/compose/simple-div.kt")));
     }
 
     #[test]
@@ -451,7 +475,9 @@ mod tests {
             OutputFormat::Swift,
         );
         let path = test.expected_output_path(Path::new("tests/golden"));
-        assert!(path.to_str().map_or(false, |s| s.contains("output/swiftui/simple-div.swift")));
+        assert!(path
+            .to_str()
+            .map_or(false, |s| s.contains("output/swiftui/simple-div.swift")));
     }
 
     #[test]
