@@ -32,7 +32,8 @@ fn rewrite_expr(expr: &mut Expression) {
         Expression::Array(arr) => {
             for el in &mut arr.elements {
                 match el {
-                    ArrayElement::Some(e) | ArrayElement::Spread(e) => rewrite_expr(e),
+                    ArrayElement::Some(e) => rewrite_expr(e),
+                    ArrayElement::Spread(e) => rewrite_expr(e),
                     ArrayElement::None(_) => {}
                 }
             }
@@ -113,8 +114,8 @@ fn rewrite_expr(expr: &mut Expression) {
         Expression::Await(a) => rewrite_expr(&mut a.argument),
         Expression::Spread(s) => rewrite_expr(s),
         Expression::Parenthesized(p) => rewrite_expr(p),
-        Expression::Identifier(_)
-        | Expression::PrivateIdentifier(_)
+        Expression::Identifier(..)
+        | Expression::PrivateIdentifier(..)
         | Expression::Number(_)
         | Expression::BigInt(_)
         | Expression::String(_)

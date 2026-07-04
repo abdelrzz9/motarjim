@@ -50,7 +50,7 @@ impl<'a> JsLexer<'a> {
             return self.make_token(JsTokenKind::Eof);
         }
 
-        let c = self.peek();
+        let c = self.peek().unwrap();
         match c {
             '\n' | '\r' => {
                 self.advance();
@@ -96,9 +96,9 @@ impl<'a> JsLexer<'a> {
     fn skip_trivia(&mut self) {
         loop {
             self.skip_whitespace();
-            if self.peek() == '/' && self.peek_at(1) == Some('/') {
+            if self.peek() == Some('/') && self.peek_at(1) == Some('/') {
                 self.skip_line_comment();
-            } else if self.peek() == '/' && self.peek_at(1) == Some('*') {
+            } else if self.peek() == Some('/') && self.peek_at(1) == Some('*') {
                 self.skip_block_comment();
             } else {
                 break;
@@ -109,7 +109,7 @@ impl<'a> JsLexer<'a> {
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.peek() {
             match c {
-                ' ' | '\t' => self.advance(),
+                ' ' | '\t' => { self.advance(); }
                 '\n' => {
                     self.advance();
                     self.line += 1;
@@ -143,7 +143,7 @@ impl<'a> JsLexer<'a> {
         self.advance();
         self.advance();
         while !self.is_eof() {
-            if self.peek() == '*' && self.peek_at(1) == Some('/') {
+            if self.peek() == Some('*') && self.peek_at(1) == Some('/') {
                 self.advance();
                 self.advance();
                 return;
@@ -508,7 +508,7 @@ impl<'a> JsLexer<'a> {
                 }
                 Some('o' | 'O') => {
                     self.advance(); self.advance();
-                    self.take_while(|c| c.is_ascii_octdigit() || c == '_');
+                    self.take_while(|c| matches!(c, '0'..='7') || c == '_');
                     let raw = self.slice();
                     let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
                     let value = u64::from_str_radix(&cleaned, 8).unwrap_or(0) as f64;
@@ -571,7 +571,7 @@ impl<'a> JsLexer<'a> {
         let raw = self.slice();
         match keyword_from_str(&raw) {
             Some(kind) => self.make_token(kind),
-            None => self.make_token_value(JsTokenKind::Identifier, TokenValue::Ident(raw)),
+            None => self.make_token_value(JsTokenKind::Identifier, TokenValue::Ident(raw.to_string())),
         }
     }
 
@@ -647,12 +647,12 @@ impl<'a> JsLexer<'a> {
     fn span(&self) -> SourceSpan {
         SourceSpan {
             start: motarjim_span::SourceLocation {
-                offset: self.start as u32,
+                offset: self.start,
                 line: self.line,
                 column: self.column.saturating_sub(1),
             },
             end: motarjim_span::SourceLocation {
-                offset: self.pos as u32,
+                offset: self.pos,
                 line: self.line,
                 column: self.column,
             },

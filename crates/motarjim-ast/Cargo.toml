@@ -15,6 +15,9 @@ motarjim-ast-ir = { workspace = true }
 motarjim-span = { workspace = true }
 serde = { workspace = true, optional = true }
 
+[dev-dependencies]
+smallvec = "1.15"
+
 [features]
 serialize = ["serde", "motarjim-ast-html/serialize", "motarjim-ast-css/serialize", "motarjim-ast-ir/serialize"]
 default = []

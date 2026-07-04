@@ -27,10 +27,7 @@ impl JsDiagnosticCode {
 
 impl From<JsDiagnosticCode> for DiagnosticCode {
     fn from(code: JsDiagnosticCode) -> Self {
-        DiagnosticCode {
-            number: code.0,
-            prefix: "JS".to_string(),
-        }
+        DiagnosticCode::new(code.0, "JS diagnostic")
     }
 }
 

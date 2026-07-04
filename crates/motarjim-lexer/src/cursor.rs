@@ -104,12 +104,12 @@ impl<'a> Cursor<'a> {
         let start_loc = SourceLocation {
             line: 0,
             column: 0,
-            offset: start as u32,
+            offset: start,
         };
         let end_loc = SourceLocation {
             line: 0,
             column: 0,
-            offset: self.pos as u32,
+            offset: self.pos,
         };
         SourceSpan {
             start: start_loc,

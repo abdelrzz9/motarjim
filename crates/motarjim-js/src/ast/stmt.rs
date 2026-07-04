@@ -2,7 +2,7 @@
 
 use motarjim_span::SourceSpan;
 
-use crate::ast::expr::Expression;
+use crate::ast::expr::{Expression, FunctionExpr};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VarKind {

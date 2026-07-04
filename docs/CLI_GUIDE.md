@@ -18,13 +18,6 @@ cargo build --release -p motarjim-cli
 cargo install motarjim-cli
 ```
 
-### Docker
-
-```bash
-docker build -t motarjim .
-docker run --rm -v $(pwd):/work motarjim compile /work/index.html --platform flutter
-```
-
 ## Commands
 
 ### `motarjim compile`
@@ -262,7 +255,6 @@ motarjim compile card.html --platform compose --output CardView.kt
 ### Multi-Platform Output
 
 ```bash
-# Parse once conceptually, generate per platform
 motarjim compile index.html --platform flutter --output lib/generated.dart
 motarjim compile index.html --platform compose --output app/generated.kt
 motarjim compile index.html --platform swiftui --output GeneratedView.swift
@@ -320,7 +312,7 @@ The binary hasn't been added to your PATH. Either:
 
 ### "Unknown platform" error
 
-Use one of: `flutter`, `compose`, `swiftui` (or `dart`, `kotlin`, `swift`).
+Use one of: `flutter`, `compose`, `swiftui`.
 
 ### "File not found"
 

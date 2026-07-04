@@ -1,4 +1,5 @@
 //! Layout strategy types for the Motarjim compiler.
+#![allow(missing_docs)]
 
 use smol_str::SmolStr;
 

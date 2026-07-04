@@ -1,5 +1,7 @@
 //! Statement parser: declarations, control flow, imports, exports.
 
+use motarjim_span::SourceSpan;
+
 use crate::ast::stmt::*;
 use crate::ast::expr::*;
 use crate::ast::pat::*;
@@ -555,7 +557,7 @@ impl JsParser {
         Statement::ClassDecl(ClassDecl { name, super_class, body, span })
     }
 
-    fn parse_class_body(&mut self) -> ClassBody {
+    pub(crate) fn parse_class_body(&mut self) -> ClassBody {
         let start = self.cur().span;
         self.expect(JsTokenKind::LBrace, "{");
         let mut body = Vec::new();
@@ -653,12 +655,6 @@ impl JsParser {
             self.error("expected an identifier");
             String::new()
         }
-    }
-}
-
-impl SourceSpan {
-    fn span_from(start: SourceSpan) -> SourceSpan {
-        unimplemented!("use JsParser::span_from instead")
     }
 }
 

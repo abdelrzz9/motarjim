@@ -979,7 +979,7 @@ fn parse_number_literal(raw: &str) -> f64 {
 
 enum TemplatePart<'a> {
     Quasi(String),
-    Expr { source: &'a str, offset_in_inner: u32 },
+    Expr { source: &'a str, offset_in_inner: usize },
 }
 
 fn split_template_parts(inner: &str) -> Vec<TemplatePart<'_>> {
@@ -998,7 +998,7 @@ fn split_template_parts(inner: &str) -> Vec<TemplatePart<'_>> {
             let expr_end = find_matching_brace(inner, expr_start);
             parts.push(TemplatePart::Expr {
                 source: &inner[expr_start..expr_end],
-                offset_in_inner: expr_start as u32,
+                offset_in_inner: expr_start,
             });
             i = (expr_end + 1).min(bytes.len());
             quasi_start = i;
@@ -1056,11 +1056,11 @@ fn skip_nested_template(inner: &str, mut i: usize) -> usize {
 }
 
 pub(crate) trait ShiftSpans {
-    fn shift_spans(&mut self, delta: u32);
+    fn shift_spans(&mut self, delta: usize);
 }
 
 impl Expression {
-    pub fn shift_spans(&mut self, delta: u32) {
+    pub fn shift_spans(&mut self, delta: usize) {
         match self {
             Self::Identifier(_, span) | Self::PrivateIdentifier(_, span) |
             Self::Null(span) | Self::Undefined(span) | Self::This(span) | Self::Super(span) => {
@@ -1083,8 +1083,10 @@ impl Expression {
             Self::Array(e) => {
                 e.span.shift(delta);
                 for el in &mut e.elements {
-                    if let ArrayElement::Some(expr) | ArrayElement::Spread(expr) = el {
-                        expr.shift_spans(delta);
+                    match el {
+                        ArrayElement::Some(expr) => expr.shift_spans(delta),
+                        ArrayElement::Spread(expr) => expr.shift_spans(delta),
+                        ArrayElement::None(_) => {}
                     }
                 }
             }
@@ -1197,7 +1199,7 @@ impl Expression {
 }
 
 impl Pattern {
-    fn shift_spans(&mut self, delta: u32) {
+    fn shift_spans(&mut self, delta: usize) {
         match self {
             Pattern::Ident(_, span) => { *span = SourceSpan { start: SourceLocation { offset: span.start.offset + delta, ..span.start }, end: SourceLocation { offset: span.end.offset + delta, ..span.end } }; }
             Pattern::Object(p) => { p.span.shift(delta); }
@@ -1211,7 +1213,7 @@ impl Pattern {
 }
 
 impl BlockStmt {
-    fn shift_spans(&mut self, delta: u32) {
+    fn shift_spans(&mut self, delta: usize) {
         self.span.shift(delta);
         for stmt in &mut self.body {
             stmt.shift_spans(delta);
@@ -1220,7 +1222,7 @@ impl BlockStmt {
 }
 
 impl Statement {
-    fn shift_spans(&mut self, delta: u32) {
+    fn shift_spans(&mut self, delta: usize) {
         let shift_span = |span: &mut SourceSpan| {
             *span = SourceSpan {
                 start: SourceLocation { offset: span.start.offset + delta, ..span.start },
@@ -1283,7 +1285,6 @@ impl Statement {
                 if let Some(u) = &mut s.update { u.shift_spans(delta); }
                 s.body.shift_spans(delta);
             }
-            Self::ForOf(s) | Self::ForIn(s) if false => {}
             Self::ForOf(s) => {
                 shift_span(&mut s.span);
                 s.right.shift_spans(delta);
@@ -1375,11 +1376,11 @@ impl Statement {
 use motarjim_span::{SourceLocation, SourceSpan};
 
 trait SpanShift {
-    fn shift(&mut self, delta: u32);
+    fn shift(&mut self, delta: usize);
 }
 
 impl SpanShift for SourceSpan {
-    fn shift(&mut self, delta: u32) {
+    fn shift(&mut self, delta: usize) {
         self.start = SourceLocation {
             offset: self.start.offset + delta,
             ..self.start

@@ -2,7 +2,7 @@
 
 ## Current Status (v0.1.0)
 
-The motarjim compiler has been rewritten from a TypeScript/parse5/PostCSS prototype into a production-quality Rust workspace of single-responsibility crates. The core compiler pipeline (parse → style → IR → optimize → generate) is complete and functional.
+The motarjim compiler is a production-quality Rust workspace of single-responsibility crates. The core compiler pipeline (parse → style → IR → optimize → generate) is complete and functional.
 
 ### Current Capabilities
 
@@ -52,8 +52,7 @@ The motarjim compiler has been rewritten from a TypeScript/parse5/PostCSS protot
 
 ### Web & Editor
 
-- [ ] Playground rewrite — Monaco editor, real-time compilation, AST viewer, diagnostics panel
-- [ ] Website redesign — Modern documentation site with search, examples, and API reference
+- [ ] Playground enhancements — Monaco editor, real-time compilation, AST viewer, diagnostics panel
 - [ ] VS Code extension — LSP wiring, diagnostics view, preview panel
 - [ ] Dark/light theme in playground
 
@@ -64,7 +63,6 @@ The motarjim compiler has been rewritten from a TypeScript/parse5/PostCSS protot
 - [ ] `cargo nextest` — Faster, more reliable test execution
 - [ ] Coverage reporting — `cargo llvm-cov` in CI
 - [ ] Markdown lint / spellcheck / license check
-- [ ] Docker image for CI/CD
 
 ## Medium-Term Goals (3-6 Months)
 
@@ -163,7 +161,7 @@ Target state: The generated code is indistinguishable from hand-written platform
 
 ## How to Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines. 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
 
 Priority areas for community contribution:
 

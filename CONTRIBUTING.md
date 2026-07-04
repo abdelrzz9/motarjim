@@ -5,7 +5,6 @@
 ### Prerequisites
 
 - **Rust** 1.75+ (install via [rustup](https://rustup.rs/))
-- **Node.js** 18+ and **npm** 9+
 - **Cargo tools**: `cargo-fuzz`, `cargo-nextest` (optional but recommended)
 
 ### Clone and Build
@@ -17,12 +16,11 @@ cd motarjim
 # Build the entire Rust workspace
 cargo build --workspace
 
-# Install TypeScript dependencies
-npm install
+# Build the release binary
+cargo build --release -p motarjim-cli
 
 # Verify everything works
 cargo test --workspace
-npm test
 ```
 
 ### Editor Setup
@@ -30,7 +28,6 @@ npm test
 We recommend VS Code with:
 - [rust-analyzer](https://rust-analyzer.github.io/) for Rust development
 - [EditorConfig](https://editorconfig.org/) for consistent formatting (`.editorconfig` is in the repo root)
-- [Prettier](https://prettier.io/) for TypeScript formatting
 
 ## Building
 
@@ -45,16 +42,6 @@ cargo build -p motarjim-core
 
 # Build with release optimizations
 cargo build --release -p motarjim-cli
-```
-
-### TypeScript Packages
-
-```bash
-# Build all packages
-npm run build
-
-# Build a specific workspace
-npm run build -w @motarjim/playground
 ```
 
 ## Testing
@@ -78,30 +65,12 @@ cargo test --release
 cargo nextest run
 ```
 
-### TypeScript Tests
-
-```bash
-# Run all TypeScript tests
-npm test
-
-# Run in watch mode during development
-npm run test:watch
-
-# Update snapshots
-npx vitest run --update
-```
-
 ### Linting and Formatting
 
 ```bash
 # Rust
 cargo clippy --workspace -- -D warnings
 cargo fmt --check
-
-# TypeScript
-npm run lint
-npm run format     # Auto-format with Prettier
-npx tsc --noEmit  # Type check
 ```
 
 ### Benchmarking
@@ -109,9 +78,6 @@ npx tsc --noEmit  # Type check
 ```bash
 # Rust benchmarks (Criterion)
 cargo bench --workspace
-
-# TypeScript benchmarks
-npm run bench
 ```
 
 ### Fuzz Testing
@@ -138,13 +104,6 @@ cargo fuzz run selector_parser
 - **Error handling**: Use `Result<T, Vec<Diagnostic>>` for compiler operations. Avoid panics (gated by `#[deny(panic)]` workspace lint).
 - **Ownership**: Prefer borrowed references (`&str`, `&[T]`) over owned values. Use `SmolStr` for small strings, `Arc` for shared ownership.
 - **Testing**: Unit tests in each crate's `tests` module. Integration tests in `tests/` at crate root. Use `proptest` for property-based testing.
-
-### TypeScript
-
-- **Strict mode**: `strict: true` in `tsconfig.json`. No exceptions.
-- **No `any`**: Use proper types. `unknown` is acceptable when the type is genuinely unknown.
-- **Functional style**: Prefer pure functions. Avoid mutating inputs.
-- **Naming**: `camelCase` for functions/variables, `PascalCase` for types/interfaces.
 
 ### Commit Messages
 
@@ -198,8 +157,6 @@ bench: add 5000-node compilation benchmark
    cargo test --workspace
    cargo clippy --workspace -- -D warnings
    cargo fmt --check
-   npm test
-   npm run typecheck
    ```
 
 4. **Benchmark** if performance-sensitive:
@@ -263,7 +220,6 @@ Include:
 
 - Open a [GitHub Discussion](https://github.com/motarjim/motarjim/discussions)
 - Check existing [issues](https://github.com/motarjim/motarjim/issues)
-- See [SUPPORT.md](SUPPORT.md) for more resources
 
 ## Good First Issues
 

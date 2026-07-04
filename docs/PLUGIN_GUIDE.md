@@ -462,12 +462,11 @@ impl ComputedStyle {
 
 ## Example Plugins
 
-### React Native Generator
+### React Native Generator (Conceptual)
 
-See `crates/examples/motarjim-gen-react-native/` for a complete React Native generator example.
+A React Native generator maps `SemanticIr` to React Native components:
 
 ```rust
-// Key mapping: SemanticIr → React Native components
 fn map_to_rn_component(semantic: &SemanticIr) -> &'static str {
     match semantic {
         SemanticIr::Container | SemanticIr::Root => "View",
@@ -481,10 +480,6 @@ fn map_to_rn_component(semantic: &SemanticIr) -> &'static str {
     }
 }
 ```
-
-### Tauri/WebView Generator (Conceptual)
-
-A Tauri generator would emit HTML, CSS, and JavaScript that runs in a WebView, similar to Tauri's front-end model. The generator would skip the native widget mapping and instead produce optimized web code with a Tauri wrapper.
 
 ## Best Practices
 

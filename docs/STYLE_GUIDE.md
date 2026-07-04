@@ -122,108 +122,19 @@ mod tests {
 - Use descriptive test names that explain the scenario.
 - Follow Arrange-Act-Assert pattern with blank line separation.
 - Use `proptest` for property-based tests.
-- Use `insta` for snapshot/golden tests.
 - Keep tests fast — avoid filesystem I/O (use `VirtualFileSystem`).
-
-## TypeScript Style Conventions
-
-### Formatting
-
-TypeScript is formatted with Prettier:
-
-```bash
-npm run format
-```
-
-### Configuration
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "exactOptionalPropertyTypes": true
-  }
-}
-```
-
-### Naming
-
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Types/Interfaces | `PascalCase` | `HtmlNode`, `UiNode`, `NodeEmitter` |
-| Functions | `camelCase` | `parseHtml()`, `detectSemantics()` |
-| Variables | `camelCase` | `styledNodes`, `optimizedTree` |
-| Constants | `UPPER_SNAKE_CASE` | `DEFAULT_PLATFORM` |
-| Files | `kebab-case` | `css-analyzer.ts`, `generator-core.ts` |
-| Packages | `kebab-case` | `@motarjim/playground-sdk` |
-
-### Type System
-
-- **No `any`**. Use `unknown` when the type is genuinely unknown, then narrow.
-- Prefer interfaces over type aliases for object shapes.
-- Use `readonly` for immutable properties.
-- Use `as const` for literal types.
-- Use `satisfies` operator for type validation without widening.
-
-```typescript
-// Good
-interface CompileResult {
-  readonly code: string;
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-// Bad
-interface CompileResult {
-  code: string;
-  diagnostics: any[];
-}
-```
-
-### Imports
-
-- Use named imports, not default imports:
-  ```typescript
-  import { parseHtml } from '@motarjim/parser';
-  ```
-- Use `import type` for type-only imports:
-  ```typescript
-  import type { HtmlNode } from '@motarjim/parser';
-  ```
-- No barrel files (`index.ts` that re-exports everything). Import directly from the module.
-
-### Asynchronous Code
-
-Use `async/await` consistently. Avoid raw promises and callbacks:
-
-```typescript
-// Good
-async function compile(input: string): Promise<CompileResult> {
-  const result = await compiler.compile(input);
-  return result;
-}
-
-// Avoid
-function compile(input: string): Promise<CompileResult> {
-  return compiler.compile(input).then(r => r);
-}
-```
 
 ## Naming Conventions
 
 ### File Names
 
 - Rust source: `snake_case.rs` (e.g., `html_parser.rs`, `computed_style.rs`)
-- TypeScript source: `kebab-case.ts` (e.g., `css-analyzer.ts`, `generator-core.ts`)
-- Test files: `<name>.test.ts` for Vitest, `<name>_test.rs` for Rust integration tests
+- Test files: `<name>_test.rs` for Rust integration tests
 - Benchmark files: `bench_<name>.rs` for Criterion
 
 ### Directory Names
 
 - Rust crates: `motarjim-<name>` (hyphenated, matches Cargo.toml package name)
-- TypeScript packages: `@motarjim/<name>` in npm scope, directory: `<name>` or `<name>-sdk`
 - Source: `src/`
 - Tests: `tests/`
 - Benchmarks: `benches/`
@@ -253,7 +164,7 @@ bench/<description>
 ### Markdown Documentation
 
 - Use `#` for title, `##` for sections, `###` for subsections.
-- Code blocks specify language: ` ```rust`, ` ```typescript`, ` ```bash`, ` ```json`.
+- Code blocks specify language: ` ```rust`, ` ```bash`, ` ```json`.
 - Use tables for structured data.
 - Use relative links for cross-references: `[ARCHITECTURE.md](../ARCHITECTURE.md)`.
 - One sentence per line in markdown source for cleaner diffs.

@@ -185,8 +185,8 @@ pub fn walk_statement<V: Visitor + ?Sized>(visitor: &mut V, stmt: &Statement) {
 
 pub fn walk_expression<V: Visitor + ?Sized>(visitor: &mut V, expr: &Expression) {
     match expr {
-        Expression::Identifier(_)
-        | Expression::PrivateIdentifier(_)
+        Expression::Identifier(..)
+        | Expression::PrivateIdentifier(..)
         | Expression::Number(_)
         | Expression::BigInt(_)
         | Expression::String(_)
@@ -204,9 +204,8 @@ pub fn walk_expression<V: Visitor + ?Sized>(visitor: &mut V, expr: &Expression) 
         Expression::Array(arr) => {
             for el in &arr.elements {
                 match el {
-                    ArrayElement::Some(expr) | ArrayElement::Spread(expr) => {
-                        visitor.visit_expression(expr);
-                    }
+                    ArrayElement::Some(expr) => visitor.visit_expression(expr),
+                    ArrayElement::Spread(expr) => visitor.visit_expression(expr),
                     ArrayElement::None(_) => {}
                 }
             }
@@ -467,8 +466,8 @@ pub fn walk_statement_mut<V: VisitorMut + ?Sized>(visitor: &mut V, stmt: &mut St
 
 pub fn walk_expression_mut<V: VisitorMut + ?Sized>(visitor: &mut V, expr: &mut Expression) {
     match expr {
-        Expression::Identifier(_)
-        | Expression::PrivateIdentifier(_)
+        Expression::Identifier(..)
+        | Expression::PrivateIdentifier(..)
         | Expression::Number(_)
         | Expression::BigInt(_)
         | Expression::String(_)
@@ -486,9 +485,10 @@ pub fn walk_expression_mut<V: VisitorMut + ?Sized>(visitor: &mut V, expr: &mut E
         Expression::Array(arr) => {
             for el in &mut arr.elements {
                 match el {
-                    ArrayElement::Some(expr) | ArrayElement::Spread(expr) => {
-                        visitor.visit_expression_mut(expr);
-                    }
+                    ArrayElement::Some(expr) =>
+                        visitor.visit_expression_mut(expr),
+                    ArrayElement::Spread(expr) =>
+                        visitor.visit_expression_mut(expr),
                     ArrayElement::None(_) => {}
                 }
             }
@@ -615,14 +615,14 @@ pub fn walk_pattern_mut<V: VisitorMut + ?Sized>(visitor: &mut V, pat: &mut Patte
     }
 }
 
-pub fn walk_fold_program(mut folder: &mut Fold, program: Program) -> Program {
+pub fn walk_fold_program<F: Fold>(mut folder: &mut F, program: Program) -> Program {
     Program {
         body: program.body.into_iter().map(|s| folder.fold_statement(s)).collect(),
         ..program
     }
 }
 
-pub fn walk_fold_statement(folder: &mut dyn Fold, stmt: Statement) -> Statement {
+pub fn walk_fold_statement<F: Fold>(folder: &mut F, stmt: Statement) -> Statement {
     match stmt {
         Statement::VarDecl(mut decl) => {
             for declarator in &mut decl.declarators {
@@ -652,11 +652,11 @@ pub fn walk_fold_statement(folder: &mut dyn Fold, stmt: Statement) -> Statement 
     }
 }
 
-pub fn walk_fold_expression(folder: &mut dyn Fold, expr: Expression) -> Expression {
+pub fn walk_fold_expression<F: Fold>(folder: &mut F, expr: Expression) -> Expression {
     expr
 }
 
-pub fn walk_fold_pattern(folder: &mut dyn Fold, pat: Pattern) -> Pattern {
+pub fn walk_fold_pattern<F: Fold>(folder: &mut F, pat: Pattern) -> Pattern {
     pat
 }
 

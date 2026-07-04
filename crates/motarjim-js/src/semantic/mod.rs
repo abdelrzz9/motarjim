@@ -1,12 +1,14 @@
 //! Best-effort semantic analysis: scope tracking, duplicate declarations, const reassignment checks.
 
+use motarjim_span::SourceSpan;
+
 use crate::ast::expr::*;
 use crate::ast::pat::*;
 use crate::ast::program::Program;
 use crate::ast::stmt::*;
 use crate::diagnostics::{JsDiagnostic, JsDiagnosticCode};
 use crate::semantic::scope::{Binding, ScopeStack};
-use crate::visitor::{walk_expression, walk_expression_mut, walk_statement_mut, Visitor, VisitorMut};
+use crate::visitor::{walk_expression, walk_expression_mut, walk_statement, walk_statement_mut, Visitor, VisitorMut};
 
 mod scope;
 
@@ -191,7 +193,6 @@ impl Visitor for SemanticAnalyzer {
                 self.loop_depth -= 1;
                 self.scopes.pop();
             }
-            Statement::While(s) | Statement::DoWhile(s) if false => {}
             Statement::While(while_stmt) => {
                 self.visit_expression(&while_stmt.test);
                 self.loop_depth += 1;

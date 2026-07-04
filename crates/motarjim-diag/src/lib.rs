@@ -22,7 +22,9 @@
 //! - `color` — Enables `emitter::DiagnosticEmitter` for colored terminal output.
 //! - `json` — Derives `serde::Serialize`/`Deserialize` on diagnostic types.
 
+/// Predefined diagnostic codes for common compiler messages.
 pub mod codes;
+/// Colored terminal diagnostic emitter.
 #[cfg(feature = "color")]
 pub mod emitter;
 

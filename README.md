@@ -9,24 +9,14 @@
   Write once in HTML/CSS. Ship native code for every platform.
 </p>
 
-<p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version"></a>
-  <a href="#"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
-  <a href="#"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="build"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-493%20passed-brightgreen" alt="tests"></a>
-  <a href="#"><img src="https://img.shields.io/badge/coverage-87%25-yellow" alt="coverage"></a>
-  <a href="#"><img src="https://img.shields.io/badge/rustc-1.75%2B-orange" alt="rustc"></a>
-</p>
-
----
-
 ## Quick Start
 
 ```bash
 git clone https://github.com/motarjim/motarjim.git
 cd motarjim
 cargo build --release -p motarjim-cli
-./target/release/motarjim compile index.html --platform flutter
+
+./target/release/motarjim compile examples/page.html --platform flutter
 ```
 
 ## Key Features
@@ -42,10 +32,6 @@ cargo build --release -p motarjim-cli
 - **Incremental compilation** — Query-based caching and dependency tracking for fast rebuilds.
 
 ## Architecture
-
-<p align="center">
-  <img src="architecture_mono.png" alt="motarjim Compiler Architecture" width="100%">
-</p>
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full architecture document.
 
@@ -73,7 +59,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full architecture document.
 ### From Source
 
 ```bash
-# Prerequisites: Rust 1.75+, Cargo
 git clone https://github.com/motarjim/motarjim.git
 cd motarjim
 cargo build --release -p motarjim-cli
@@ -89,51 +74,43 @@ cp ./target/release/motarjim ~/.local/bin/
 cargo install motarjim-cli
 ```
 
-### Docker
+## Usage
+
+### Compile HTML to a target platform
 
 ```bash
-docker build -t motarjim .
-docker run --rm -v $(pwd):/work motarjim compile /work/index.html --platform flutter
-```
+# Compile to Flutter (default)
+motarjim compile index.html
 
-## Usage Examples
-
-### Basic Compilation
-
-```bash
-# Compile to Flutter
-motarjim compile index.html --platform flutter
-
-# Compile to Jetpack Compose
+# Specify target platform
 motarjim compile index.html --platform compose
-
-# Compile to SwiftUI
 motarjim compile index.html --platform swiftui
+
+# Write output to a file
+motarjim compile index.html --output output.dart
+
+# Full options
+motarjim compile index.html --platform flutter --minify --source-maps --strict --output lib/generated.dart
 ```
 
-### With Output File
-
-```bash
-motarjim compile index.html --platform swiftui --output ContentView.swift
-```
-
-### With Options
-
-```bash
-motarjim compile index.html --platform compose --minify --source-maps --strict
-```
-
-### Initialize a Project
+### Initialize a config file
 
 ```bash
 motarjim init
 ```
 
-### Check for Diagnostics
+Creates `motarjim.json` in the current directory.
+
+### Check for diagnostics
 
 ```bash
 motarjim check index.html
-motarjim check app.js    # JavaScript analysis with motarjim-js
+```
+
+### Watch mode (stub)
+
+```bash
+motarjim watch index.html
 ```
 
 ### Input
@@ -260,65 +237,24 @@ motarjim supports `motarjim.json` and `motarjim.toml` configuration files:
 }
 ```
 
-```toml
-[platforms.flutter]
-format = "dart"
-output_dir = "output/flutter"
-minify = false
-
-[global]
-verbose = false
-strict = false
-incremental = true
-```
-
-## Web Playground
-
-motarjim ships with a Vite playground at `apps/playground`:
-
-```bash
-npm install
-npm run start:playground
-```
-
-Open [http://localhost:3000](http://localhost:3000) for:
-- Split-panel editor with HTML/CSS input and generated code output
-- Pipeline visualizer with stage-by-stage progress
-- Platform switcher (Flutter, Compose, SwiftUI)
-- Dark/light theme support
-- Auto-save drafts across sessions
-- Error cards with detailed diagnostic information
-
 ## Development
 
 ### Prerequisites
 
 - Rust 1.75+
-- Node.js 18+
-- npm 9+
 
 ### Build
 
 ```bash
-# Rust workspace
 cargo build --workspace
-
-# TypeScript packages
-npm install
-npm run build
+cargo build --release -p motarjim-cli
 ```
 
 ### Test
 
 ```bash
-# Rust tests
 cargo test --workspace
-
-# TypeScript tests
-npm test
-
-# All tests with release profile
-cargo test --release
+cargo test --workspace --lib   # Skip integration tests for speed
 ```
 
 ### Lint
@@ -326,14 +262,12 @@ cargo test --release
 ```bash
 cargo clippy --workspace -- -D warnings
 cargo fmt --check
-npm run lint
 ```
 
 ### Benchmark
 
 ```bash
 cargo bench --workspace
-npm run bench
 ```
 
 ## Project Structure
@@ -341,6 +275,7 @@ npm run bench
 ```
 motarjim/
 ├── crates/                 # Rust workspace (compiler engine)
+│   ├── motarjim-cli        # CLI application
 │   ├── motarjim-core       # Compiler facade & pipeline orchestrator
 │   ├── motarjim-parser     # HTML/CSS parser
 │   ├── motarjim-lexer      # HTML/CSS tokenizer
@@ -352,7 +287,6 @@ motarjim/
 │   ├── motarjim-gen-flutter # Flutter code generator
 │   ├── motarjim-gen-compose # Compose code generator
 │   ├── motarjim-gen-swiftui # SwiftUI code generator
-│   ├── motarjim-cli        # CLI application
 │   ├── motarjim-lsp        # Language server
 │   ├── motarjim-wasm       # WebAssembly bindings
 │   ├── motarjim-diag       # Diagnostic system
@@ -365,17 +299,14 @@ motarjim/
 │   ├── motarjim-profiling  # Performance profiling
 │   ├── motarjim-serialize  # Serialization
 │   └── motarjim-ffi        # FFI bridge
-├── packages/               # TypeScript packages
-│   ├── vscode-extension    # VS Code extension
-│   ├── playground-sdk      # Shared playground types
-│   └── website-sdk         # Website metadata
-├── apps/                   # TypeScript applications
-│   ├── playground          # Web playground (Vite)
-│   └── website             # Documentation website
+├── apps/                   # Applications
+│   ├── web                 # Web playground (Vite + React)
+│   └── vscode-extension    # VS Code extension
 ├── fuzz/                   # Fuzz targets
 ├── docs/                   # Documentation
-├── examples/               # Example inputs
+├── examples/               # Example HTML/CSS inputs
 ├── scripts/                # Build scripts
+├── docker/                 # Docker configurations
 └── xtask/                  # Cargo build tasks
 ```
 
@@ -386,7 +317,7 @@ motarjim/
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Compiler architecture and design decisions |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Development setup and contribution guide |
 | [docs/CLI_GUIDE.md](docs/CLI_GUIDE.md) | CLI commands, options, and configuration |
-| [docs/WEB_GUIDE.md](docs/WEB_GUIDE.md) | Web playground and website development |
+| [docs/WEB_GUIDE.md](docs/WEB_GUIDE.md) | Web playground development |
 | [docs/WASM_GUIDE.md](docs/WASM_GUIDE.md) | WebAssembly bindings and browser usage |
 | [docs/EXTENSION_GUIDE.md](docs/EXTENSION_GUIDE.md) | VS Code extension |
 | [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | Testing philosophy and practices |
@@ -394,8 +325,6 @@ motarjim/
 | [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) | Code style and conventions |
 | [docs/RELEASE_GUIDE.md](docs/RELEASE_GUIDE.md) | Release process and publishing |
 | [ROADMAP.md](ROADMAP.md) | Project roadmap and future plans |
-| [SECURITY.md](SECURITY.md) | Security policy and vulnerability reporting |
-| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community guidelines |
 
 ## Performance
 

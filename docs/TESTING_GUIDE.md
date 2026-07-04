@@ -37,25 +37,9 @@ cargo install cargo-tarpaulin
 cargo tarpaulin --workspace
 ```
 
-### TypeScript Tests
-
-```bash
-# All TypeScript tests
-npm test
-
-# Watch mode
-npm run test:watch
-
-# Update snapshots
-npx vitest run --update
-
-# A specific file
-npx vitest run tests/parser.test.ts
-```
-
 ### Golden Tests
 
-Golden tests compare generated output against expected files stored in `tests/golden/`.
+Golden tests compare generated output against expected files stored in `crates/motarjim-test-utils/tests/golden/`.
 
 ```bash
 # Run golden tests
@@ -65,7 +49,7 @@ cargo test golden
 UPDATE_EXPECT=1 cargo test golden
 
 # Review golden changes
-git diff tests/golden/
+git diff crates/motarjim-test-utils/tests/golden/
 ```
 
 ### Fuzz Tests
@@ -134,12 +118,12 @@ mod tests {
 Integration tests live in `tests/` directories at crate root and test the public API:
 
 ```rust
-// crates/motarjim-core/tests/golden_test.rs
+// crates/motarjim-core/tests/compile_test.rs
 #[test]
 fn test_end_to_end_navigation_bar() {
     let result = compile(CompilerOptions {
-        html: SourceFile::from_path("tests/golden/html/nav-bar.html"),
-        css: Some(SourceFile::from_path("tests/golden/css/nav-bar.css")),
+        html: SourceFile::from_path("tests/html/nav-bar.html"),
+        css: Some(SourceFile::from_path("tests/css/nav-bar.css")),
         target: Target::Flutter,
         ..Default::default()
     });
@@ -220,10 +204,6 @@ motarjim/
 │       ├── html_lexer.rs
 │       ├── css_lexer.rs
 │       └── selector_parser.rs
-└── tests/                       # TypeScript tests
-    ├── parser.test.ts
-    ├── css-analyzer.test.ts
-    └── generators.test.ts
 ```
 
 ### Per-Crate Test Coverage Targets
@@ -247,7 +227,7 @@ motarjim/
 ### Golden File Structure
 
 ```
-tests/golden/
+crates/motarjim-test-utils/tests/golden/
 ├── html/
 │   ├── simple-div.html
 │   ├── nested-elements.html
@@ -283,13 +263,13 @@ UPDATE_EXPECT=1 cargo test golden
 This updates all golden files. Always review the diff before committing:
 
 ```bash
-git diff tests/golden/
+git diff crates/motarjim-test-utils/tests/golden/
 ```
 
 ### Adding New Golden Tests
 
-1. Add input HTML to `tests/golden/html/`
-2. Add CSS to `tests/golden/css/` (if needed)
+1. Add input HTML to `crates/motarjim-test-utils/tests/golden/html/`
+2. Add CSS to `crates/motarjim-test-utils/tests/golden/css/` (if needed)
 3. Create a test function in `crates/motarjim-test-utils/tests/golden_test.rs`
 4. Run with `UPDATE_EXPECT=1` to generate initial golden output
 5. Verify the output manually
@@ -390,7 +370,7 @@ use libfuzzer_sys::fuzz_target;
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
         let mut lexer = motarjim_js::JsLexer::new(s);
-        let _ = lexer.tokenize(); // Must not panic
+        let _ = lexer.tokenize();
     }
 });
 ```
@@ -430,4 +410,3 @@ jobs:
 - [ ] New features have tests (unit + integration)
 - [ ] Golden files are updated if output changed
 - [ ] Performance benchmarks don't regress beyond limits
-- [ ] `npm test` passes for TypeScript changes

@@ -4,7 +4,7 @@
 
 motarjim is a **source-to-source compiler** that translates HTML and CSS into native UI code for Flutter (Dart), Jetpack Compose (Kotlin), and SwiftUI (Swift). It follows a classic multi-stage compiler architecture with discrete, composable passes.
 
-The compiler is built as a **Rust workspace** of single-responsibility crates. Each crate is independently publishable, testable, and benchmarkable. The TypeScript surface (VS Code extension, web playground, website) consumes the Rust engine via WASM or FFI and contains no compiler logic.
+The compiler is built as a **Rust workspace** of single-responsibility crates. Each crate is independently publishable, testable, and benchmarkable.
 
 ```
 HTML + CSS
@@ -251,13 +251,6 @@ Each generator crate walks the IR tree and emits platform-native code. Generator
      │ (motarjim- │  │ (motarjim-   │  │ (motarjim-   │
      │   cli)     │  │   wasm)      │  │   ffi)       │
      └────────────┘  └──────────────┘  └──────────────┘
-                              │               │
-                              ▼               ▼
-                     ┌──────────────┐  ┌──────────────┐
-                     │ Web Playground│  │ VS Code Ext  │
-                     │ (apps/       │  │ (packages/   │
-                     │  playground) │  │ extension)   │
-                     └──────────────┘  └──────────────┘
 ```
 
 ## Data Flow

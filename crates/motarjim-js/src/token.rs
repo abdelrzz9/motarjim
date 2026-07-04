@@ -46,6 +46,10 @@ pub enum JsTokenKind {
     In,
     Instanceof,
     As,
+    Debugger,
+    Static,
+    Get,
+    Set,
 
     // ---- identifiers & literals -------------------------------------------
     Identifier,
@@ -264,6 +268,10 @@ pub fn keyword_from_str(s: &str) -> Option<JsTokenKind> {
         "in" => JsTokenKind::In,
         "instanceof" => JsTokenKind::Instanceof,
         "as" => JsTokenKind::As,
+        "debugger" => JsTokenKind::Debugger,
+        "static" => JsTokenKind::Static,
+        "get" => JsTokenKind::Get,
+        "set" => JsTokenKind::Set,
         _ => return None,
     })
 }
@@ -277,6 +285,6 @@ pub fn is_reserved_word(s: &str) -> bool {
             | "async" | "await" | "yield" | "class" | "extends" | "super"
             | "new" | "this" | "typeof" | "void" | "delete" | "true"
             | "false" | "null" | "import" | "export" | "instanceof"
-            | "in" | "of" | "as"
+            | "in" | "of" | "as" | "debugger" | "static"
     )
 }

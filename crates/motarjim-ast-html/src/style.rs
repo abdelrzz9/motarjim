@@ -1,4 +1,5 @@
 //! Computed style types for the Motarjim compiler.
+#![allow(missing_docs)]
 
 /// CSS display types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

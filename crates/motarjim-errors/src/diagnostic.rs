@@ -1,9 +1,10 @@
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
-use motarjim_span::{SourceSpan, SourceFile};
+use motarjim_span::SourceSpan;
 
-use crate::{DiagnosticCode, Severity};
+use crate::code::DiagnosticCode;
+use crate::severity::Severity;
 
 /// The main diagnostic type used throughout the compiler.
 ///

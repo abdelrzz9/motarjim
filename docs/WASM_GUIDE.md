@@ -214,9 +214,6 @@ crates/motarjim-wasm/
 ### Optimization
 
 ```bash
-# Build with optimizations for smaller binary
-wasm-pack build --target web -- --features wee_alloc
-
 # Build with LTO for maximum performance
 RUSTFLAGS='-C target-cpu=native' wasm-pack build --target web --release
 

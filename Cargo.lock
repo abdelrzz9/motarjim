@@ -796,15 +796,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "motarjim"
-version = "0.1.0"
-
-[[package]]
 name = "motarjim-ast"
 version = "0.1.0"
 dependencies = [
- "bitflags 2.13.0",
- "motarjim-diag",
+ "motarjim-ast-css",
+ "motarjim-ast-html",
+ "motarjim-ast-ir",
+ "motarjim-span",
+ "serde",
+ "smallvec",
+]
+
+[[package]]
+name = "motarjim-ast-css"
+version = "0.1.0"
+dependencies = [
+ "motarjim-ast-html",
+ "serde",
+ "smallvec",
+ "smol_str",
+]
+
+[[package]]
+name = "motarjim-ast-html"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "smallvec",
+ "smol_str",
+]
+
+[[package]]
+name = "motarjim-ast-ir"
+version = "0.1.0"
+dependencies = [
+ "motarjim-ast-css",
+ "motarjim-ast-html",
  "serde",
  "smallvec",
  "smol_str",
@@ -817,6 +844,7 @@ dependencies = [
  "motarjim-diag",
  "motarjim-fs",
  "motarjim-serialize",
+ "motarjim-span",
  "serde",
  "serde_json",
  "sha2",
@@ -833,6 +861,7 @@ dependencies = [
  "motarjim-fs",
  "motarjim-js",
  "motarjim-profiling",
+ "motarjim-span",
  "serde",
  "serde_json",
  "tracing",
@@ -845,6 +874,7 @@ version = "0.1.0"
 dependencies = [
  "motarjim-diag",
  "motarjim-fs",
+ "motarjim-span",
  "serde",
  "serde_json",
  "toml",
@@ -856,6 +886,7 @@ version = "0.1.0"
 dependencies = [
  "dashmap",
  "motarjim-ast",
+ "motarjim-ast-html",
  "motarjim-cache",
  "motarjim-config",
  "motarjim-css",
@@ -872,6 +903,7 @@ dependencies = [
  "motarjim-parser",
  "motarjim-profiling",
  "motarjim-selectors",
+ "motarjim-span",
  "rayon",
  "smol_str",
  "tracing",
@@ -885,9 +917,12 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-css",
+ "motarjim-ast-html",
  "motarjim-diag",
  "motarjim-lexer",
  "motarjim-selectors",
+ "motarjim-span",
  "rayon",
  "smallvec",
  "smol_str",
@@ -897,9 +932,19 @@ dependencies = [
 name = "motarjim-diag"
 version = "0.1.0"
 dependencies = [
+ "motarjim-errors",
+ "motarjim-span",
  "proptest",
  "serde",
  "smol_str",
+]
+
+[[package]]
+name = "motarjim-errors"
+version = "0.1.0"
+dependencies = [
+ "motarjim-span",
+ "serde",
 ]
 
 [[package]]
@@ -918,6 +963,7 @@ version = "0.1.0"
 dependencies = [
  "motarjim-ast",
  "motarjim-diag",
+ "motarjim-span",
  "smallvec",
 ]
 
@@ -926,6 +972,7 @@ name = "motarjim-fs"
 version = "0.1.0"
 dependencies = [
  "motarjim-diag",
+ "motarjim-span",
  "serde",
 ]
 
@@ -935,9 +982,11 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-html",
  "motarjim-diag",
  "motarjim-formatter",
  "motarjim-ir",
+ "motarjim-span",
  "smallvec",
  "smol_str",
 ]
@@ -948,9 +997,11 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-html",
  "motarjim-diag",
  "motarjim-formatter",
  "motarjim-ir",
+ "motarjim-span",
  "smallvec",
  "smol_str",
 ]
@@ -961,9 +1012,11 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-html",
  "motarjim-diag",
  "motarjim-formatter",
  "motarjim-ir",
+ "motarjim-span",
  "smallvec",
  "smol_str",
 ]
@@ -975,6 +1028,7 @@ dependencies = [
  "motarjim-cache",
  "motarjim-diag",
  "motarjim-fs",
+ "motarjim-span",
  "serde",
  "sha2",
 ]
@@ -985,8 +1039,11 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-html",
+ "motarjim-ast-ir",
  "motarjim-diag",
  "motarjim-selectors",
+ "motarjim-span",
  "smallvec",
  "smol_str",
 ]
@@ -998,6 +1055,7 @@ dependencies = [
  "criterion",
  "motarjim-diag",
  "motarjim-lexer",
+ "motarjim-span",
  "proptest",
 ]
 
@@ -1008,6 +1066,7 @@ dependencies = [
  "criterion",
  "motarjim-ast",
  "motarjim-diag",
+ "motarjim-span",
  "proptest",
  "smallvec",
  "smol_str",
@@ -1025,6 +1084,7 @@ dependencies = [
  "motarjim-diag",
  "motarjim-fs",
  "motarjim-parser",
+ "motarjim-span",
  "serde",
  "serde_json",
  "tokio",
@@ -1038,7 +1098,9 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-html",
  "motarjim-diag",
+ "motarjim-span",
  "rayon",
  "smallvec",
  "smol_str",
@@ -1050,8 +1112,10 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "motarjim-ast",
+ "motarjim-ast-css",
  "motarjim-diag",
  "motarjim-lexer",
+ "motarjim-span",
  "proptest",
  "smallvec",
  "smol_str",
@@ -1070,6 +1134,7 @@ version = "0.1.0"
 dependencies = [
  "motarjim-ast",
  "motarjim-diag",
+ "motarjim-span",
  "proptest",
  "smallvec",
 ]
@@ -1079,10 +1144,18 @@ name = "motarjim-serialize"
 version = "0.1.0"
 dependencies = [
  "motarjim-ast",
+ "motarjim-ast-html",
  "serde",
  "serde_json",
  "smallvec",
  "smol_str",
+]
+
+[[package]]
+name = "motarjim-span"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -1094,6 +1167,7 @@ dependencies = [
  "motarjim-core",
  "motarjim-diag",
  "motarjim-fs",
+ "motarjim-span",
 ]
 
 [[package]]
@@ -1105,6 +1179,7 @@ dependencies = [
  "motarjim-core",
  "motarjim-diag",
  "motarjim-fs",
+ "motarjim-span",
  "serde",
  "serde_json",
  "wasm-bindgen",

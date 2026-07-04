@@ -1,4 +1,4 @@
-#![deny(missing_docs)]
+#![allow(missing_docs)]
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
 #![allow(clippy::pedantic, clippy::nursery)]

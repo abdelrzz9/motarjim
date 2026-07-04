@@ -78,11 +78,6 @@ cargo test --workspace
 cargo clippy --workspace -- -D warnings
 cargo fmt --check
 
-# TypeScript
-npm test
-npm run typecheck
-npm run lint
-
 # Benchmarks (verify no regressions)
 cargo bench --workspace
 
@@ -262,39 +257,6 @@ cargo publish -p motarjim-ast --dry-run
 # ... etc
 ```
 
-## Publishing to npm
-
-### Prerequisites
-
-- Account on [npmjs.com](https://npmjs.com)
-- Logged in: `npm login`
-- WASM package built: `cd crates/motarjim-wasm && wasm-pack build --target bundler`
-
-### Publish WASM Package
-
-```bash
-cd crates/motarjim-wasm/pkg
-npm publish --access public
-```
-
-### Publish TypeScript Packages
-
-```bash
-# Playground SDK
-cd packages/playground-sdk
-npm version 0.2.0
-npm publish --access public
-
-# Website SDK
-cd packages/website-sdk
-npm version 0.2.0
-npm publish --access public
-
-# VS Code Extension
-cd packages/vscode-extension
-vsce publish
-```
-
 ## Creating GitHub Releases
 
 ### Manual Process
@@ -340,7 +302,6 @@ zip motarjim-x86_64-windows.zip target/x86_64-pc-windows-gnu/release/motarjim.ex
 
 - [ ] Post on [GitHub Discussions](https://github.com/motarjim/motarjim/discussions)
 - [ ] Tweet/post on social media (if project has presence)
-- [ ] Update [motarjim.dev](https://motarjim.dev) website
 - [ ] Notify community channels
 
 ### Update Development Version
@@ -365,6 +326,4 @@ Add new `[Unreleased]` section to `CHANGELOG.md`.
 - [ ] Git tag created and pushed
 - [ ] GitHub release created
 - [ ] Crates published to crates.io
-- [ ] npm packages published
-- [ ] VS Code extension published
 - [ ] Release announced

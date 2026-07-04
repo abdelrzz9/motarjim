@@ -245,14 +245,16 @@ fn cmd_check_js(input: &Path) -> Result<i32, Box<dyn Error>> {
     match parser.parse() {
         Ok(program) => {
             let diagnostics = motarjim_js::SemanticAnalyzer::new().analyze(&program);
-            if !diagnostics.is_empty() {
-                print_diagnostics(&diagnostics);
+            let diags: Vec<_> = diagnostics.into_iter().map(Into::into).collect();
+            if !diags.is_empty() {
+                print_diagnostics(&diags);
             }
-            eprintln!("Check complete: {} diagnostics", diagnostics.len());
+            eprintln!("Check complete: {} diagnostics", diags.len());
             Ok(0)
         }
         Err(diagnostics) => {
-            print_diagnostics(&diagnostics);
+            let diags: Vec<_> = diagnostics.into_iter().map(Into::into).collect();
+            print_diagnostics(&diags);
             Ok(1)
         }
     }
