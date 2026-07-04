@@ -67,6 +67,12 @@ function attachResponsiveMetadata(ir: UiNode, metadata: ResponsiveMetadata): UiN
   return walk(ir);
 }
 
+/**
+ * @deprecated Use runIrPipeline instead.
+ * runPipeline uses the legacy UiNode-based pipeline. New code should use
+ * runIrPipeline which produces IrNode trees with typed ComputedStyle,
+ * SemanticIR, and LayoutIR.
+ */
 export async function runPipeline(input: PipelineInput): Promise<PipelineResult> {
   const { html, css, target, aiEnhance, aiModel } = input;
   const startTime = Date.now();

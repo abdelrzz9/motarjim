@@ -1,3 +1,10 @@
+/**
+ * @deprecated Use ./ir-generate.js (generateIr) instead.
+ * This module generates Flutter code from the legacy UiNode IR.
+ * The IR-based generator (generateIr) consumes the three-layer IrNode
+ * with separate semantic, layout, and style information.
+ */
+
 import type { UiNode, GenerateResult, PlatformTarget, Result } from '@motarjim/shared';
 import { countNodes, escapeStringExtra, NodeEmitter, walkTree } from '@motarjim/generator-core';
 import { DiagnosticBag } from '@motarjim/shared/diagnostics.js';

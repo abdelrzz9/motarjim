@@ -1,3 +1,10 @@
+/**
+ * @deprecated Use @motarjim/ir-v2 instead.
+ * This module produces the legacy UiNode IR. New code should use
+ * styledNodeToIrV2 from @motarjim/ir-v2 which produces the three-layer IrNode
+ * with separate SemanticIR, LayoutIR, and typed ComputedStyle.
+ */
+
 import type { UiNode, StyledNode, SemanticHint, NormalizedHint, AccessibilityInfo, Result, SourceSpan } from '@motarjim/shared';
 import { DiagnosticBag } from '@motarjim/shared/diagnostics.js';
 import { computeStyle } from '@motarjim/css-analyzer';
