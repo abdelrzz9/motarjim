@@ -1,0 +1,86 @@
+{
+  "name": "motarjim-vscode",
+  "displayName": "Motarjim",
+  "description": "Motarjim compiler support for VS Code",
+  "version": "0.1.0",
+  "publisher": "motarjim",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": ["motarjim", "html", "css", "flutter", "compose", "swiftui"],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:css",
+    "onCommand:motarjim.openPlayground",
+    "onCommand:motarjim.compileFile"
+  ],
+  "main": "./client/dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "motarjim.openPlayground",
+        "title": "Motarjim: Open Playground"
+      },
+      {
+        "command": "motarjim.compileFile",
+        "title": "Motarjim: Compile Current File"
+      },
+      {
+        "command": "motarjim.showOutput",
+        "title": "Motarjim: Show Output Panel"
+      },
+      {
+        "command": "motarjim.clearCache",
+        "title": "Motarjim: Clear Cache"
+      }
+    ],
+    "configuration": {
+      "title": "Motarjim",
+      "properties": {
+        "motarjim.defaultPlatform": {
+          "type": "string",
+          "default": "flutter",
+          "enum": ["flutter", "compose", "swiftui"],
+          "description": "Default target platform"
+        },
+        "motarjim.minifyOutput": {
+          "type": "boolean",
+          "default": false,
+          "description": "Minify generated code"
+        },
+        "motarjim.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time diagnostics"
+        },
+        "motarjim.formatOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Format on save"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "motarjim.compileFile",
+        "key": "ctrl+shift+m",
+        "when": "editorLangId == 'html'"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.4.0"
+  }
+}
