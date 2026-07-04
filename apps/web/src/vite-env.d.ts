@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-declare module '*.module.css' {
-  const classes: { readonly [key: string]: string };
-  export default classes;
+interface Window {
+  motarjim_wasm_init?: () => Promise<void>;
+  WasmCompiler?: new () => { compile(html: string, css: string | null, platform: string): string };
 }

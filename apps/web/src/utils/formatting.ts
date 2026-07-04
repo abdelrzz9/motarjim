@@ -1,4 +1,4 @@
-export function formatCode(code: string, lang: string): string {
+export function formatCode(code: string, _lang: string): string {
   return code;
 }
 
