@@ -9,9 +9,10 @@ import { generate as generateFlutter } from '@motarjim/generator-flutter';
 import { generateIr as generateFlutterIr } from '@motarjim/generator-flutter/ir-generate.js';
 import { generate as generateCompose } from '@motarjim/generator-compose';
 import { generate as generateSwiftUI } from '@motarjim/generator-swiftui';
-import type { HtmlNode, StyledNode, UiNode, GenerateResult, Result, Diagnostic, ResponsiveMetadata } from '@motarjim/shared';
+import type { StyledNode, GenerateResult, Result, Diagnostic, ResponsiveMetadata } from '@motarjim/shared';
 import type { IrNode } from '@motarjim/shared/ir-v2.js';
 import { formatDiagnostics } from '@motarjim/shared/diagnostics.js';
+import { countHtmlNodes, countNodes as countUiNodes, countComponentNodes } from '@motarjim/shared/count-nodes.js';
 
 export type Target = 'flutter' | 'compose' | 'swiftui';
 
@@ -53,30 +54,6 @@ function requireOk<T>(result: Result<T>, phase: string): T {
     throw new PipelineError(result.diagnostics);
   }
   return result.value;
-}
-
-const COMPONENT_TYPES = new Set([
-  'Button', 'Card', 'NavigationBar', 'AppBar', 'Drawer',
-  'HeroSection', 'Footer', 'Sidebar', 'Dialog', 'Modal',
-  'Tabs', 'Form', 'TextField', 'TextArea', 'List',
-]);
-
-function countHtmlNodes(node: HtmlNode): number {
-  let count = 1;
-  for (const child of node.children) count += countHtmlNodes(child);
-  return count;
-}
-
-function countComponentNodes(node: UiNode): number {
-  let count = COMPONENT_TYPES.has(node.type) ? 1 : 0;
-  for (const child of node.children) count += countComponentNodes(child);
-  return count;
-}
-
-function countNodes(node: UiNode): number {
-  let count = 1;
-  for (const child of node.children) count += countNodes(child);
-  return count;
 }
 
 function attachResponsiveMetadata(ir: UiNode, metadata: ResponsiveMetadata): UiNode {
@@ -141,8 +118,8 @@ export async function runPipeline(input: PipelineInput): Promise<PipelineResult>
 
   const irBefore = structuredClone(ir);
   const optimized = requireOk(optimize(ir), 'optimizer');
-  const originalCount = countNodes(irBefore);
-  const optimizedCount = countNodes(optimized);
+  const originalCount = countUiNodes(irBefore);
+  const optimizedCount = countUiNodes(optimized);
   const savings = originalCount > 0 ? Math.round(((originalCount - optimizedCount) / originalCount) * 100) : 0;
 
   let result: GenerateResult;

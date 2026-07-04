@@ -1,25 +1,16 @@
 import type { UiNode, PlatformTarget } from '@motarjim/shared';
 import type { ConversionStats } from '../types.js';
+import {
+  countNodes as sharedCountNodes,
+  countComponentNodes as sharedCountComponentNodes,
+} from '@motarjim/shared/count-nodes.js';
 
 export function countNodes(node: UiNode): number {
-  let count = 1;
-  for (const child of node.children) {
-    count += countNodes(child);
-  }
-  return count;
+  return sharedCountNodes(node);
 }
 
 export function countComponentNodes(node: UiNode): number {
-  const componentTypes = new Set([
-    'Button', 'Card', 'NavigationBar', 'AppBar', 'Drawer',
-    'HeroSection', 'Footer', 'Sidebar', 'Dialog', 'Modal',
-    'Tabs', 'Form', 'TextField', 'TextArea', 'List',
-  ]);
-  let count = componentTypes.has(node.type) ? 1 : 0;
-  for (const child of node.children) {
-    count += countComponentNodes(child);
-  }
-  return count;
+  return sharedCountComponentNodes(node);
 }
 
 export function countLines(code: string): number {
@@ -27,8 +18,8 @@ export function countLines(code: string): number {
 }
 
 export function computeOptimizationSavings(original: UiNode, optimized: UiNode): number {
-  const originalCount = countNodes(original);
-  const optimizedCount = countNodes(optimized);
+  const originalCount = sharedCountNodes(original);
+  const optimizedCount = sharedCountNodes(optimized);
   if (originalCount === 0) return 0;
   return Math.round(((originalCount - optimizedCount) / originalCount) * 100);
 }
