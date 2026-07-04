@@ -1,0 +1,57 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - 'Dockerfile'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          load: true
+          tags: motarjim:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Verify image exists
+        run: docker image inspect motarjim:ci
+
+  build-dev:
+    name: Build Dev Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build dev image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.dev
+          push: false
+          load: true
+          tags: motarjim:dev-ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Verify image exists
+        run: docker image inspect motarjim:dev-ci

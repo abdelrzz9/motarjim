@@ -3,6 +3,10 @@ name: Benchmarks
 on:
   push:
     branches: [main]
+    paths:
+      - 'crates/**/*.rs'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
   workflow_dispatch:
 
 jobs:
@@ -14,6 +18,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v4
       - name: Install cargo-criterion
-        run: cargo install cargo-criterion
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-criterion
       - name: Run benchmarks
-        run: cargo criterion
+        run: cargo criterion --workspace

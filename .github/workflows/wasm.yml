@@ -6,6 +6,7 @@ on:
     paths:
       - 'crates/motarjim-wasm/**'
       - 'Cargo.toml'
+      - 'Cargo.lock'
   pull_request:
     branches: [main]
 
@@ -18,9 +19,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v4
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - name: Build WASM
-        run: wasm-pack build crates/motarjim-wasm --target web
+        run: wasm-pack build crates/motarjim-wasm --target web --out-dir pkg
       - name: Check size
         run: ls -lh crates/motarjim-wasm/pkg/
