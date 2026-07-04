@@ -1,0 +1,23 @@
+[package]
+name = "motarjim-lexer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "HTML and CSS lexer/tokenizer for Motarjim compiler"
+
+[dependencies]
+motarjim-diag = { workspace = true }
+motarjim-ast = { workspace = true }
+smol_str = { workspace = true }
+smallvec = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+
+[[bench]]
+name = "lexer_bench"
+harness = false
+
+[lints]
+workspace = true
