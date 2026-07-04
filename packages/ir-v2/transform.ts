@@ -1,4 +1,5 @@
 import type { HtmlNode, StyledNode, ResolvedStyles } from '@motarjim/shared';
+import { computeStyle } from '@motarjim/css-analyzer';
 import type {
   IrNode,
   SemanticIR,
@@ -21,7 +22,6 @@ import type {
   GridLayout,
   GridTrack,
   ScrollAxis,
-  DisplayType,
 } from '@motarjim/shared/ir-v2.js';
 import {
   defaultAccessibility,
@@ -107,7 +107,7 @@ export function styledNodeToIrV2(
   styled: StyledNode,
   responsiveVariants?: ResponsiveVariant[],
 ): IrNode {
-  const cs = computeV2Style(styled.styles);
+  const cs = computeStyle(styled.styles);
   const rvs = responsiveVariants ?? [];
 
   return {
@@ -137,147 +137,8 @@ function styledShouldSkipTextChild(child: StyledNode, parent: StyledNode): boole
   return TEXT_CONTAINER_TAGS.has(parent.node.tagName);
 }
 
-// ============================================================
-// ResolvedStyles → v2 ComputedStyle converter
-// ============================================================
-
-function computeV2Style(styles: ResolvedStyles): ComputedStyle {
-  const r: ComputedStyle = {};
-  const s = (name: string) => styles[name];
-
-  // Typography
-  if (s('font-family')) r.fontFamily = s('font-family');
-  if (s('font-size')) r.fontSize = parsePx(s('font-size'));
-  if (s('font-weight')) r.fontWeight = parseInt(s('font-weight'), 10) || undefined;
-  if (s('font-style')) r.fontStyle = s('font-style');
-  if (s('line-height')) r.lineHeight = parsePx(s('line-height'));
-  if (s('text-align')) r.textAlign = s('text-align') as ComputedStyle['textAlign'];
-  if (s('text-decoration')) r.textDecoration = s('text-decoration');
-  if (s('text-transform')) r.textTransform = s('text-transform') as ComputedStyle['textTransform'];
-  if (s('letter-spacing')) r.letterSpacing = parsePx(s('letter-spacing'));
-  if (s('color')) r.color = s('color');
-
-  // Box model
-  if (s('margin')) applyBoxShorthand(r, 'margin', s('margin'));
-  if (s('margin-top')) r.marginTop = parsePx(s('margin-top'));
-  if (s('margin-right')) r.marginRight = parsePx(s('margin-right'));
-  if (s('margin-bottom')) r.marginBottom = parsePx(s('margin-bottom'));
-  if (s('margin-left')) r.marginLeft = parsePx(s('margin-left'));
-
-  if (s('padding')) applyBoxShorthand(r, 'padding', s('padding'));
-  if (s('padding-top')) r.paddingTop = parsePx(s('padding-top'));
-  if (s('padding-right')) r.paddingRight = parsePx(s('padding-right'));
-  if (s('padding-bottom')) r.paddingBottom = parsePx(s('padding-bottom'));
-  if (s('padding-left')) r.paddingLeft = parsePx(s('padding-left'));
-
-  if (s('border-width')) r.borderWidth = parsePx(s('border-width'));
-  if (s('border-color')) r.borderColor = s('border-color');
-  if (s('border-radius')) r.borderRadius = parsePx(s('border-radius'));
-  if (s('box-sizing')) r.boxSizing = s('box-sizing') as ComputedStyle['boxSizing'];
-  if (s('opacity')) r.opacity = parseFloat(s('opacity')) || undefined;
-
-  // Color / Background
-  if (s('background-color')) r.backgroundColor = s('background-color');
-  if (s('background-image')) r.backgroundImage = s('background-image');
-
-  // Sizing
-  if (s('width')) r.width = s('width');
-  if (s('height')) r.height = s('height');
-  if (s('min-width')) r.minWidth = s('min-width');
-  if (s('max-width')) r.maxWidth = s('max-width');
-  if (s('min-height')) r.minHeight = s('min-height');
-  if (s('max-height')) r.maxHeight = s('max-height');
-
-  // Positioning
-  if (s('position')) r.position = s('position') as ComputedStyle['position'];
-  if (s('top')) r.top = parsePx(s('top'));
-  if (s('right')) r.right = parsePx(s('right'));
-  if (s('bottom')) r.bottom = parsePx(s('bottom'));
-  if (s('left')) r.left = parsePx(s('left'));
-  if (s('z-index')) r.zIndex = parseInt(s('z-index'), 10) || undefined;
-
-  // Overflow
-  if (s('overflow-x')) r.overflowX = s('overflow-x') as ComputedStyle['overflowX'];
-  if (s('overflow-y')) r.overflowY = s('overflow-y') as ComputedStyle['overflowY'];
-
-  // Display & visibility
-  if (s('display')) r.display = s('display') as DisplayType;
-  if (s('visibility')) r.visibility = s('visibility') as ComputedStyle['visibility'];
-
-  // Flex
-  if (s('flex-direction')) r.flexDirection = s('flex-direction');
-  if (s('flex-wrap')) r.flexWrap = s('flex-wrap');
-  if (s('justify-content')) r.justifyContent = s('justify-content');
-  if (s('align-items')) r.alignItems = s('align-items');
-  if (s('align-content')) r.alignContent = s('align-content');
-  if (s('gap')) r.gap = parsePx(s('gap'));
-  if (s('flex-grow')) r.flexGrow = parseFloat(s('flex-grow')) || undefined;
-  if (s('flex-shrink')) r.flexShrink = parseFloat(s('flex-shrink')) || undefined;
-  if (s('flex-basis')) r.flexBasis = s('flex-basis');
-  if (s('align-self')) r.alignSelf = s('align-self') as ComputedStyle['alignSelf'];
-  if (s('order')) r.order = parseInt(s('order'), 10) || undefined;
-
-  // Grid
-  if (s('grid-column')) r.gridColumn = s('grid-column');
-  if (s('grid-row')) r.gridRow = s('grid-row');
-  if (s('grid-area')) r.gridArea = s('grid-area');
-
-  // Misc
-  if (s('transform')) r.transform = s('transform');
-  if (s('transition')) r.transition = s('transition');
-  if (s('box-shadow')) r.boxShadow = s('box-shadow');
-  if (s('cursor')) r.cursor = s('cursor');
-
-  return r;
-}
-
-function parsePx(value: string | undefined): number | undefined {
-  if (!value) return undefined;
-  const t = value.trim();
-  const m = t.match(/^(-?\d+(?:\.\d+)?)px$/);
-  if (m) return parseFloat(m[1]);
-  const n = t.match(/^(-?\d+(?:\.\d+)?)$/);
-  if (n) return parseFloat(n[1]);
-  return undefined;
-}
-
-function applyMarginShorthand(
-  r: Pick<ComputedStyle, 'marginTop' | 'marginRight' | 'marginBottom' | 'marginLeft'>,
-  parts: number[],
-): void {
-  switch (parts.length) {
-    case 1: r.marginTop = parts[0]; r.marginRight = parts[0]; r.marginBottom = parts[0]; r.marginLeft = parts[0]; break;
-    case 2: r.marginTop = parts[0]; r.marginRight = parts[1]; r.marginBottom = parts[0]; r.marginLeft = parts[1]; break;
-    case 3: r.marginTop = parts[0]; r.marginRight = parts[1]; r.marginBottom = parts[2]; r.marginLeft = parts[1]; break;
-    case 4: r.marginTop = parts[0]; r.marginRight = parts[1]; r.marginBottom = parts[2]; r.marginLeft = parts[3]; break;
-  }
-}
-
-function applyPaddingShorthand(
-  r: Pick<ComputedStyle, 'paddingTop' | 'paddingRight' | 'paddingBottom' | 'paddingLeft'>,
-  parts: number[],
-): void {
-  switch (parts.length) {
-    case 1: r.paddingTop = parts[0]; r.paddingRight = parts[0]; r.paddingBottom = parts[0]; r.paddingLeft = parts[0]; break;
-    case 2: r.paddingTop = parts[0]; r.paddingRight = parts[1]; r.paddingBottom = parts[0]; r.paddingLeft = parts[1]; break;
-    case 3: r.paddingTop = parts[0]; r.paddingRight = parts[1]; r.paddingBottom = parts[2]; r.paddingLeft = parts[1]; break;
-    case 4: r.paddingTop = parts[0]; r.paddingRight = parts[1]; r.paddingBottom = parts[2]; r.paddingLeft = parts[3]; break;
-  }
-}
-
-function applyBoxShorthand(
-  r: ComputedStyle,
-  prefix: 'margin' | 'padding',
-  value: string,
-): void {
-  const parts = value.split(/\s+/).map(s => parsePx(s)).filter((p): p is number => p !== undefined);
-  if (parts.length === 0) return;
-  if (prefix === 'margin') {
-    applyMarginShorthand(r, parts);
-  } else {
-    applyPaddingShorthand(r, parts);
-  }
-}
+// computeV2Style is now delegated to @motarjim/css-analyzer's computeStyle
+// which uses the shared CSS mapper modules (spacing-mapper, typography-mapper, etc.)
 
 // ============================================================
 // Accessibility extraction
