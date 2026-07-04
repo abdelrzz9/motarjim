@@ -1,0 +1,34 @@
+[package]
+name = "motarjim-lsp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Language server for Motarjim"
+
+[[bin]]
+name = "motarjim-lsp"
+path = "src/main.rs"
+
+[dependencies]
+motarjim-core = { workspace = true }
+motarjim-cache = { workspace = true }
+motarjim-config = { workspace = true }
+motarjim-diag = { workspace = true }
+motarjim-parser = { workspace = true }
+motarjim-ast = { workspace = true }
+motarjim-fs = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tower-lsp = "0.19"
+tokio = { version = "1", features = ["full"] }
+dashmap = "5"
+url = "2"
+
+[features]
+default = ["completion", "hover", "semantic-tokens"]
+completion = []
+hover = []
+semantic-tokens = []
+
+[lints]
+workspace = true

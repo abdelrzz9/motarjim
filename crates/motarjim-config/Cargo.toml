@@ -1,0 +1,16 @@
+[package]
+name = "motarjim-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Configuration loading for Motarjim compiler"
+
+[dependencies]
+motarjim-diag = { workspace = true }
+motarjim-fs = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+toml = "0.8"
+
+[lints]
+workspace = true

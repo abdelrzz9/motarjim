@@ -1,0 +1,18 @@
+[package]
+name = "motarjim-ffi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "FFI bridge for Motarjim compiler"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+motarjim-core = { workspace = true }
+motarjim-config = { workspace = true }
+motarjim-fs = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

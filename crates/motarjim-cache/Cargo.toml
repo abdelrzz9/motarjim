@@ -1,0 +1,23 @@
+[package]
+name = "motarjim-cache"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Compilation cache for Motarjim compiler"
+
+[dependencies]
+motarjim-diag = { workspace = true }
+motarjim-fs = { workspace = true }
+motarjim-serialize = { workspace = true }
+sha2 = { workspace = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+[features]
+default = []
+s3 = []
+redis = []
+json = ["dep:serde", "dep:serde_json"]
+
+[lints]
+workspace = true

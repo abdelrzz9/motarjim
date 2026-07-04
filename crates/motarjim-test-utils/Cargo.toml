@@ -1,0 +1,15 @@
+[package]
+name = "motarjim-test-utils"
+version = "0.1.0"
+edition = "2021"
+description = "Test utilities for Motarjim compiler"
+
+[dependencies]
+motarjim-core = { workspace = true, features = ["gen-flutter", "gen-compose", "gen-swiftui"] }
+motarjim-diag = { workspace = true }
+motarjim-fs = { workspace = true }
+motarjim-config = { workspace = true }
+insta = { workspace = true }
+
+[lints]
+workspace = true

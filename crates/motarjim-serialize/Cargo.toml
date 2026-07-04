@@ -1,0 +1,16 @@
+[package]
+name = "motarjim-serialize"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Serialization helpers for Motarjim compiler"
+
+[dependencies]
+motarjim-ast = { workspace = true, features = ["serialize"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+smol_str = { workspace = true }
+smallvec = { workspace = true }
+
+[lints]
+workspace = true

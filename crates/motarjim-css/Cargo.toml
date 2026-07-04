@@ -1,0 +1,25 @@
+[package]
+name = "motarjim-css"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Complete CSS engine for Motarjim compiler"
+
+[dependencies]
+motarjim-diag = { workspace = true }
+motarjim-ast = { workspace = true }
+motarjim-lexer = { workspace = true }
+motarjim-selectors = { workspace = true }
+smallvec = { workspace = true }
+smol_str = { workspace = true }
+rayon = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "css_bench"
+harness = false
+
+[lints]
+workspace = true

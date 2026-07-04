@@ -1,0 +1,18 @@
+[package]
+name = "motarjim-fs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Filesystem abstraction for Motarjim compiler"
+
+[dependencies]
+motarjim-diag = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+watcher = []
+json = ["dep:serde"]
+
+[lints]
+workspace = true

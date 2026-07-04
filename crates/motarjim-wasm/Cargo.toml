@@ -1,0 +1,24 @@
+[package]
+name = "motarjim-wasm"
+version.workspace = true
+edition.workspace = true
+description = "WASM bindings for Motarjim compiler"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+motarjim-core = { workspace = true, features = ["wasm"] }
+motarjim-diag = { workspace = true }
+motarjim-config = { workspace = true }
+motarjim-fs = { workspace = true }
+wasm-bindgen = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+js-sys = { workspace = true }
+
+[features]
+default = []
+
+[lints]
+workspace = true

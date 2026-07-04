@@ -1,0 +1,24 @@
+[package]
+name = "motarjim-gen-compose"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Jetpack Compose/Kotlin code generator for Motarjim compiler"
+
+[dependencies]
+motarjim-ast = { workspace = true }
+motarjim-diag = { workspace = true }
+motarjim-ir = { workspace = true }
+motarjim-formatter = { workspace = true }
+smallvec = { workspace = true }
+smol_str = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "gen_bench"
+harness = false
+
+[lints]
+workspace = true

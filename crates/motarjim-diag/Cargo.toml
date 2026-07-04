@@ -1,0 +1,21 @@
+[package]
+name = "motarjim-diag"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Diagnostic system for Motarjim compiler"
+
+[dependencies]
+serde = { workspace = true, optional = true }
+smol_str = { workspace = true, optional = true }
+
+[features]
+default = ["color"]
+color = []
+json = ["dep:serde", "dep:smol_str"]
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[lints]
+workspace = true

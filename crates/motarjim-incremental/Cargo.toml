@@ -1,0 +1,20 @@
+[package]
+name = "motarjim-incremental"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Incremental compilation engine for Motarjim compiler"
+
+[dependencies]
+motarjim-cache = { workspace = true }
+motarjim-fs = { workspace = true }
+motarjim-diag = { workspace = true }
+sha2 = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+json = ["dep:serde"]
+
+[lints]
+workspace = true
