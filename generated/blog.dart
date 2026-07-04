@@ -90,11 +90,20 @@ class _Header extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          const _TabLink(label: 'Latest'),
+          Semantics(
+            label: 'Latest posts',
+            child: const _TabLink(label: 'Latest'),
+          ),
           const SizedBox(width: 24),
-          const _TabLink(label: 'Popular'),
+          Semantics(
+            label: 'Popular posts',
+            child: const _TabLink(label: 'Popular'),
+          ),
           const SizedBox(width: 24),
-          const _TabLink(label: 'Archive'),
+          Semantics(
+            label: 'Archive posts',
+            child: const _TabLink(label: 'Archive'),
+          ),
         ],
       ),
     );
@@ -108,18 +117,21 @@ class _TabLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.transparent, width: 2),
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.transparent, width: 2),
+          ),
         ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 16,
-          color: Color(0xFF666666),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFF666666),
+          ),
         ),
       ),
     );
@@ -182,12 +194,15 @@ class _BlogCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Read More',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF2563EB),
+            GestureDetector(
+              onTap: () {},
+              child: const Text(
+                'Read More',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2563EB),
+                ),
               ),
             ),
           ],
