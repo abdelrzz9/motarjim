@@ -73,7 +73,7 @@ class _Header extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Color(0x1A000000),
             blurRadius: 3,
             offset: const Offset(0, 1),
           ),
@@ -139,56 +139,59 @@ class _BlogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1A1A2E),
+    return Semantics(
+      label: 'Blog post: $title',
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            meta,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF888888),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A2E),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            description,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF555555),
+            const SizedBox(height: 8),
+            Text(
+              meta,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF888888),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Read More',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2563EB),
+            const SizedBox(height: 16),
+            Text(
+              description,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF555555),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Text(
+              'Read More',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2563EB),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
