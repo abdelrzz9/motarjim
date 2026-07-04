@@ -10,4 +10,3 @@ bin/
 *.log
 coverage/
 .turbo/
-packages/

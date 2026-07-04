@@ -1,0 +1,1 @@
+{"name":"motarjim-vscode-extension","displayName":"motarjim","version":"0.1.0","private":true,"engines":{"vscode":"^1.90.0"},"activationEvents":["onCommand:motarjim.openPlayground"],"main":"./src/extension.ts","contributes":{"commands":[{"command":"motarjim.openPlayground","title":"motarjim: Open Playground"}]}}

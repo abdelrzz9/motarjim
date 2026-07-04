@@ -53,10 +53,10 @@ Write once in HTML/CSS. Ship native code for every platform.
 
 ## Web Playground
 
-motarjim ships with a web-based playground at `http://localhost:3000`:
+motarjim ships with a restored Vite playground in `apps/playground` at `http://localhost:3000`:
 
 ```
-npm start -w web
+npm run start:playground
 ```
 
 The web UI provides:
@@ -239,6 +239,26 @@ struct GeneratedView: View {
 }
 ```
 
+## TypeScript apps and packages
+
+The repository keeps runnable TypeScript applications separate from reusable TypeScript packages:
+
+- `apps/playground` — restored Vite playground that was previously under `web/`.
+- `apps/website` — documentation/marketing website shell.
+- `packages/vscode-extension` — VS Code extension workspace for editor integration.
+- `packages/playground-sdk` — shared playground request and target types.
+- `packages/website-sdk` — shared website navigation metadata.
+
+Common commands:
+
+```bash
+npm install
+npm run start:playground
+npm run start:website
+```
+
+See [docs/web-and-vscode.md](docs/web-and-vscode.md) for details.
+
 ## AI Enhancement
 
 Optional Ollama integration for improved component detection:
@@ -274,7 +294,7 @@ See [docs/benchmarks.md](docs/benchmarks.md) for detailed results.
 - [ ] Responsive design generation
 - [ ] Advanced CSS selectors
 - [x] Watch mode
-- [ ] VS Code extension
+- [x] VS Code extension workspace scaffold
 
 See [docs/roadmap.md](docs/roadmap.md) for full roadmap.
 
@@ -299,6 +319,7 @@ See [docs/roadmap.md](docs/roadmap.md) for full roadmap.
 - [Troubleshooting](docs/troubleshooting.md)
 - [FAQ](docs/faq.md)
 - [Roadmap](docs/roadmap.md)
+- [Web apps and VS Code extension](docs/web-and-vscode.md)
 
 ## Contributing
 
