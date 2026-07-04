@@ -185,17 +185,14 @@ impl QueryCache {
         self.misses.fetch_add(1, Ordering::Relaxed);
         let value = query.execute(key, context);
 
-        self.results
-            .entry(type_id)
-            .or_insert_with(HashMap::new)
-            .insert(
-                cache_key,
-                CachedValue {
-                    value: Box::new(value.clone()),
-                    dependencies: Vec::new(),
-                    created_at: Instant::now(),
-                },
-            );
+        self.results.entry(type_id).or_default().insert(
+            cache_key,
+            CachedValue {
+                value: Box::new(value.clone()),
+                dependencies: Vec::new(),
+                created_at: Instant::now(),
+            },
+        );
 
         value
     }

@@ -148,6 +148,7 @@ pub trait EventHandler: Send + Sync {
 /// bus.subscribe(Box::new(MyHandler));
 /// ```
 pub struct EventBus {
+    /// Registered handlers, notified in subscription order.
     handlers: Vec<Box<dyn EventHandler>>,
 }
 

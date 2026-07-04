@@ -198,7 +198,14 @@ fn cmd_init() -> Result<i32, Box<dyn Error>> {
 }
 
 /// Runs the check command, compiling with strict mode enabled.
+///
+/// JavaScript inputs (`.js`, `.mjs`) are routed to the `motarjim-js`
+/// parser and semantic analyzer instead of the HTML/CSS compiler pipeline.
 fn cmd_check(input: &Path) -> Result<i32, Box<dyn Error>> {
+    if is_javascript_file(input) {
+        return cmd_check_js(input);
+    }
+
     let config = load_config();
     let fs = Arc::new(RealFileSystem::new());
     let compiler = Compiler::new(config, fs);
@@ -218,6 +225,34 @@ fn cmd_check(input: &Path) -> Result<i32, Box<dyn Error>> {
         }
         Err(diags) => {
             print_diagnostics(&diags);
+            Ok(1)
+        }
+    }
+}
+
+/// Returns `true` if `path`'s extension marks it as JavaScript source.
+fn is_javascript_file(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|ext| ext.to_str()),
+        Some("js" | "mjs" | "jsx")
+    )
+}
+
+/// Parses and semantically analyzes a JavaScript file, printing diagnostics.
+fn cmd_check_js(input: &Path) -> Result<i32, Box<dyn Error>> {
+    let source = std::fs::read_to_string(input)?;
+    let mut parser = motarjim_js::JsParser::new(&source);
+    match parser.parse() {
+        Ok(program) => {
+            let diagnostics = motarjim_js::SemanticAnalyzer::new().analyze(&program);
+            if !diagnostics.is_empty() {
+                print_diagnostics(&diagnostics);
+            }
+            eprintln!("Check complete: {} diagnostics", diagnostics.len());
+            Ok(0)
+        }
+        Err(diagnostics) => {
+            print_diagnostics(&diagnostics);
             Ok(1)
         }
     }
@@ -317,6 +352,28 @@ mod tests {
             }
             _ => panic!("Expected Check command"),
         }
+    }
+
+    #[test]
+    fn test_is_javascript_file() {
+        assert!(is_javascript_file(Path::new("app.js")));
+        assert!(is_javascript_file(Path::new("app.mjs")));
+        assert!(is_javascript_file(Path::new("app.jsx")));
+        assert!(!is_javascript_file(Path::new("index.html")));
+    }
+
+    #[test]
+    fn test_cmd_check_js_reports_semantic_diagnostics() {
+        let dir =
+            std::env::temp_dir().join(format!("motarjim-cli-check-js-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+        let file = dir.join("demo.js");
+        std::fs::write(&file, "const x = 1; x = 2;").expect("write temp file");
+
+        let exit_code = cmd_check_js(&file).expect("cmd_check_js should not error");
+        assert_eq!(exit_code, 0);
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

@@ -55,6 +55,7 @@ pub trait Generator: Send + Sync {
 /// Generators are keyed by their [`name`](Generator::name) and can be
 /// looked up at code-generation time.
 pub struct GeneratorRegistry {
+    /// Registered generators, in registration order.
     generators: Vec<Box<dyn Generator>>,
 }
 
@@ -128,6 +129,7 @@ pub trait Plugin: Send + Sync {
 ///
 /// Serves as the integration point where plugins register their generators.
 pub struct PluginRegistry {
+    /// The generator registry plugins populate.
     generators: GeneratorRegistry,
 }
 

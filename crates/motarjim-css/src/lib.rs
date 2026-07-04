@@ -34,13 +34,18 @@ use smol_str::SmolStr;
 // CSS value types
 // ---------------------------------------------------------------------------
 
+/// Typed CSS value parsing (colors, lengths, spacing, etc.).
 mod value;
 pub use value::*;
+/// Cascade resolution: sorting and merging matched declarations by specificity.
 mod cascade;
 pub use cascade::*;
+/// Known CSS property definitions and lookups.
 mod properties;
 pub use properties::*;
+/// Selector-to-node matching against a styled document.
 mod matching;
+/// Resolves a stylesheet and document into computed styles per node.
 mod resolver;
 pub use resolver::*;
 #[cfg(test)]

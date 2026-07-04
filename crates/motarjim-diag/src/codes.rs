@@ -11,6 +11,7 @@
 //! | 400-499 | IR         | E0400  |
 //! | 500-599 | Generator  | E0500  |
 //! | 600-699 | Config     | E0600  |
+//! | 700-799 | JavaScript | E0700  |
 
 use crate::DiagnosticCode;
 
@@ -83,6 +84,24 @@ pub const CONFIG_FILE_NOT_FOUND: DiagnosticCode =
 pub const CONFIG_PARSE_ERROR: DiagnosticCode =
     DiagnosticCode::new(601, "Configuration parse error");
 
+// JavaScript codes (E0700-E0799)
+
+/// An unexpected token was encountered while parsing JavaScript.
+pub const JS_UNEXPECTED_TOKEN: DiagnosticCode = DiagnosticCode::new(700, "Unexpected token");
+
+/// The input ended before parsing could complete.
+pub const JS_UNEXPECTED_EOF: DiagnosticCode = DiagnosticCode::new(701, "Unexpected end of input");
+
+/// A `let`/`const` binding was declared more than once in the same scope.
+pub const JS_DUPLICATE_DECLARATION: DiagnosticCode =
+    DiagnosticCode::new(710, "Duplicate declaration");
+
+/// A variable was referenced without a matching declaration in scope.
+pub const JS_UNDECLARED_VARIABLE: DiagnosticCode = DiagnosticCode::new(711, "Undeclared variable");
+
+/// A `const` binding was reassigned after its initial declaration.
+pub const JS_ASSIGN_TO_CONST: DiagnosticCode = DiagnosticCode::new(712, "Assignment to constant");
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -133,6 +152,15 @@ mod tests {
     }
 
     #[test]
+    fn test_js_codes() {
+        assert_eq!(JS_UNEXPECTED_TOKEN.number, 700);
+        assert_eq!(JS_UNEXPECTED_EOF.number, 701);
+        assert_eq!(JS_DUPLICATE_DECLARATION.number, 710);
+        assert_eq!(JS_UNDECLARED_VARIABLE.number, 711);
+        assert_eq!(JS_ASSIGN_TO_CONST.number, 712);
+    }
+
+    #[test]
     fn test_code_messages() {
         assert_eq!(PARSER_UNEXPECTED_TOKEN.message, "Unexpected token");
         assert_eq!(A11Y_MISSING_ALT.message, "Missing alt text");
@@ -152,5 +180,7 @@ mod tests {
         assert!((500..=599).contains(&GEN_UNSUPPORTED_FEATURE.number));
         assert!((600..=699).contains(&CONFIG_FILE_NOT_FOUND.number));
         assert!((600..=699).contains(&CONFIG_PARSE_ERROR.number));
+        assert!((700..=799).contains(&JS_UNEXPECTED_TOKEN.number));
+        assert!((700..=799).contains(&JS_ASSIGN_TO_CONST.number));
     }
 }

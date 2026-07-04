@@ -1,0 +1,21 @@
+[package]
+name = "motarjim-js"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "JavaScript lexer, parser, AST, and semantic analysis for the Motarjim compiler"
+
+[dependencies]
+motarjim-diag = { workspace = true }
+motarjim-lexer = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+proptest = { workspace = true }
+
+[[bench]]
+name = "js_bench"
+harness = false
+
+[lints]
+workspace = true

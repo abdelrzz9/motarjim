@@ -668,12 +668,11 @@ impl<'a> Pipeline<'a> {
                 minify: false,
                 source_maps: false,
             };
-            return self
-                .compiler
+            self.compiler
                 .generator_registry
                 .get(target_str)
                 .and_then(|g| g.generate(ir, &options).ok())
-                .unwrap_or_default();
+                .unwrap_or_default()
         }
         #[cfg(not(feature = "plugin-system"))]
         {

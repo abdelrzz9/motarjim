@@ -15,6 +15,7 @@ members = [
     "crates/motarjim-parser",
     "crates/motarjim-css",
     "crates/motarjim-selectors",
+    "crates/motarjim-js",
     "crates/motarjim-ir",
     "crates/motarjim-optimizer",
     "crates/motarjim-formatter",
@@ -49,6 +50,7 @@ motarjim-lexer = { path = "crates/motarjim-lexer", version = "0.1.0" }
 motarjim-parser = { path = "crates/motarjim-parser", version = "0.1.0" }
 motarjim-css = { path = "crates/motarjim-css", version = "0.1.0" }
 motarjim-selectors = { path = "crates/motarjim-selectors", version = "0.1.0" }
+motarjim-js = { path = "crates/motarjim-js", version = "0.1.0" }
 motarjim-ir = { path = "crates/motarjim-ir", version = "0.1.0" }
 motarjim-optimizer = { path = "crates/motarjim-optimizer", version = "0.1.0" }
 motarjim-formatter = { path = "crates/motarjim-formatter", version = "0.1.0" }

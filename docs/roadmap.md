@@ -1,111 +1,106 @@
 # Roadmap
 
+This roadmap describes the **Rust engine** (`crates/`), which is the single
+source of truth for parsing, analysis, and code generation. TypeScript is a
+client of the Rust engine only (web playground, VS Code extension, website);
+it does not contain compiler logic.
+
 ## Completed
 
-### Phase 1 — Core Pipeline ✓
-- [x] HTML parser (parse5)
-- [x] CSS analyzer (PostCSS) with media query support
-- [x] Semantic analyzer (rule-based component detection)
-- [x] IR (platform-neutral intermediate representation)
-- [x] Optimizer (3 passes: removeEmpty, mergeText, flattenContainers)
-- [x] Flutter code generator
-- [x] Compose code generator
-- [x] SwiftUI code generator
-- [x] Shared generator infrastructure (generator-core)
+### Rust workspace migration
 
-### Phase 2 — Integration ✓
-- [x] End-to-end pipeline (CLI + programmatic)
-- [x] 71 tests across all packages
-- [x] 12 snapshot tests for generated output
-- [x] Performance benchmarks (100ms for 1000 nodes)
-- [x] Optional Ollama AI enhancement
+The compiler was rewritten from a TypeScript/`parse5`/PostCSS pipeline into a
+Rust `cargo` workspace of single-responsibility crates:
 
-### Phase 3 — Quality ✓
-- [x] Generator-core refactor (shared traversal/formatting)
-- [x] Single-point optimization (no double-optimization)
-- [x] Configurable output names (default: GeneratedView)
-- [x] Structural validity tests (balanced braces)
-- [x] Documentation overhaul
-- [x] Repository audit and fixes
+- [x] `motarjim-diag` — diagnostics, source spans, colored terminal output
+- [x] `motarjim-ast` — shared AST/IR/style type definitions
+- [x] `motarjim-lexer` / `motarjim-parser` — zero-copy HTML and CSS tokenizers/parsers
+- [x] `motarjim-selectors` — CSS selector parsing, specificity, matching
+- [x] `motarjim-css` — CSS cascade, computed styles, typed values
+- [x] `motarjim-ir` — semantic/layout/target intermediate representation
+- [x] `motarjim-optimizer` — IR optimization passes (merge text, flatten, prune, dedupe)
+- [x] `motarjim-formatter` — target-language code writer
+- [x] `motarjim-gen-flutter` / `motarjim-gen-compose` / `motarjim-gen-swiftui` — code generators
+- [x] `motarjim-core` — compiler facade, event bus, query/cache system, compilation DAG
+- [x] `motarjim-cli` — `compile` / `watch` / `init` / `check` commands
+- [x] `motarjim-lsp` — language server scaffold (`tower-lsp`)
+- [x] `motarjim-cache` / `motarjim-incremental` — compilation caching and incremental rebuilds
+- [x] `motarjim-config` / `motarjim-fs` / `motarjim-profiling` / `motarjim-serialize` / `motarjim-ffi`
+- [x] `motarjim-wasm` — WebAssembly bindings scaffold
+- [x] `xtask` — workspace automation
+- [x] Fuzz targets for the HTML/CSS lexers and parsers (`fuzz/`)
+- [x] Criterion benchmarks per parser/crate
+- [x] Workspace-wide `clippy::all`/`clippy::pedantic`/`clippy::nursery` lints,
+      `#![deny(missing_docs)]`, `#![forbid(unsafe_code)]`
 
-## In Progress
+### JavaScript support (`motarjim-js`)
 
-### Phase 4 — Production Hardening
-- [ ] Configurable class/struct/function name via CLI flag
-- [ ] Package.json `exports` maps for production builds
-- [ ] Source maps (HTML node → generated code line)
-- [ ] Incremental compilation support
-- [ ] CSS cascade specificity calculator
+- [x] Zero-copy lexer/tokenizer (reuses `motarjim_lexer::Cursor`)
+- [x] Recursive-descent parser with precedence climbing for expressions
+- [x] AST covering variables, functions, arrow functions, template literals
+      (including nested interpolations), `import`/`export`, control flow
+- [x] `Visitor` trait for read-only AST traversal
+- [x] Best-effort semantic analysis: duplicate `let`/`const` declarations,
+      `const` reassignment, undeclared-variable warnings
+- [x] DOM event binding extraction (`addEventListener`, `on*` assignment)
+- [x] `Transform` trait + a first transform (template literals → string concatenation)
+- [x] Wired into `motarjim check` for `.js`/`.mjs`/`.jsx` files
 
-## Planned
+See [javascript.md](javascript.md) for details and current syntax coverage.
 
-### Phase 5 — CSS Value Mapping
-- [ ] Flutter: map CSS colors to `Colors.*` / `Color(0xFF...)`
-- [ ] Flutter: map CSS padding to `EdgeInsets.all()` / `EdgeInsets.symmetric()`
-- [ ] Compose: map CSS colors to `Color()` / `MaterialTheme.colorScheme`
-- [ ] SwiftUI: map CSS colors to `Color()` / `.foregroundColor()`
-- [ ] Proper font size mapping with platform-appropriate units
+## In Progress / Next Up
 
-### Phase 6 — Responsive Design
-- [ ] Consume media query hints in generators
-- [ ] Generate platform-native responsive layout code
-- [ ] Flutter: `LayoutBuilder` + breakpoint conditions
-- [ ] Compose: `BoxWithConstraints` + `Modifier.widthIn()`
-- [ ] SwiftUI: `@Environment(\.horizontalSizeClass)` + `ViewThatFits`
+### Rust engine
 
-### Phase 7 — Advanced CSS Support
-- [ ] Compound selectors (`div.card`, `.container > .item`)
-- [ ] Pseudo-classes (`:hover`, `:focus`, `:nth-child`)
-- [ ] CSS variables / custom properties
-- [ ] Flexbox properties (justify-content, align-items, flex-wrap)
-- [ ] Grid layout properties (grid-template-columns, grid-gap)
-- [ ] Animation and transition support
-- [ ] Gradient support (linear-gradient, radial-gradient)
+- [ ] Wire `motarjim-js` DOM event bindings into `motarjim-ir` so a `click`
+      listener can drive a generated `onPressed`/`onClick`/`.onTapGesture`
+      handler — the seam exists (`find_dom_event_bindings`) but nothing
+      downstream consumes it yet
+- [ ] CSS value mapping: colors, padding/margin shorthands, typography, per platform
+- [ ] Responsive design generation from media query hints already captured in the IR
+- [ ] Advanced CSS selectors: `:nth-child()`, `:not()`, `:has()`, pseudo-elements
+- [ ] Flesh out `motarjim-lsp` handlers (hover, completion, rename, semantic tokens)
+- [ ] Flesh out `motarjim-wasm`'s public API (`parse`/`compile`/`format`/`lint`/`ast`)
+- [ ] `motarjim watch` is currently a stub (`cmd_watch` prints "not yet implemented")
 
-### Phase 8 — Developer Experience
-- [ ] Watch mode (auto-recompile on file change)
-- [ ] Pretty-print output (configurable indentation)
-- [ ] Error reporting with source locations
-- [ ] Config file support (`motarjim.json`)
-- [ ] Multiple file/page compilation
-- [ ] Plugin system for custom emitters
+### Documentation
 
-### Phase 9 — AI & Intelligence
-- [ ] Improve AI prompt engineering for higher-quality hints
-- [ ] Caching of AI results (avoid re-querying unchanged trees)
-- [ ] Support for additional Ollama model families
-- [ ] Confidence threshold configuration
+- [ ] Most of `docs/*.md` (architecture, parser, cli, pipeline, css-analyzer,
+      semantic-analyzer, ir, optimizer, generator-core, the per-platform
+      generator docs, ai-enhancement, benchmarks) still describes the retired
+      TypeScript/`parse5`/PostCSS pipeline and needs a full rewrite against
+      the Rust crates. Treat anything under `docs/` other than this file and
+      `javascript.md` as unverified until it's been re-audited.
 
-### Phase 10 — Ecosystem
-- [ ] VS Code extension (syntax highlighting for generated files)
-- [ ] MCP server integration for IDE tooling
-- [ ] GitHub Actions marketplace action
-- [ ] Published npm package
-- [ ] API documentation site (Docusaurus)
+### Tooling and CI
+
+- [ ] `cargo deny`, `cargo machete`, `cargo nextest`, coverage reporting in CI
+- [ ] Markdown lint / spellcheck / license check in CI
+- [ ] Docker (`Dockerfile`, `docker-compose.yml`) for local development
+- [ ] `motarjim.toml` as the primary config format (JSON config exists today)
+
+### Web and editor clients
+
+- [ ] `apps/playground` and `apps/website` are plain Vite + vanilla JS; the
+      planned modern rewrite (component framework, typed API client, state
+      management, Monaco editor, AST/diagnostics panels) has not started
+- [ ] `packages/vscode-extension` is a scaffold; LSP wiring, diagnostics,
+      and preview commands are not yet implemented
 
 ## Future Considerations
 
-### Performance Targets
-
-| Scale | Current | Target | Timeline |
-|-------|---------|--------|----------|
-| 1,000 nodes | 98ms | 500ms | ✓ Met |
-| 5,000 nodes | ~500ms (est.) | 500ms | Phase 4 |
-| 10,000 nodes | ~1s (est.) | 500ms | Phase 6 |
-| 50,000 nodes | ~5s (est.) | 2s | Phase 8 |
-
-### Platform Expansion
-
-- [ ] React Native support
-- [ ] UIKit (iOS) support
-- [ ] WinUI 3 (Windows) support
-- [ ] Jetpack Views (Android XML) support
+- [ ] React Native / UIKit / WinUI / Jetpack Views (raw XML) generator targets
+- [ ] Plugin system for third-party generators (`Generator` trait already
+      exists in `motarjim-core::plugin`; no external plugin loading yet)
+- [ ] Property-based/fuzz testing for `motarjim-js`, mirroring the existing
+      HTML/CSS fuzz targets
 
 ## How to Contribute
 
-See [contributing.md](contributing.md) for development setup and guidelines. Priority areas for community contributions:
+See [contributing.md](contributing.md) for development setup and guidelines.
+Good first areas, roughly in order of leverage:
 
-1. CSS property mapping improvements (Phase 5)
-2. Additional CSS selector support (Phase 7)
-3. Watch mode implementation (Phase 8)
-4. Documentation and examples
+1. Wiring `motarjim-js` DOM events into the IR/generators
+2. CSS value mapping (colors, spacing, typography)
+3. Rewriting the stale TypeScript-era docs listed above
+4. `motarjim watch` (file watching + incremental recompilation)

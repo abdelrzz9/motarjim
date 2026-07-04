@@ -57,6 +57,7 @@ impl Severity {
 /// | 400-499 | IR         |
 /// | 500-599 | Generator  |
 /// | 600-699 | Config     |
+/// | 700-799 | JavaScript |
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DiagnosticCode {
     /// The numeric identifier (e.g. `1` for `E0001`).

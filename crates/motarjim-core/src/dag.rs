@@ -231,6 +231,10 @@ impl CompilationContext {
     }
 }
 
+/// A boxed phase-execution closure; see [`CompilationNode::run`].
+pub type PhaseFn =
+    Box<dyn Fn(&CompilationContext) -> Result<PhaseOutput, Vec<Diagnostic>> + Send + Sync>;
+
 /// A single node (phase) in the compilation DAG.
 ///
 /// Each node has a [`phase`](Self::phase) identifier, a list of
@@ -245,7 +249,7 @@ pub struct CompilationNode {
     ///
     /// Receives a shared reference to the [`CompilationContext`] and returns
     /// either the phase output or a list of fatal diagnostics.
-    pub run: Box<dyn Fn(&CompilationContext) -> Result<PhaseOutput, Vec<Diagnostic>> + Send + Sync>,
+    pub run: PhaseFn,
 }
 
 impl std::fmt::Debug for CompilationNode {

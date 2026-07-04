@@ -831,6 +831,7 @@ dependencies = [
  "motarjim-core",
  "motarjim-diag",
  "motarjim-fs",
+ "motarjim-js",
  "motarjim-profiling",
  "serde",
  "serde_json",
@@ -988,6 +989,16 @@ dependencies = [
  "motarjim-selectors",
  "smallvec",
  "smol_str",
+]
+
+[[package]]
+name = "motarjim-js"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "motarjim-diag",
+ "motarjim-lexer",
+ "proptest",
 ]
 
 [[package]]

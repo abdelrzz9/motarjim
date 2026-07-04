@@ -8,11 +8,10 @@
 
 Write once in HTML/CSS. Ship native code for every platform.
 
-[![npm version](https://img.shields.io/badge/npm-0.1.0-blue)]()
+[![crates.io](https://img.shields.io/badge/crates.io-0.1.0-blue)]()
 [![license](https://img.shields.io/badge/license-MIT-green)]()
 [![build](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![tests](https://img.shields.io/badge/tests-103%20passed-brightgreen)]()
-[![benchmark](https://img.shields.io/badge/benchmark-98ms%20%2F%201000%20nodes-blue)]()
+[![tests](https://img.shields.io/badge/tests-493%20passed-brightgreen)]()
 
 ---
 
@@ -20,11 +19,10 @@ Write once in HTML/CSS. Ship native code for every platform.
 
 - **Local-first** — Zero cloud dependencies. Everything runs on your machine.
 - **Multi-platform** — Generate Flutter (Dart), Jetpack Compose (Kotlin), or SwiftUI from the same HTML/CSS.
-- **Compiler architecture** — Full pipeline: parse → analyze → optimize → generate. No runtime, no WebView.
-- **103 tests** — Comprehensive test suite with snapshot coverage.
-- **~100ms for 1000 nodes** — 5× headroom against the 500ms target.
-- **Optional AI enhancement** — Ollama integration for smarter component detection.
-- **TypeScript strict mode** — Zero `any`, zero errors.
+- **Rust engine** — The Rust workspace under `crates/` is the single source of truth; parse → analyze → optimize → generate, no runtime, no WebView.
+- **JavaScript front end** — `motarjim-js` parses variables, functions, arrow functions, template literals, imports/exports, and extracts DOM event bindings.
+- **493 tests** across the Rust workspace, plus fuzz targets and Criterion benchmarks per parser.
+- **Diagnostics with error codes** — Rust-style `E0001`-`E0799` diagnostics with severities, spans, and notes (see `motarjim-diag`).
 
 ## Architecture
 
@@ -76,77 +74,44 @@ The web UI provides:
 ### Installation
 
 ```bash
-# From npm (when published)
-npm install -g motarjim
-
-# From source
+# From source (published crates.io release not yet available)
 git clone https://github.com/abdelrzz9/motarjim.git
 cd motarjim
-npm install
+cargo build --release -p motarjim-cli
+./target/release/motarjim --help
 ```
 
 ### CLI Usage
 
+The Rust CLI (`motarjim-cli`) currently supports:
+
 ```bash
-# Minimal (auto-detect everything)
-motarjim convert
+# Compile HTML to a target platform (flutter | compose | swiftui)
+motarjim compile index.html --platform flutter
 
-# Specify input only
-motarjim convert index.html
+# Write output to a file instead of stdout
+motarjim compile index.html --platform swiftui --output ContentView.swift
 
-# Full manual configuration
-motarjim convert index.html --css styles.css --target flutter --output lib/generated.dart
+# Minify output / emit source maps / treat warnings as errors
+motarjim compile index.html --platform compose --minify --source-maps --strict
 
-# Auto-detect target from output extension
-motarjim convert index.html --output home.kt
-
-# Project initialization
+# Create a default motarjim.json config in the current directory
 motarjim init
 
-# Watch mode (auto-regenerate on changes)
-motarjim watch --input designs/index.html --target flutter
+# Check a file for diagnostics without generating output
+# (.html/.css go through the full compiler pipeline in strict mode;
+#  .js/.mjs/.jsx are parsed and semantically analyzed by motarjim-js)
+motarjim check index.html
+motarjim check app.js
 
-# Batch convert all HTML files in a directory
-motarjim batch designs/ --target flutter
-
-# Validate HTML/CSS before converting
-motarjim validate index.html --css styles.css
-
-# Explain the compilation pipeline
-motarjim explain
-
-# Scaffold a project from a template
-motarjim new landing-page
+# Watch mode is scaffolded but not yet implemented
+motarjim watch index.html --platform flutter
 ```
 
-### API Endpoint
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/convert` | Convert HTML/CSS to native UI code |
-| `GET` | `/api/health` | Health check |
-
-```json
-POST /api/convert
-{
-  "html": "<button>Click me</button>",
-  "css": "button { background: blue; }",
-  "target": "flutter"
-}
-```
-
-Response:
-```json
-{
-  "code": "import 'package:flutter/material.dart';...",
-  "stats": {
-    "htmlNodes": 3,
-    "componentsDetected": 1,
-    "generatedLines": 9,
-    "duration": 0.009
-  }
-}
-```
+See [docs/cli.md](docs/cli.md) — note this doc still needs a rewrite against
+the current Rust CLI; treat `motarjim --help` as the source of truth in the
+meantime. There is no HTTP API; `motarjim-core` is a library embedded by the
+CLI, LSP, and (eventually) WASM bindings, not a server.
 
 ## Examples
 
@@ -285,18 +250,19 @@ See [docs/benchmarks.md](docs/benchmarks.md) for detailed results.
 
 ## Roadmap
 
-- [x] Core pipeline (parser → CSS → semantic → IR → optimize → generate)
-- [x] 3 platform generators (Flutter, Compose, SwiftUI)
-- [x] Media query support
-- [x] AI enhancement layer
-- [x] Performance benchmarks (100ms / 1000 nodes)
+- [x] Rust compiler workspace (`motarjim-parser`, `motarjim-css`, `motarjim-ir`,
+      `motarjim-optimizer`, 3 platform generators, `motarjim-core`)
+- [x] JavaScript front end (`motarjim-js`): lexer, parser, AST, semantic
+      analysis, DOM event extraction, transforms
+- [ ] Wire `motarjim-js` DOM events into the IR/generators
 - [ ] CSS value mapping (colors, padding, etc.)
 - [ ] Responsive design generation
 - [ ] Advanced CSS selectors
-- [x] Watch mode
-- [x] VS Code extension workspace scaffold
+- [ ] `motarjim watch` (currently a stub)
+- [ ] VS Code extension LSP wiring (workspace scaffold exists; not yet functional)
 
-See [docs/roadmap.md](docs/roadmap.md) for full roadmap.
+See [docs/roadmap.md](docs/roadmap.md) for the full roadmap, including a note
+on which docs are still being rewritten for the Rust engine.
 
 ## Documentation
 
@@ -304,6 +270,7 @@ See [docs/roadmap.md](docs/roadmap.md) for full roadmap.
 - [Architecture](docs/architecture.md)
 - [Pipeline](docs/pipeline.md)
 - [Parser](docs/parser.md)
+- [JavaScript Support](docs/javascript.md)
 - [CSS Analyzer](docs/css-analyzer.md)
 - [Semantic Analyzer](docs/semantic-analyzer.md)
 - [IR (Intermediate Representation)](docs/ir.md)

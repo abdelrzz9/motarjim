@@ -13,6 +13,7 @@ use motarjim_ast::style::EdgeValues;
 use motarjim_ast::NodeId;
 use motarjim_formatter::CodeWriter;
 
+/// The Kotlin/Jetpack Compose code generator implementation.
 mod generator;
 pub use generator::*;
 

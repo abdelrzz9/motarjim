@@ -13,6 +13,7 @@ use motarjim_ast::style::EdgeValues;
 use motarjim_ast::NodeId;
 use motarjim_formatter::CodeWriter;
 
+/// The Swift/SwiftUI code generator implementation.
 mod generator;
 pub use generator::*;
 

@@ -26,14 +26,19 @@ use motarjim_ast::{Document, Element, HtmlNode, NodeId, NodeType};
 use motarjim_diag::DiagnosticBag;
 use smol_str::SmolStr;
 
+/// Builds an [`IrTree`] from a styled HTML document.
 mod builder;
 pub use builder::*;
+/// Semantic role inference for IR nodes.
 mod semantic;
 pub use semantic::*;
+/// Layout strategy inference for IR nodes.
 mod layout;
 pub use layout::*;
+/// Responsive variant attachment for IR nodes.
 mod responsive;
 pub use responsive::*;
+/// Accessibility metadata inference for IR nodes.
 mod accessibility;
 pub use accessibility::*;
 #[cfg(test)]

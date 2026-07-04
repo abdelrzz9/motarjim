@@ -1,5 +1,6 @@
 use crate::*;
 
+/// Applies every declaration in `map` to `style`, one property at a time.
 pub(crate) fn apply_declarations(style: &mut ComputedStyle, map: &HashMap<SmolStr, String>) {
     for (prop, value) in map {
         apply_property(style, prop.as_str(), value);

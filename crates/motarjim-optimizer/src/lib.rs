@@ -20,9 +20,12 @@ use motarjim_ast::NodeId;
 use motarjim_diag::Diagnostic;
 use smallvec::SmallVec;
 
+/// The [`PassManager`] and pass scheduling/registration types.
 mod pass_manager;
 pub use pass_manager::*;
+/// Shared helper functions used by multiple passes.
 mod helpers;
+/// Individual optimization pass implementations.
 mod passes;
 pub use passes::*;
 

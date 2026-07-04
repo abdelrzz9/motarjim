@@ -210,7 +210,9 @@ pub mod watcher {
 
     /// Watches a directory for file changes.
     pub struct FileWatcher {
+        /// The watched directory (currently unused pending a real backend).
         _dir: PathBuf,
+        /// The receiving end of the change-event channel.
         _rx: mpsc::Receiver<FileChange>,
     }
 

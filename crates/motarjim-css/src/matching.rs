@@ -1,5 +1,6 @@
 use crate::*;
 
+/// Checks whether any selector on `rule` matches `element`.
 pub(crate) fn rule_matches_element(rule: &StyleRule, element: &Element) -> bool {
     rule.selectors
         .iter()
