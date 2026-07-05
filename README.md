@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>HTML/CSS → Native UI Code compiler</strong><br>
-  Write once in HTML/CSS. Ship native code for every platform.
+  <strong>HTML/CSS/js → Native UI Code compiler</strong><br>
+  Write once in HTML/CSS/js. Ship native code for every platform.
 </p>
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="version"></a>
