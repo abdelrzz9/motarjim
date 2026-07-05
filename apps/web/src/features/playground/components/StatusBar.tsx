@@ -1,43 +1,58 @@
 import { usePlaygroundStore } from '../../../stores/playgroundStore';
-import { formatMs, pluralize } from '../../../utils/formatting';
+import { Icon } from '../../../components/Icons';
 
 export default function StatusBar() {
-  const { stats, isCompiling, diagnostics } = usePlaygroundStore();
+  const { stats, isCompiling, diagnostics, backendOnline } = usePlaygroundStore();
   const errors = diagnostics.filter((d) => d.severity === 'error').length;
   const warnings = diagnostics.filter((d) => d.severity === 'warning').length;
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-        padding: '0.25rem 1rem',
-        background: 'var(--bg-secondary)',
-        borderTop: '1px solid var(--border)',
-        fontSize: '0.75rem',
-        color: 'var(--text-muted)',
-      }}
-    >
-      {isCompiling && <span>Compiling...</span>}
+    <div className="statusBar">
+      <div className="statusBarLeft">
+        {!stats && !isCompiling && (
+          <span className="statusBarItem">Ready</span>
+        )}
+        {isCompiling && (
+          <span className="statusBarItem">Compiling...</span>
+        )}
+        {stats && (
+          <>
+            <span className="statusBarItem">
+              <Icon.Zap size={11} />
+              <span>{stats.time_ms < 1000 ? `${stats.time_ms.toFixed(0)}ms` : `${(stats.time_ms / 1000).toFixed(2)}s`}</span>
+            </span>
+            <span className="statusBarItem">
+              <Icon.Code size={11} />
+              <span>{stats.nodes_parsed} nodes</span>
+            </span>
+            <span className="statusBarItem">
+              <Icon.Palette size={11} />
+              <span>{stats.css_rules} rules</span>
+            </span>
+            <span className="statusBarItem">
+              <Icon.Node size={11} />
+              <span>{stats.ir_nodes} IR</span>
+            </span>
+          </>
+        )}
+      </div>
 
-      {stats && !isCompiling && (
-        <>
-          <span>{pluralize(stats.nodes_parsed, 'node')} parsed</span>
-          <span>{pluralize(stats.css_rules, 'CSS rule')}</span>
-          <span>{pluralize(stats.ir_nodes, 'IR node')}</span>
-          <span>{formatMs(stats.time_ms)}</span>
-        </>
-      )}
-
-      <div style={{ flex: 1 }} />
-
-      {errors > 0 && <span style={{ color: 'var(--error)' }}>{errors} error{errors !== 1 ? 's' : ''}</span>}
-      {warnings > 0 && <span style={{ color: 'var(--warning)' }}>{warnings} warning{warnings !== 1 ? 's' : ''}</span>}
-
-      {!isCompiling && !stats && errors === 0 && (
-        <span>Ready</span>
-      )}
+      <div className="statusBarRight">
+        {warnings > 0 && (
+          <span className="statusBarItem warning">
+            <Icon.Warning size={11} /> {warnings}
+          </span>
+        )}
+        {errors > 0 && (
+          <span className="statusBarItem error">
+            <Icon.Error size={11} /> {errors}
+          </span>
+        )}
+        <span className="statusBarItem">
+          <span className={`statusBarDot ${backendOnline ? 'online' : ''}`} />
+          Engine
+        </span>
+      </div>
     </div>
   );
 }
