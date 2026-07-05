@@ -8,12 +8,21 @@ const NOTIFICATION_ICONS: Record<NotificationType, typeof Icon.Info> = {
   warning: Icon.Warning,
 };
 
-const NOTIFICATION_CLASSES: Record<NotificationType, string> = {
-  success: 'notification-success',
-  error: 'notification-error',
-  info: 'notification-info',
-  warning: 'notification-warning',
+const NOTIFICATION_COLORS: Record<NotificationType, string> = {
+  success: 'var(--success)',
+  error: 'var(--error)',
+  info: 'var(--info)',
+  warning: 'var(--warning)',
 };
+
+function NotificationIcon({ type }: { type: NotificationType }) {
+  const IconComp = NOTIFICATION_ICONS[type];
+  return (
+    <span style={{ width: 16, height: 16, flexShrink: 0, color: NOTIFICATION_COLORS[type] }}>
+      <IconComp size={16} />
+    </span>
+  );
+}
 
 export default function Notifications() {
   const { notifications, removeNotification } = useNotificationsStore();
@@ -32,36 +41,46 @@ export default function Notifications() {
         zIndex: 100,
         pointerEvents: 'none',
       }}
+      role="log"
+      aria-live="polite"
     >
       {notifications.map((n) => {
-        const IconComp = NOTIFICATION_ICONS[n.type];
+        const bg = n.type === 'error' ? 'rgba(239,68,68,0.1)'
+          : n.type === 'warning' ? 'rgba(245,166,35,0.1)'
+          : n.type === 'success' ? 'rgba(46,211,160,0.1)'
+          : 'rgba(84,197,248,0.1)';
+
+        const border = n.type === 'error' ? 'rgba(239,68,68,0.2)'
+          : n.type === 'warning' ? 'rgba(245,166,35,0.2)'
+          : n.type === 'success' ? 'rgba(46,211,160,0.2)'
+          : 'var(--border-default)';
+
         return (
           <div
             key={n.id}
-            className={NOTIFICATION_CLASSES[n.type]}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 'var(--space-3)',
               padding: 'var(--space-3) var(--space-4)',
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-default)',
+              background: bg,
+              border: `1px solid ${border}`,
               borderRadius: 'var(--radius-md)',
               boxShadow: 'var(--shadow-md)',
               fontSize: 'var(--text-sm)',
               color: 'var(--text-primary)',
               pointerEvents: 'auto',
-              animation: 'slide-in-right var(--duration-slow) var(--ease-out)',
+              animation: 'slide-in-right 200ms var(--ease-out)',
               minWidth: 280,
               maxWidth: 400,
+              backdropFilter: 'blur(8px)',
             }}
           >
-            <span style={{ width: 16, height: 16, flexShrink: 0, color: `var(--${n.type === 'error' ? 'error' : n.type === 'warning' ? 'warning' : n.type === 'success' ? 'success' : 'info'})` }}>
-              <IconComp size={16} />
-            </span>
+            <NotificationIcon type={n.type} />
             <span style={{ flex: 1 }}>{n.message}</span>
             <button
               onClick={() => removeNotification(n.id)}
+              aria-label="Dismiss notification"
               style={{
                 border: 'none',
                 background: 'transparent',
@@ -69,8 +88,11 @@ export default function Notifications() {
                 cursor: 'pointer',
                 padding: 2,
                 display: 'flex',
-                transition: 'color var(--duration-fast)',
+                transition: 'color 120ms',
+                borderRadius: 4,
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-tertiary)'; }}
             >
               <Icon.Close size={12} />
             </button>
