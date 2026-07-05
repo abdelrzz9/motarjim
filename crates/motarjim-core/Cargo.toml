@@ -25,6 +25,7 @@ motarjim-fs = { workspace = true }
 motarjim-profiling = { workspace = true }
 motarjim-cache = { workspace = true }
 motarjim-incremental = { workspace = true }
+motarjim-session = { workspace = true }
 dashmap = { version = "5", optional = true }
 rayon = { workspace = true, optional = true }
 wasm-bindgen = { workspace = true, optional = true }
@@ -34,7 +35,7 @@ tracing = { workspace = true }
 
 [features]
 default = []
-cancellation = []
+cancellation = ["motarjim-session/cancellation"]
 dag = ["rayon"]
 events = []
 query-system = ["dep:dashmap"]

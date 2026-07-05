@@ -33,7 +33,6 @@ pub mod query;
 use motarjim_ast::ir::IrTree;
 use motarjim_ast::{Document, NodeId};
 use motarjim_ast_html::ComputedStyle;
-use motarjim_cache::ArtifactCache;
 use motarjim_config::{Config, OutputFormat};
 use motarjim_css::StyleResolver;
 #[cfg(feature = "cancellation")]
@@ -46,11 +45,11 @@ use motarjim_gen_compose::ComposeGenerator;
 use motarjim_gen_flutter::FlutterGenerator;
 #[cfg(not(feature = "plugin-system"))]
 use motarjim_gen_swiftui::SwiftUIGenerator;
-use motarjim_incremental::IncrementalEngine;
 use motarjim_ir::IrBuilder;
 use motarjim_optimizer::{register_default_passes, PassManager};
 use motarjim_parser::{CssParser, HtmlParser};
 use motarjim_profiling::ProfilingSession;
+use motarjim_session::Session;
 
 #[cfg(feature = "plugin-system")]
 pub mod plugin;
@@ -129,40 +128,26 @@ pub struct CompileTarget {
 
 /// The main compiler orchestrating the full pipeline.
 pub struct Compiler {
-    /// Compiler configuration.
-    config: Config,
-    /// Abstract filesystem for I/O operations.
-    fs: Arc<dyn FileSystem>,
+    /// Centralised compiler context that owns all compiler-wide state.
+    session: Session,
     /// Manager for optimization passes.
     pass_manager: PassManager,
-    /// Session for collecting profiling data.
-    profiling_session: ProfilingSession,
-    /// Optional artifact cache.
-    cache: Option<ArtifactCache>,
-    /// Optional incremental compilation engine.
-    incremental: Option<IncrementalEngine>,
     /// Event bus for lifecycle events.
     #[cfg(feature = "events")]
     event_bus: event::EventBus,
     /// Registry of code generators (available when `plugin-system` feature is enabled).
     #[cfg(feature = "plugin-system")]
     generator_registry: plugin::GeneratorRegistry,
-    /// Token used to signal and check for cancellation of the current compilation.
-    #[cfg(feature = "cancellation")]
-    cancel_token: cancellation::CancelToken,
 }
 
 impl std::fmt::Debug for Compiler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut d = f.debug_struct("Compiler");
-        d.field("config", &self.config)
+        d.field("session", &self.session)
             .field(
                 "pass_manager",
                 &format_args!("PassManager({})", self.pass_manager.len()),
-            )
-            .field("profiling_session", &self.profiling_session.label())
-            .field("cache", &self.cache)
-            .field("incremental", &self.incremental);
+            );
         #[cfg(feature = "events")]
         {
             d.field(
@@ -177,10 +162,6 @@ impl std::fmt::Debug for Compiler {
                 &format_args!("GeneratorRegistry({})", self.generator_registry.len()),
             );
         }
-        #[cfg(feature = "cancellation")]
-        {
-            d.field("cancel_token", &self.cancel_token.is_cancelled());
-        }
         d.finish()
     }
 }
@@ -192,37 +173,18 @@ impl Compiler {
         let mut pass_manager = PassManager::new();
         register_default_passes(&mut pass_manager);
 
-        let cache = config.global.cache_dir.clone().map(ArtifactCache::new);
-
-        let incremental = if config.global.incremental {
-            let dir = config
-                .global
-                .cache_dir
-                .clone()
-                .unwrap_or_else(|| std::path::PathBuf::from(".motarjim/cache"));
-            Some(IncrementalEngine::new(dir.join("incremental")))
-        } else {
-            None
-        };
-
         #[cfg(feature = "plugin-system")]
         let mut generator_registry = plugin::GeneratorRegistry::new();
         #[cfg(feature = "plugin-system")]
         plugin::register_builtin_generators(&mut generator_registry);
 
         Self {
-            config,
-            fs,
+            session: Session::new(config, fs),
             pass_manager,
-            profiling_session: ProfilingSession::new("compilation"),
-            cache,
-            incremental,
             #[cfg(feature = "events")]
             event_bus: event::EventBus::new(),
             #[cfg(feature = "plugin-system")]
             generator_registry,
-            #[cfg(feature = "cancellation")]
-            cancel_token: cancellation::CancelToken::new(),
         }
     }
 
@@ -263,13 +225,13 @@ impl Compiler {
         profiling.record_phase("parse_html", html_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token.check().map_err(|e| {
-            vec![Diagnostic::new(
+        if self.session.is_cancelled() {
+            return Err(vec![Diagnostic::new(
                 Severity::Error,
                 DiagnosticCode::new(700, "Compilation cancelled"),
-                e.message,
-            )]
-        })?;
+                "Compilation cancelled by user",
+            )]);
+        }
 
         // Phase 2: Parse CSS from <style> tags
         let mut css_timer = profiling.start_phase("parse_css");
@@ -281,13 +243,13 @@ impl Compiler {
         profiling.record_phase("parse_css", css_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token.check().map_err(|e| {
-            vec![Diagnostic::new(
+        if self.session.is_cancelled() {
+            return Err(vec![Diagnostic::new(
                 Severity::Error,
                 DiagnosticCode::new(700, "Compilation cancelled"),
-                e.message,
-            )]
-        })?;
+                "Compilation cancelled by user",
+            )]);
+        }
 
         // Phase 3: Resolve styles
         #[cfg(feature = "events")]
@@ -339,13 +301,13 @@ impl Compiler {
         profiling.record_phase("resolve_styles", style_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token.check().map_err(|e| {
-            vec![Diagnostic::new(
+        if self.session.is_cancelled() {
+            return Err(vec![Diagnostic::new(
                 Severity::Error,
                 DiagnosticCode::new(700, "Compilation cancelled"),
-                e.message,
-            )]
-        })?;
+                "Compilation cancelled by user",
+            )]);
+        }
 
         // Phase 4: Build IR
         #[cfg(feature = "events")]
@@ -369,13 +331,13 @@ impl Compiler {
         profiling.record_phase("build_ir", ir_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token.check().map_err(|e| {
-            vec![Diagnostic::new(
+        if self.session.is_cancelled() {
+            return Err(vec![Diagnostic::new(
                 Severity::Error,
                 DiagnosticCode::new(700, "Compilation cancelled"),
-                e.message,
-            )]
-        })?;
+                "Compilation cancelled by user",
+            )]);
+        }
 
         // Phase 5: Optimize IR
         let mut opt_timer = profiling.start_phase("optimize_ir");
@@ -385,13 +347,13 @@ impl Compiler {
         profiling.record_phase("optimize_ir", opt_timer.stop());
 
         #[cfg(feature = "cancellation")]
-        self.cancel_token.check().map_err(|e| {
-            vec![Diagnostic::new(
+        if self.session.is_cancelled() {
+            return Err(vec![Diagnostic::new(
                 Severity::Error,
                 DiagnosticCode::new(700, "Compilation cancelled"),
-                e.message,
-            )]
-        })?;
+                "Compilation cancelled by user",
+            )]);
+        }
 
         // Phase 6: Generate platform code
         #[cfg(any(feature = "events", feature = "plugin-system"))]
@@ -469,7 +431,7 @@ impl Compiler {
         path: &Path,
         options: &CompileOptions,
     ) -> Result<CompileResult, Vec<Diagnostic>> {
-        let entry = self.fs.read(path).map_err(|e| {
+        let entry = self.session.file_system().read(path).map_err(|e| {
             vec![Diagnostic::new(
                 Severity::Error,
                 motarjim_diag::codes::CONFIG_FILE_NOT_FOUND,
@@ -494,29 +456,35 @@ impl Compiler {
             .collect()
     }
 
+    /// Returns a reference to the compiler-wide session.
+    #[must_use]
+    pub const fn session(&self) -> &Session {
+        &self.session
+    }
+
     /// Returns a reference to the compiler's configuration.
     #[must_use]
-    pub const fn config(&self) -> &Config {
-        &self.config
+    pub fn config(&self) -> &Config {
+        self.session.config()
     }
 
     /// Returns a reference to the profiling session.
     #[must_use]
-    pub const fn profiling_session(&self) -> &ProfilingSession {
-        &self.profiling_session
+    pub fn profiling_session(&self) -> motarjim_profiling::ProfilingSession {
+        self.session.profiling()
     }
 
     /// Returns a clone of the cancellation token for sharing with phases.
     #[cfg(feature = "cancellation")]
     #[must_use]
-    pub fn cancel_token(&self) -> cancellation::CancelToken {
-        self.cancel_token.clone()
+    pub fn cancel_token(&self) -> motarjim_session::CancelToken {
+        self.session.cancel_token()
     }
 
     /// Request cancellation of the current compilation.
     #[cfg(feature = "cancellation")]
     pub fn cancel(&self) {
-        self.cancel_token.cancel();
+        self.session.cancel();
     }
 
     /// Register a third-party generator with the compiler.
