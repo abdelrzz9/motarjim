@@ -7,6 +7,7 @@ import type {
 interface PlaygroundStore {
   html: string;
   css: string;
+  js: string;
   platform: Platform;
   minify: boolean;
   output: string;
@@ -25,6 +26,7 @@ interface PlaygroundStore {
 
   setHtml: (html: string) => void;
   setCss: (css: string) => void;
+  setJs: (js: string) => void;
   setPlatform: (platform: Platform) => void;
   setMinify: (minify: boolean) => void;
   setOutput: (output: string) => void;
@@ -45,10 +47,12 @@ interface PlaygroundStore {
 
 const DEFAULT_HTML = '';
 const DEFAULT_CSS = '';
+const DEFAULT_JS = '';
 
 export const usePlaygroundStore = create<PlaygroundStore>((set) => ({
   html: DEFAULT_HTML,
   css: DEFAULT_CSS,
+  js: DEFAULT_JS,
   platform: localStorage.getItem('motarjim-platform') as Platform || 'flutter',
   minify: false,
   output: '',
@@ -67,6 +71,7 @@ export const usePlaygroundStore = create<PlaygroundStore>((set) => ({
 
   setHtml: (html) => set({ html }),
   setCss: (css) => set({ css }),
+  setJs: (js) => set({ js }),
   setPlatform: (platform) => {
     localStorage.setItem('motarjim-platform', platform);
     set({ platform });

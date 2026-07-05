@@ -1,5 +1,5 @@
 export type Platform = 'flutter' | 'compose' | 'swiftui';
-export type EditorTab = 'html' | 'css';
+export type EditorTab = 'html' | 'css' | 'js';
 export type OutputTab = 'code' | 'diagnostics' | 'ast';
 export type Severity = 'error' | 'warning' | 'info' | 'hint' | 'note';
 export type PipelineStage =
