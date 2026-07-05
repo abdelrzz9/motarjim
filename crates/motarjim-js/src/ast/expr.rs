@@ -4,7 +4,7 @@ use motarjim_span::SourceSpan;
 
 use crate::ast::lit::{BigIntLit, BoolLit, NumberLit, RegexLit, StringLit};
 use crate::ast::pat::Pattern;
-use crate::ast::stmt::BlockStmt;
+use crate::ast::stmt::{BlockStmt, ClassBody};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TemplateLiteral {
@@ -31,6 +31,7 @@ pub enum PropKey {
     Ident(String),
     String(String),
     Computed(Box<Expression>),
+    PrivateIdent(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -235,6 +236,14 @@ pub struct AwaitExpr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ClassExpr {
+    pub name: Option<Pattern>,
+    pub super_class: Option<Expression>,
+    pub body: ClassBody,
+    pub span: SourceSpan,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct MetaProperty {
     pub meta: String,
     pub property: String,
@@ -274,6 +283,7 @@ pub enum Expression {
     Update(Box<UnaryExpr>),
     Spread(Box<Expression>),
     Parenthesized(Box<Expression>),
+    ClassExpr(Box<ClassExpr>),
 }
 
 impl Expression {
@@ -310,6 +320,7 @@ impl Expression {
             Self::Update(e) => e.span,
             Self::Spread(e) => e.span(),
             Self::Parenthesized(e) => e.span(),
+            Self::ClassExpr(e) => e.span,
         }
     }
 }
