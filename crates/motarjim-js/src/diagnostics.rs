@@ -44,6 +44,8 @@ impl JsDiagnosticCode {
     pub const JS_ILLEGAL_AWAIT: Self = Self(309);
     pub const JS_ILLEGAL_YIELD: Self = Self(310);
     pub const JS_DUPLICATE_EXPORT: Self = Self(311);
+    pub const JS_ILLEGAL_SUPER: Self = Self(312);
+    pub const JS_IMPORT_ERROR: Self = Self(313);
 }
 
 impl From<JsDiagnosticCode> for DiagnosticCode {

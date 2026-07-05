@@ -809,7 +809,7 @@ impl JsParser {
     }
 
     fn parse_binding_ident(&mut self) -> String {
-        if self.at(JsTokenKind::Identifier) {
+        if self.at(JsTokenKind::Identifier) || self.cur().kind.is_keyword() {
             self.advance().raw
         } else {
             self.error_with_code(

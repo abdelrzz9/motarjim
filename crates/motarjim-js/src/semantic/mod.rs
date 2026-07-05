@@ -1,16 +1,26 @@
-//! Best-effort semantic analysis: scope tracking, duplicate declarations, const reassignment checks.
+//! Best-effort semantic analysis: scope tracking, duplicate declarations, const reassignment checks,
+//! closure capture tracking, and import validation.
+//!
+//! # Capture analysis
+//!
+//! Captures are stored in the [`SemanticAnalyzer::captures`] side table as a
+//! `HashMap<SourceSpan, Vec<String>>` keyed by a function's span.  Each entry
+//! lists the free variable names that the function reads from or writes to
+//! in an enclosing non-global scope.
+//!
+//! Callers retrieve capture info via [`SemanticAnalyzer::captures_for`].
+
+use std::collections::HashMap;
 
 use motarjim_span::SourceSpan;
 
 use crate::ast::expr::*;
 use crate::ast::pat::*;
-use crate::ast::program::Program;
+use crate::ast::program::{Program, SourceType};
 use crate::ast::stmt::*;
 use crate::diagnostics::{JsDiagnostic, JsDiagnosticCode};
 use crate::semantic::scope::{Binding, ScopeStack};
-use crate::visitor::{
-    walk_expression, walk_expression_mut, walk_statement, walk_statement_mut, Visitor, VisitorMut,
-};
+use crate::visitor::{walk_expression, walk_statement, Visitor};
 
 mod scope;
 
@@ -20,6 +30,13 @@ pub struct SemanticAnalyzer {
     diagnostics: Vec<JsDiagnostic>,
     loop_depth: u32,
     function_depth: u32,
+    function_async_stack: Vec<bool>,
+    strict_mode: bool,
+    class_has_superclass_stack: Vec<bool>,
+    in_method_body: u32,
+    captures: HashMap<SourceSpan, Vec<String>>,
+    function_scope_bases: Vec<usize>,
+    pending_captures_stack: Vec<Vec<(usize, String)>>,
 }
 
 impl SemanticAnalyzer {
@@ -29,19 +46,63 @@ impl SemanticAnalyzer {
             diagnostics: Vec::new(),
             loop_depth: 0,
             function_depth: 0,
+            function_async_stack: Vec::new(),
+            strict_mode: false,
+            class_has_superclass_stack: Vec::new(),
+            in_method_body: 0,
+            captures: HashMap::new(),
+            function_scope_bases: Vec::new(),
+            pending_captures_stack: Vec::new(),
         }
     }
 
     pub fn analyze(&mut self, program: &Program) -> Vec<JsDiagnostic> {
+        self.strict_mode = program.source_type == SourceType::Module
+            || program
+                .body
+                .first()
+                .map_or(false, |s| is_use_strict_directive(s));
         self.visit_program(program);
         std::mem::take(&mut self.diagnostics)
     }
+
+    /// Returns the list of captured free variables for the function whose span
+    /// matches `span`, or `None` if the function is not known.
+    pub fn captures_for(&self, span: &SourceSpan) -> Option<&[String]> {
+        self.captures.get(span).map(|v| v.as_slice())
+    }
+
+    /// Iterate over all (span, captures) entries in the captures side table.
+    pub fn captures_iter(&self) -> impl Iterator<Item = (&SourceSpan, &Vec<String>)> {
+        self.captures.iter()
+    }
+
+    // ── declaration helpers ──────────────────────────────────────────────
 
     fn declare(&mut self, name: &str, kind: VarKind, span: SourceSpan) {
         if name.is_empty() {
             return;
         }
         if let Some(existing) = self.scopes.declare(name, kind, span) {
+            self.diagnostics.push(
+                JsDiagnostic::error(
+                    JsDiagnosticCode::JS_DUPLICATE_DECLARATION,
+                    format!("'{name}' is already declared in this scope"),
+                )
+                .with_span(span)
+                .with_note(format!(
+                    "previous declaration at byte offset {}",
+                    existing.span.start.offset
+                )),
+            );
+        }
+    }
+
+    fn declare_in_function_scope(&mut self, name: &str, kind: VarKind, span: SourceSpan) {
+        if name.is_empty() {
+            return;
+        }
+        if let Some(existing) = self.scopes.declare_in_function_scope(name, kind, span) {
             self.diagnostics.push(
                 JsDiagnostic::error(
                     JsDiagnosticCode::JS_DUPLICATE_DECLARATION,
@@ -88,8 +149,13 @@ impl SemanticAnalyzer {
     }
 
     fn declare_params(&mut self, params: &[Param]) {
+        let kind = if self.strict_mode {
+            VarKind::Let
+        } else {
+            VarKind::Var
+        };
         for param in params {
-            self.declare_pat(&param.pat, VarKind::Var);
+            self.declare_pat(&param.pat, kind);
             if let Some(default) = &param.default {
                 self.visit_expression(default);
             }
@@ -97,27 +163,125 @@ impl SemanticAnalyzer {
     }
 
     fn declare_pat(&mut self, pat: &Pattern, kind: VarKind) {
+        self.declare_pat_inner(pat, kind, false);
+    }
+
+    fn declare_pat_hoisted(&mut self, pat: &Pattern, kind: VarKind) {
+        self.declare_pat_inner(pat, kind, true);
+    }
+
+    fn declare_pat_inner(&mut self, pat: &Pattern, kind: VarKind, hoist: bool) {
         match pat {
-            Pattern::Ident(name, span) => self.declare(name, kind, *span),
+            Pattern::Ident(name, span) => {
+                if hoist {
+                    self.declare_in_function_scope(name, kind, *span);
+                } else {
+                    self.declare(name, kind, *span);
+                }
+            }
             Pattern::Object(obj) => {
                 for prop in &obj.props {
                     match prop {
-                        ObjectPatProp::KeyValue { value, .. } => self.declare_pat(value, kind),
-                        ObjectPatProp::Shorthand { name, span } => self.declare(name, kind, *span),
-                        ObjectPatProp::Rest(pat, _) => self.declare_pat(pat, kind),
+                        ObjectPatProp::KeyValue { value, .. } => {
+                            self.declare_pat_inner(value, kind, hoist);
+                        }
+                        ObjectPatProp::Shorthand { name, span } => {
+                            if hoist {
+                                self.declare_in_function_scope(name, kind, *span);
+                            } else {
+                                self.declare(name, kind, *span);
+                            }
+                        }
+                        ObjectPatProp::Rest(pat, _) => self.declare_pat_inner(pat, kind, hoist),
                     }
                 }
             }
             Pattern::Array(arr) => {
                 for el in arr.elements.iter().flatten() {
-                    self.declare_pat(el, kind);
+                    self.declare_pat_inner(el, kind, hoist);
                 }
             }
-            Pattern::Assign(assign) => self.declare_pat(&assign.left, kind),
-            Pattern::Rest(pat) => self.declare_pat(pat, kind),
-            Pattern::Default(default) => self.declare_pat(&default.left, kind),
+            Pattern::Assign(assign) => self.declare_pat_inner(&assign.left, kind, hoist),
+            Pattern::Rest(pat) => self.declare_pat_inner(pat, kind, hoist),
+            Pattern::Default(default) => self.declare_pat_inner(&default.left, kind, hoist),
             Pattern::Member(_) => {}
         }
+    }
+
+    // ── scope management ────────────────────────────────────────────────
+
+    fn push_function_scope(&mut self, is_async: bool) {
+        self.scopes.push_function();
+        self.function_depth += 1;
+        self.function_async_stack.push(is_async);
+        self.function_scope_bases.push(self.scopes.len() - 1);
+        self.pending_captures_stack.push(Vec::new());
+    }
+
+    fn record_capture(&mut self, name: &str, depth: usize) {
+        if let Some(top) = self.pending_captures_stack.last_mut() {
+            top.push((depth, name.to_string()));
+        }
+    }
+
+    // ── class context helpers ───────────────────────────────────────────
+
+    fn visit_class_body(&mut self, body: &ClassBody, has_superclass: bool) {
+        self.class_has_superclass_stack.push(has_superclass);
+        for member in &body.body {
+            match member {
+                ClassMember::Method(m) => {
+                    if let Some(default) =
+                        &m.function.params.iter().find_map(|p| p.default.as_ref())
+                    {
+                        self.visit_expression(default);
+                    }
+                    self.in_method_body += 1;
+                    self.push_function_scope(m.function.r#async);
+                    let kind = if self.strict_mode {
+                        VarKind::Let
+                    } else {
+                        VarKind::Var
+                    };
+                    for param in &m.function.params {
+                        self.declare_pat(&param.pat, kind);
+                        if let Some(default) = &param.default {
+                            self.visit_expression(default);
+                        }
+                    }
+                    for stmt in &m.function.body.body {
+                        self.visit_statement(stmt);
+                    }
+                    // Pop and store captures for this method
+                    self.scopes.pop();
+                    self.function_depth -= 1;
+                    self.function_async_stack.pop();
+                    let func_base = self
+                        .function_scope_bases
+                        .pop()
+                        .expect("scope base mismatch");
+                    let func_captures = self
+                        .pending_captures_stack
+                        .pop()
+                        .expect("captures stack mismatch");
+                    let mut names: Vec<String> = func_captures
+                        .into_iter()
+                        .filter(|(depth, _)| *depth < func_base)
+                        .map(|(_, n)| n)
+                        .collect();
+                    names.sort();
+                    names.dedup();
+                    self.captures.insert(m.function.span, names);
+                    self.in_method_body -= 1;
+                }
+                ClassMember::Property(p) => {
+                    if let Some(value) = &p.value {
+                        self.visit_expression(value);
+                    }
+                }
+            }
+        }
+        self.class_has_superclass_stack.pop();
     }
 }
 
@@ -135,17 +299,40 @@ impl Visitor for SemanticAnalyzer {
                     if let Some(init) = &declarator.init {
                         self.visit_expression(init);
                     }
-                    self.declare_pat(&declarator.name, decl.kind);
+                    if decl.kind == VarKind::Var {
+                        self.declare_pat_hoisted(&declarator.name, decl.kind);
+                    } else {
+                        self.declare_pat(&declarator.name, decl.kind);
+                    }
                 }
             }
             Statement::FunctionDecl(func) => {
                 self.declare_pat(&func.name, VarKind::Var);
-                self.push_function_scope();
+                self.push_function_scope(func.r#async);
                 self.declare_params(&func.params);
                 for stmt in &func.body.body {
                     self.visit_statement(stmt);
                 }
-                self.pop_scope();
+                // Pop and store captures for this function
+                self.scopes.pop();
+                self.function_depth -= 1;
+                self.function_async_stack.pop();
+                let func_base = self
+                    .function_scope_bases
+                    .pop()
+                    .expect("scope base mismatch");
+                let func_captures = self
+                    .pending_captures_stack
+                    .pop()
+                    .expect("captures stack mismatch");
+                let mut names: Vec<String> = func_captures
+                    .into_iter()
+                    .filter(|(depth, _)| *depth < func_base)
+                    .map(|(_, n)| n)
+                    .collect();
+                names.sort();
+                names.dedup();
+                self.captures.insert(func.span, names);
             }
             Statement::Block(block) => {
                 self.scopes.push();
@@ -163,7 +350,11 @@ impl Visitor for SemanticAnalyzer {
                                 if let Some(init) = &declarator.init {
                                     self.visit_expression(init);
                                 }
-                                self.declare_pat(&declarator.name, decl.kind);
+                                if decl.kind == VarKind::Var {
+                                    self.declare_pat_hoisted(&declarator.name, decl.kind);
+                                } else {
+                                    self.declare_pat(&declarator.name, decl.kind);
+                                }
                             }
                         }
                         ForInit::Expr(expr) => self.visit_expression(expr),
@@ -246,16 +437,43 @@ impl Visitor for SemanticAnalyzer {
                     self.visit_expression(arg);
                 }
             }
+            Statement::ClassDecl(class) => {
+                self.declare_pat(&class.name, VarKind::Let);
+                if let Some(super_class) = &class.super_class {
+                    self.visit_expression(super_class);
+                }
+                let has_super = class.super_class.is_some();
+                self.visit_class_body(&class.body, has_super);
+            }
+            Statement::Import(import) => {
+                self.validate_import(import);
+            }
             _ => walk_statement(self, stmt),
         }
     }
 
     fn visit_expression(&mut self, expr: &Expression) {
         match expr {
-            Expression::Identifier(name, span) => self.check_reference(name, *span),
+            Expression::Identifier(name, span) => {
+                self.check_reference(name, *span);
+                if !self.function_scope_bases.is_empty() {
+                    if let Some((_binding, depth)) = self.scopes.lookup_with_depth(name) {
+                        if !is_known_global(name) {
+                            self.record_capture(name, depth);
+                        }
+                    }
+                }
+            }
             Expression::Assignment(assign) => {
                 if let Expression::Identifier(name, span) = assign.target.as_ref() {
                     self.check_assignment_target(name, *span);
+                    if !self.function_scope_bases.is_empty() {
+                        if let Some((_binding, depth)) = self.scopes.lookup_with_depth(name) {
+                            if !is_known_global(name) {
+                                self.record_capture(name, depth);
+                            }
+                        }
+                    }
                 } else {
                     self.visit_expression(&assign.target);
                 }
@@ -265,15 +483,34 @@ impl Visitor for SemanticAnalyzer {
                 self.visit_expression(&unary.argument);
             }
             Expression::Function(func) => {
-                self.push_function_scope();
+                self.push_function_scope(func.r#async);
                 self.declare_params(&func.params);
                 for stmt in &func.body.body {
                     self.visit_statement(stmt);
                 }
-                self.pop_scope();
+                // Pop and store captures for this function expr
+                self.scopes.pop();
+                self.function_depth -= 1;
+                self.function_async_stack.pop();
+                let func_base = self
+                    .function_scope_bases
+                    .pop()
+                    .expect("scope base mismatch");
+                let func_captures = self
+                    .pending_captures_stack
+                    .pop()
+                    .expect("captures stack mismatch");
+                let mut names: Vec<String> = func_captures
+                    .into_iter()
+                    .filter(|(depth, _)| *depth < func_base)
+                    .map(|(_, n)| n)
+                    .collect();
+                names.sort();
+                names.dedup();
+                self.captures.insert(func.span, names);
             }
             Expression::Arrow(arrow) => {
-                self.push_function_scope();
+                self.push_function_scope(arrow.r#async);
                 self.declare_params(&arrow.params);
                 match &arrow.body {
                     ArrowBody::Block(block) => {
@@ -281,12 +518,32 @@ impl Visitor for SemanticAnalyzer {
                             self.visit_statement(stmt);
                         }
                     }
-                    ArrowBody::Expr(expr) => self.visit_expression(expr),
+                    ArrowBody::Expr(body_expr) => self.visit_expression(body_expr),
                 }
-                self.pop_scope();
+                // Pop and store captures for this arrow
+                self.scopes.pop();
+                self.function_depth -= 1;
+                self.function_async_stack.pop();
+                let func_base = self
+                    .function_scope_bases
+                    .pop()
+                    .expect("scope base mismatch");
+                let func_captures = self
+                    .pending_captures_stack
+                    .pop()
+                    .expect("captures stack mismatch");
+                let mut names: Vec<String> = func_captures
+                    .into_iter()
+                    .filter(|(depth, _)| *depth < func_base)
+                    .map(|(_, n)| n)
+                    .collect();
+                names.sort();
+                names.dedup();
+                self.captures.insert(arrow.span, names);
             }
             Expression::Await(await_expr) => {
-                if self.function_depth == 0 {
+                let in_async = self.function_async_stack.last().copied().unwrap_or(false);
+                if self.function_depth == 0 || !in_async {
                     self.diagnostics.push(
                         JsDiagnostic::error(
                             JsDiagnosticCode::JS_ILLEGAL_AWAIT,
@@ -312,13 +569,29 @@ impl Visitor for SemanticAnalyzer {
                 }
             }
             Expression::Super(span) => {
-                self.diagnostics.push(
-                    JsDiagnostic::error(
-                        JsDiagnosticCode::JS_ILLEGAL_RETURN,
-                        "'super' outside of class",
-                    )
-                    .with_span(*span),
-                );
+                let has_super = self
+                    .class_has_superclass_stack
+                    .last()
+                    .copied()
+                    .unwrap_or(false);
+                if self.in_method_body == 0 || !has_super {
+                    let msg = if self.in_method_body == 0 {
+                        "'super' outside of class method"
+                    } else {
+                        "'super' in class without extends"
+                    };
+                    self.diagnostics.push(
+                        JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_SUPER, msg)
+                            .with_span(*span),
+                    );
+                }
+            }
+            Expression::ClassExpr(class_expr) => {
+                if let Some(super_class) = &class_expr.super_class {
+                    self.visit_expression(super_class);
+                }
+                let has_super = class_expr.super_class.is_some();
+                self.visit_class_body(&class_expr.body, has_super);
             }
             _ => walk_expression(self, expr),
         }
@@ -326,17 +599,71 @@ impl Visitor for SemanticAnalyzer {
 }
 
 impl SemanticAnalyzer {
-    fn push_function_scope(&mut self) {
-        self.scopes.push();
-        self.function_depth += 1;
-    }
+    // ── import validation (single-file) ─────────────────────────────────
 
-    fn pop_scope(&mut self) {
-        self.scopes.pop();
-        if self.function_depth > 0 {
-            self.function_depth -= 1;
+    fn validate_import(&mut self, import: &ImportDecl) {
+        let mut names_in_use: Vec<&str> = Vec::new();
+
+        // Check default import: `import x from 'y'`
+        if let Some(ref default) = import.default {
+            if default == "default" {
+                self.diagnostics.push(
+                    JsDiagnostic::error(
+                        JsDiagnosticCode::JS_IMPORT_ERROR,
+                        "cannot use 'default' as a local binding name",
+                    )
+                    .with_span(import.span),
+                );
+            }
+            names_in_use.push(default.as_str());
+        }
+        if import.namespace.is_some() {
+            if let Some(ref ns) = import.namespace {
+                names_in_use.push(ns.as_str());
+            }
+        }
+        for spec in &import.named {
+            if &spec.imported == "default" {
+                self.diagnostics.push(
+                    JsDiagnostic::error(
+                        JsDiagnosticCode::JS_IMPORT_ERROR,
+                        "use default-import syntax instead of `import { default }`",
+                    )
+                    .with_span(spec.span),
+                );
+            }
+            if names_in_use.contains(&spec.local.as_str()) {
+                self.diagnostics.push(
+                    JsDiagnostic::error(
+                        JsDiagnosticCode::JS_DUPLICATE_DECLARATION,
+                        format!("'{}' is already bound by this import", spec.local),
+                    )
+                    .with_span(spec.span),
+                );
+            }
+            names_in_use.push(&spec.local);
+        }
+
+        // Self-import detection (same source) – best-effort, single file.
+        if import.source == "*self*" || import.source.is_empty() {
+            self.diagnostics.push(
+                JsDiagnostic::error(
+                    JsDiagnosticCode::JS_IMPORT_ERROR,
+                    "self-import is not allowed",
+                )
+                .with_span(import.span),
+            );
         }
     }
+}
+
+fn is_use_strict_directive(stmt: &Statement) -> bool {
+    if let Statement::Expr(expr_stmt) = stmt {
+        if let Expression::String(s) = &expr_stmt.expr {
+            return s.value == "use strict";
+        }
+    }
+    false
 }
 
 fn is_known_global(name: &str) -> bool {
@@ -386,14 +713,11 @@ fn is_known_global(name: &str) -> bool {
             | "Element"
             | "Node"
             | "HTMLElement"
-            | "console"
             | "undefined"
             | "null"
             | "true"
             | "false"
             | "eval"
-            | "isNaN"
-            | "isFinite"
             | "encodeURI"
             | "encodeURIComponent"
             | "decodeURI"

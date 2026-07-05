@@ -143,6 +143,58 @@ pub enum JsTokenKind {
 }
 
 impl JsTokenKind {
+    pub const fn is_keyword(self) -> bool {
+        matches!(
+            self,
+            Self::Var
+                | Self::Let
+                | Self::Const
+                | Self::Function
+                | Self::Return
+                | Self::If
+                | Self::Else
+                | Self::For
+                | Self::While
+                | Self::Do
+                | Self::Break
+                | Self::Continue
+                | Self::Switch
+                | Self::Case
+                | Self::Default
+                | Self::Try
+                | Self::Catch
+                | Self::Finally
+                | Self::Throw
+                | Self::Async
+                | Self::Await
+                | Self::Yield
+                | Self::Class
+                | Self::Extends
+                | Self::Super
+                | Self::New
+                | Self::This
+                | Self::Typeof
+                | Self::Void
+                | Self::Delete
+                | Self::True
+                | Self::False
+                | Self::Null
+                | Self::Undefined
+                | Self::Import
+                | Self::Export
+                | Self::From
+                | Self::Of
+                | Self::In
+                | Self::Instanceof
+                | Self::As
+                | Self::Debugger
+                | Self::Static
+                | Self::Get
+                | Self::Set
+                | Self::With
+        )
+    }
+
     pub const fn is_terminator(self) -> bool {
         matches!(
             self,
