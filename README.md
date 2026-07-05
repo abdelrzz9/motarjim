@@ -386,4 +386,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, 
 
 ## License
 
-MIT
+MIT License — see [LICENSE](LICENSE) for details.
+
+Copyright (c) 2026 abdelrzz9
