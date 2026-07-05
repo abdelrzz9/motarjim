@@ -82,6 +82,7 @@ impl<'a> JsLexer<'a> {
             '#' => self.read_hash(),
             '`' => self.read_template(),
             '\'' | '"' => self.read_string(c),
+            '@' => self.simple_token(JsTokenKind::At),
             '/' if !self.regex_allowed => self.read_slash(),
             '/' => self.read_regex_or_slash(),
             _ if c.is_ascii_digit() => self.read_number(),

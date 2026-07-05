@@ -13,7 +13,7 @@ mod stmt;
 pub use expr::*;
 pub use stmt::*;
 
-use crate::diagnostics::JsDiagnostic;
+use crate::diagnostics::{JsDiagnostic, JsDiagnosticCode};
 
 #[derive(Debug)]
 pub struct JsParser {
@@ -111,7 +111,10 @@ impl JsParser {
         if self.at(kind) {
             self.advance()
         } else {
-            self.error(format!("expected '{what}'"));
+            self.error_with_code(
+                JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                format!("expected '{what}'"),
+            );
             self.cur().clone()
         }
     }
@@ -120,7 +123,10 @@ impl JsParser {
         if self.at_any(kinds) {
             self.advance()
         } else {
-            self.error(format!("expected {what}"));
+            self.error_with_code(
+                JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                format!("expected {what}"),
+            );
             self.cur().clone()
         }
     }
@@ -152,6 +158,27 @@ impl JsParser {
         let msg = message.into();
         self.errors
             .push(JsDiagnostic::parse_error(msg, self.cur().span));
+    }
+
+    fn error_with_code(&mut self, code: JsDiagnosticCode, message: impl Into<String>) {
+        let msg = message.into();
+        self.errors
+            .push(JsDiagnostic::error(code, msg).with_span(self.cur().span));
+    }
+
+    fn error_with_help(
+        &mut self,
+        code: JsDiagnosticCode,
+        message: impl Into<String>,
+        help: impl Into<String>,
+    ) {
+        let msg = message.into();
+        let help_str = help.into();
+        self.errors.push(
+            JsDiagnostic::error(code, msg)
+                .with_span(self.cur().span)
+                .with_help(help_str),
+        );
     }
 
     fn error_at(&mut self, span: SourceSpan, message: impl Into<String>) {

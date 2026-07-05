@@ -50,6 +50,7 @@ pub enum JsTokenKind {
     Static,
     Get,
     Set,
+    With,
 
     // ---- identifiers & literals -------------------------------------------
     Identifier,
@@ -299,6 +300,7 @@ pub fn keyword_from_str(s: &str) -> Option<JsTokenKind> {
         "static" => JsTokenKind::Static,
         "get" => JsTokenKind::Get,
         "set" => JsTokenKind::Set,
+        "with" => JsTokenKind::With,
         _ => return None,
     })
 }

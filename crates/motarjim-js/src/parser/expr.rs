@@ -4,6 +4,7 @@ use crate::ast::expr::*;
 use crate::ast::lit::*;
 use crate::ast::pat::*;
 use crate::ast::stmt::*;
+use crate::diagnostics::JsDiagnosticCode;
 use crate::parser::JsParser;
 use crate::token::{JsTokenKind, TokenValue};
 
@@ -94,10 +95,10 @@ impl JsParser {
             JsTokenKind::PipePipeAssign => AssignOp::LogicalOrAssign,
             JsTokenKind::NullishAssign => AssignOp::NullishAssign,
             _ => {
-                self.error(format!(
-                    "unexpected token in assignment operator: {:?}",
-                    tok.kind
-                ));
+                self.error_with_code(
+                    JsDiagnosticCode::JS_UNEXPECTED_TOKEN,
+                    format!("unexpected token in assignment operator: {:?}", tok.kind),
+                );
                 AssignOp::Assign
             }
         }
@@ -232,7 +233,11 @@ impl JsParser {
                     && (existing.op == LogicalOp::NullishCoalesce
                         || op == LogicalOp::NullishCoalesce)
                 {
-                    self.error("cannot mix '??' with '&&' or '||' without parentheses");
+                    self.error_with_help(
+                        JsDiagnosticCode::JS_MIXING_NULLISH_AND_LOGICAL,
+                        "cannot mix '??' with '&&' or '||' without parentheses",
+                        "wrap the expression in parentheses to clarify precedence",
+                    );
                 }
             }
             self.advance();
@@ -241,7 +246,11 @@ impl JsParser {
                 if r.op != op
                     && (r.op == LogicalOp::NullishCoalesce || op == LogicalOp::NullishCoalesce)
                 {
-                    self.error("cannot mix '??' with '&&' or '||' without parentheses");
+                    self.error_with_help(
+                        JsDiagnosticCode::JS_MIXING_NULLISH_AND_LOGICAL,
+                        "cannot mix '??' with '&&' or '||' without parentheses",
+                        "wrap the expression in parentheses to clarify precedence",
+                    );
                 }
             }
             let span = self.span_from(start);
@@ -424,7 +433,10 @@ impl JsParser {
     fn parse_exponentiation(&mut self) -> Expression {
         let start = self.cur().span;
         if self.at(JsTokenKind::StarStar) {
-            self.error("exponentiation operator requires a left operand");
+            self.error_with_code(
+                JsDiagnosticCode::JS_UNEXPECTED_TOKEN,
+                "exponentiation operator requires a left operand",
+            );
         }
         let left = self.parse_unary();
         if self.eat(JsTokenKind::StarStar) {
@@ -768,7 +780,10 @@ impl JsParser {
             JsTokenKind::Yield => self.parse_yield_expr(),
             JsTokenKind::Slash | JsTokenKind::SlashAssign => self.parse_regex_literal(),
             _ => {
-                self.error(format!("unexpected token in expression: {:?}", self.kind()));
+                self.error_with_code(
+                    JsDiagnosticCode::JS_UNEXPECTED_TOKEN,
+                    format!("unexpected token in expression: {:?}", self.kind()),
+                );
                 Expression::Undefined(self.advance().span)
             }
         }
@@ -850,7 +865,10 @@ impl JsParser {
                     span,
                 });
             } else {
-                self.error("expected ':' in object literal");
+                self.error_with_code(
+                    JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                    "expected ':' in object literal",
+                );
             }
             self.eat(JsTokenKind::Comma);
         }
@@ -995,7 +1013,10 @@ impl JsParser {
                         span,
                     });
                 } else {
-                    self.error("invalid destructuring pattern");
+                    self.error_with_code(
+                        JsDiagnosticCode::JS_INVALID_DESTRUCTURING_PATTERN,
+                        "invalid destructuring pattern",
+                    );
                 }
                 self.eat(JsTokenKind::Comma);
             }
@@ -1032,7 +1053,10 @@ impl JsParser {
         let name = if self.at(JsTokenKind::Identifier) {
             self.advance().raw
         } else {
-            self.error("expected a binding identifier");
+            self.error_with_code(
+                JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                "expected a binding identifier",
+            );
             String::new()
         };
 

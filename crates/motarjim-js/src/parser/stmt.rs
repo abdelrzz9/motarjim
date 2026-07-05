@@ -6,6 +6,7 @@ use crate::ast::expr::*;
 use crate::ast::lit::*;
 use crate::ast::pat::*;
 use crate::ast::stmt::*;
+use crate::diagnostics::JsDiagnosticCode;
 use crate::parser::JsParser;
 use crate::token::JsTokenKind;
 
@@ -36,6 +37,16 @@ impl JsParser {
             }
             JsTokenKind::Throw => self.parse_throw(),
             JsTokenKind::Try => self.parse_try(),
+            JsTokenKind::With => {
+                let span = self.advance().span;
+                self.parse_expression();
+                self.parse_statement();
+                self.error_with_code(
+                    JsDiagnosticCode::JS_UNSUPPORTED_SYNTAX,
+                    "'with' statement is not supported",
+                );
+                Statement::Empty(span)
+            }
             JsTokenKind::Debugger => {
                 let span = self.advance().span;
                 self.eat_semicolon();
@@ -51,7 +62,10 @@ impl JsParser {
             JsTokenKind::At => {
                 self.advance();
                 self.parse_expression();
-                self.error("decorators are not supported yet");
+                self.error_with_code(
+                    JsDiagnosticCode::JS_UNSUPPORTED_SYNTAX,
+                    "decorators are not supported yet",
+                );
                 Statement::Empty(self.cur().span)
             }
             _ => self.parse_expr_stmt(),
@@ -129,6 +143,13 @@ impl JsParser {
             self.advance();
         }
         self.advance();
+        if self.at(JsTokenKind::Star) {
+            self.advance();
+            self.error_with_code(
+                JsDiagnosticCode::JS_UNSUPPORTED_SYNTAX,
+                "generator functions are not supported yet",
+            );
+        }
         let name = self.parse_pattern();
         let params = self.parse_params();
         let body = self.parse_block();
@@ -245,7 +266,10 @@ impl JsParser {
                     span,
                 });
             } else {
-                self.error("expected 'case' or 'default'");
+                self.error_with_code(
+                    JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                    "expected 'case' or 'default'",
+                );
                 self.advance();
             }
         }
@@ -375,7 +399,10 @@ impl JsParser {
                     span,
                 });
             }
-            self.error("invalid left-hand side in for-of");
+            self.error_with_code(
+                JsDiagnosticCode::JS_INVALID_LHS,
+                "invalid left-hand side in for-of",
+            );
             return Statement::ForOf(ForOfStmt {
                 left: Pattern::Ident(String::new(), expr.span()),
                 right,
@@ -398,7 +425,10 @@ impl JsParser {
                     span,
                 });
             }
-            self.error("invalid left-hand side in for-in");
+            self.error_with_code(
+                JsDiagnosticCode::JS_INVALID_LHS,
+                "invalid left-hand side in for-in",
+            );
             return Statement::ForIn(ForInStmt {
                 left: Pattern::Ident(String::new(), expr.span()),
                 right,
@@ -513,7 +543,10 @@ impl JsParser {
         let source = if self.eat(JsTokenKind::From) || !has_bindings {
             self.parse_string_literal_value()
         } else {
-            self.error("expected 'from' after import specifiers");
+            self.error_with_code(
+                JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                "expected 'from' after import specifiers",
+            );
             String::new()
         };
 
@@ -537,7 +570,10 @@ impl JsParser {
             }
             self.advance().raw
         } else {
-            self.error("expected a string literal");
+            self.error_with_code(
+                JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                "expected a string literal",
+            );
             String::new()
         }
     }
@@ -715,7 +751,10 @@ impl JsParser {
             } else if self.at(JsTokenKind::Semicolon) {
                 self.advance();
             } else {
-                self.error("unexpected token in class body");
+                self.error_with_code(
+                    JsDiagnosticCode::JS_INVALID_CLASS_MEMBER,
+                    "unexpected token in class body",
+                );
                 self.advance();
             }
         }
@@ -760,7 +799,10 @@ impl JsParser {
         if self.at(JsTokenKind::Identifier) {
             self.advance().raw
         } else {
-            self.error("expected an identifier");
+            self.error_with_code(
+                JsDiagnosticCode::JS_EXPECTED_TOKEN,
+                "expected an identifier",
+            );
             String::new()
         }
     }

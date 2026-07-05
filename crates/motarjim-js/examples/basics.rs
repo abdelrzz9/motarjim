@@ -15,7 +15,7 @@ fn main() {
         Ok(program) => program,
         Err(diagnostics) => {
             for diag in &diagnostics {
-                println!("error[E{:04}]: {}", diag.code.number, diag.message);
+                println!("error[JS{:04}]: {}", diag.code.number, diag.message);
             }
             return;
         }
