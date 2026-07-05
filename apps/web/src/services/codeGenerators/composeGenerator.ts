@@ -63,7 +63,7 @@ export function generateCompose(
   emit('Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {');
   depth = 2;
 
-  generateNode(htmlAst);
+  generateChildren(htmlAst);
 
   depth = 1;
   emit('}');

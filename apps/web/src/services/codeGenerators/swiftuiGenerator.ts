@@ -43,7 +43,7 @@ export function generateSwiftUI(
   emit('VStack(alignment: .leading, spacing: 8) {');
   depth = 4;
 
-  generateNode(htmlAst);
+  generateChildren(htmlAst);
 
   depth = 3;
   emit('}');

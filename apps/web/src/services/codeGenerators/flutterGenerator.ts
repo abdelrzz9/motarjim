@@ -77,7 +77,7 @@ export function generateFlutter(
   emit('body: ');
   depth = 4;
 
-  generateNode(htmlAst);
+  generateChildren(htmlAst);
 
   depth = 3;
   emit(');');
