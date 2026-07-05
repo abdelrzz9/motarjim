@@ -234,8 +234,8 @@ pub fn register_builtin_generators(registry: &mut GeneratorRegistry) {
 mod tests {
     use super::*;
     use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr, TargetIr};
-    use motarjim_ast_html::ComputedStyle;
     use motarjim_ast::NodeId;
+    use motarjim_ast_html::ComputedStyle;
     use smol_str::SmolStr;
 
     fn make_node(

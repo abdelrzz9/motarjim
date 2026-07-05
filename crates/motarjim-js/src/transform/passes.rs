@@ -1,9 +1,9 @@
 //! Built-in transform passes (e.g., [`TemplateLiteralToConcat`]).
 
-use crate::ast::program::Program;
-use crate::ast::lit::*;
 use crate::ast::expr::*;
+use crate::ast::lit::*;
 use crate::ast::pat::*;
+use crate::ast::program::Program;
 use crate::ast::stmt::*;
 use crate::transform::Transform;
 
@@ -114,6 +114,28 @@ fn rewrite_expr(expr: &mut Expression) {
         Expression::Await(a) => rewrite_expr(&mut a.argument),
         Expression::Spread(s) => rewrite_expr(s),
         Expression::Parenthesized(p) => rewrite_expr(p),
+        Expression::ClassExpr(c) => {
+            if let Some(super_class) = &mut c.super_class {
+                rewrite_expr(super_class);
+            }
+            for member in &mut c.body.body {
+                match member {
+                    ClassMember::Method(m) => {
+                        for param in &mut m.function.params {
+                            if let Some(default) = &mut param.default {
+                                rewrite_expr(default);
+                            }
+                        }
+                        rewrite_block(&mut m.function.body);
+                    }
+                    ClassMember::Property(p) => {
+                        if let Some(value) = &mut p.value {
+                            rewrite_expr(value);
+                        }
+                    }
+                }
+            }
+        }
         Expression::Identifier(..)
         | Expression::PrivateIdentifier(..)
         | Expression::Number(_)
@@ -139,7 +161,11 @@ fn rewrite_expr(expr: &mut Expression) {
 }
 
 fn template_to_concat(tpl: TemplateLiteral) -> Expression {
-    let TemplateLiteral { quasis, exprs, span } = tpl;
+    let TemplateLiteral {
+        quasis,
+        exprs,
+        span,
+    } = tpl;
     let mut quasis = quasis.into_iter();
     let mut result = Expression::String(Box::new(StringLit {
         value: quasis.next().unwrap_or_default(),
@@ -238,7 +264,11 @@ fn rewrite_stmt(stmt: &mut Statement) {
             rewrite_expr(&mut do_while.test);
         }
         Statement::Block(block) => rewrite_block(block),
-        Statement::Break(_) | Statement::Continue(_) | Statement::Empty(_) | Statement::Import(_) | Statement::Debugger(_) => {}
+        Statement::Break(_)
+        | Statement::Continue(_)
+        | Statement::Empty(_)
+        | Statement::Import(_)
+        | Statement::Debugger(_) => {}
         Statement::Throw(s) => rewrite_expr(&mut s.argument),
         Statement::Try(s) => {
             rewrite_block(&mut s.block);
@@ -273,9 +303,45 @@ fn rewrite_stmt(stmt: &mut Statement) {
                 }
                 rewrite_block(&mut f.body);
             }
-            ExportDefaultKind::ClassDecl(_) => {}
+            ExportDefaultKind::ClassDecl(c) => {
+                for member in &mut c.body.body {
+                    match member {
+                        ClassMember::Method(m) => {
+                            for param in &mut m.function.params {
+                                if let Some(default) = &mut param.default {
+                                    rewrite_expr(default);
+                                }
+                            }
+                            rewrite_block(&mut m.function.body);
+                        }
+                        ClassMember::Property(p) => {
+                            if let Some(value) = &mut p.value {
+                                rewrite_expr(value);
+                            }
+                        }
+                    }
+                }
+            }
         },
-        Statement::ClassDecl(_) => {}
+        Statement::ClassDecl(c) => {
+            for member in &mut c.body.body {
+                match member {
+                    ClassMember::Method(m) => {
+                        for param in &mut m.function.params {
+                            if let Some(default) = &mut param.default {
+                                rewrite_expr(default);
+                            }
+                        }
+                        rewrite_block(&mut m.function.body);
+                    }
+                    ClassMember::Property(p) => {
+                        if let Some(value) = &mut p.value {
+                            rewrite_expr(value);
+                        }
+                    }
+                }
+            }
+        }
         Statement::Labelled { body, .. } => rewrite_stmt(body),
     }
 }

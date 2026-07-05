@@ -28,7 +28,7 @@ pub mod codes;
 #[cfg(feature = "color")]
 pub mod emitter;
 
-pub use motarjim_errors::diagnostic::{Diagnostic, DiagnosticBag};
 pub use motarjim_errors::code::DiagnosticCode;
+pub use motarjim_errors::diagnostic::{Diagnostic, DiagnosticBag};
 pub use motarjim_errors::severity::Severity;
 pub use motarjim_span::{SourceFile, SourceLocation, SourceSpan};

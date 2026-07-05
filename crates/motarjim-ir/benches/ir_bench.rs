@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use motarjim_ast_html::ComputedStyle;
 use motarjim_ast::{Attribute, Document, Element, HtmlNode, NodeId, NodeType};
+use motarjim_ast_html::ComputedStyle;
 use motarjim_diag::DiagnosticBag;
 use motarjim_ir::IrBuilder;
 use smallvec::SmallVec;

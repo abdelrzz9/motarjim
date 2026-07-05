@@ -9,8 +9,8 @@
 //! using the [`CodeWriter`](motarjim_formatter::CodeWriter) for indented Swift output.
 
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr};
-use motarjim_ast_html::EdgeValues;
 use motarjim_ast::NodeId;
+use motarjim_ast_html::EdgeValues;
 use motarjim_formatter::CodeWriter;
 
 /// The Swift/SwiftUI code generator implementation.

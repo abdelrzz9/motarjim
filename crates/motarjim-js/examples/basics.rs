@@ -15,7 +15,7 @@ fn main() {
         Ok(program) => program,
         Err(diagnostics) => {
             for diag in &diagnostics {
-                println!("error[E{:04}]: {}", diag.code().number, diag.message());
+                println!("error[E{:04}]: {}", diag.code.number, diag.message);
             }
             return;
         }
@@ -28,7 +28,7 @@ fn main() {
         diagnostics.len()
     );
     for diag in &diagnostics {
-        println!("  [{}] {}", diag.severity().as_str(), diag.message());
+        println!("  [{}] {}", diag.severity.as_str(), diag.message);
     }
 
     let bindings = find_dom_event_bindings(&program);

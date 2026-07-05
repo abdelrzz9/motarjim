@@ -76,7 +76,12 @@ impl DiagnosticEmitter {
                 let _ = writeln!(
                     output,
                     " {} {}-->{} {}:{}:{}",
-                    severity_color, bold, reset, sf.path.display(), span.start.line, span.start.column
+                    severity_color,
+                    bold,
+                    reset,
+                    sf.path.display(),
+                    span.start.line,
+                    span.start.column
                 );
                 let _ = writeln!(output, "  {severity_color}");
                 output.push_str(&sf.snippet(span, 2));

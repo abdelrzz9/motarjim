@@ -502,9 +502,7 @@ impl FlutterGenerator {
                 motarjim_ast_html::JustifyContent::FlexStart => "MainAxisAlignment.start",
                 motarjim_ast_html::JustifyContent::FlexEnd => "MainAxisAlignment.end",
                 motarjim_ast_html::JustifyContent::Center => "MainAxisAlignment.center",
-                motarjim_ast_html::JustifyContent::SpaceBetween => {
-                    "MainAxisAlignment.spaceBetween"
-                }
+                motarjim_ast_html::JustifyContent::SpaceBetween => "MainAxisAlignment.spaceBetween",
                 motarjim_ast_html::JustifyContent::SpaceAround => "MainAxisAlignment.spaceAround",
                 motarjim_ast_html::JustifyContent::SpaceEvenly => "MainAxisAlignment.spaceEvenly",
             };

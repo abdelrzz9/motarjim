@@ -115,7 +115,9 @@ impl DiagnosticBag {
     /// Creates a new, empty diagnostic bag.
     #[must_use]
     pub fn new() -> Self {
-        Self { diagnostics: Vec::new() }
+        Self {
+            diagnostics: Vec::new(),
+        }
     }
 
     /// Adds a diagnostic to the bag.
@@ -149,13 +151,19 @@ impl DiagnosticBag {
     /// Returns the number of error-severity diagnostics.
     #[must_use]
     pub fn error_count(&self) -> usize {
-        self.diagnostics.iter().filter(|d| d.severity.is_error()).count()
+        self.diagnostics
+            .iter()
+            .filter(|d| d.severity.is_error())
+            .count()
     }
 
     /// Returns the number of warning-severity diagnostics.
     #[must_use]
     pub fn warning_count(&self) -> usize {
-        self.diagnostics.iter().filter(|d| d.severity.is_warning()).count()
+        self.diagnostics
+            .iter()
+            .filter(|d| d.severity.is_warning())
+            .count()
     }
 
     /// Returns `true` if the bag contains no diagnostics.
@@ -177,17 +185,20 @@ impl DiagnosticBag {
 
     /// Convenience method to push an error diagnostic.
     pub fn push_error(&mut self, code: DiagnosticCode, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(Severity::Error, code, message));
+        self.diagnostics
+            .push(Diagnostic::new(Severity::Error, code, message));
     }
 
     /// Convenience method to push a warning diagnostic.
     pub fn push_warning(&mut self, code: DiagnosticCode, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(Severity::Warning, code, message));
+        self.diagnostics
+            .push(Diagnostic::new(Severity::Warning, code, message));
     }
 
     /// Convenience method to push an info diagnostic.
     pub fn push_info(&mut self, code: DiagnosticCode, message: impl Into<String>) {
-        self.diagnostics.push(Diagnostic::new(Severity::Info, code, message));
+        self.diagnostics
+            .push(Diagnostic::new(Severity::Info, code, message));
     }
 
     /// Returns `true` if any diagnostic has warning severity.

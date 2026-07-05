@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use motarjim_js::{
+    transform::{run_transforms, TemplateLiteralToConcat},
     JsLexer, JsParser, SemanticAnalyzer,
-    transform::{TemplateLiteralToConcat, run_transforms},
 };
 
 const JS_SMALL: &str = "let x = 1;";
@@ -163,7 +163,10 @@ fn bench_transform_medium(c: &mut Criterion) {
     let mut group = c.benchmark_group("js_transform");
     group.bench_function("template_to_concat", |b| {
         b.iter(|| {
-            run_transforms(black_box(program.clone()), &mut [&mut TemplateLiteralToConcat])
+            run_transforms(
+                black_box(program.clone()),
+                &mut [&mut TemplateLiteralToConcat],
+            )
         });
     });
     group.finish();

@@ -2,10 +2,10 @@
 
 pub mod passes;
 
-use crate::ast::program::Program;
-use crate::ast::lit::*;
 use crate::ast::expr::*;
+use crate::ast::lit::*;
 use crate::ast::pat::*;
+use crate::ast::program::Program;
 use crate::ast::stmt::*;
 
 pub trait Transform {
