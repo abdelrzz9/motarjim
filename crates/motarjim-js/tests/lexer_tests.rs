@@ -131,11 +131,16 @@ fn test_import_export_keywords() {
     assert_eq!(
         k,
         vec![
-            JsTokenKind::Import, JsTokenKind::Identifier,
-            JsTokenKind::From, JsTokenKind::String,
-            JsTokenKind::Semicolon, JsTokenKind::Export,
-            JsTokenKind::Default, JsTokenKind::Identifier,
-            JsTokenKind::Semicolon, JsTokenKind::Eof,
+            JsTokenKind::Import,
+            JsTokenKind::Identifier,
+            JsTokenKind::From,
+            JsTokenKind::String,
+            JsTokenKind::Semicolon,
+            JsTokenKind::Export,
+            JsTokenKind::Default,
+            JsTokenKind::Identifier,
+            JsTokenKind::Semicolon,
+            JsTokenKind::Eof,
         ]
     );
 }

@@ -1,16 +1,16 @@
 use motarjim_js::{
-    Expression, JsParser, Pattern, Statement,
-    visitor::{Visitor, VisitorMut, Fold, walk_program},
+    visitor::{Fold, Visitor, VisitorMut},
+    walk_expression, walk_statement, Expression, JsParser, Statement,
 };
 
 struct CountingVisitor {
     count: usize,
 }
 
-impl<'ast> Visitor<'ast> for CountingVisitor {
-    fn visit_expression(&mut self, _: &'ast Expression) {
+impl Visitor for CountingVisitor {
+    fn visit_expression(&mut self, _expr: &Expression) {
         self.count += 1;
-        walk_program::walk_expression(self, _);
+        walk_expression(self, _expr);
     }
 }
 
@@ -18,39 +18,50 @@ impl<'ast> Visitor<'ast> for CountingVisitor {
 fn test_visitor_counts_expressions() {
     let mut parser = JsParser::new("let x = 1 + 2 + 3;");
     let program = parser.parse().expect("should parse");
+    // Debug: dump statement
+    if let Statement::VarDecl(decl) = &program.body[0] {
+        eprintln!(
+            "DEBUG: VarDecl declarators={}, init={:?}, name={:?}",
+            decl.declarators.len(),
+            decl.declarators[0].init.is_some(),
+            decl.declarators[0].name
+        );
+    } else {
+        eprintln!("DEBUG: unexpected statement");
+    }
     let mut visitor = CountingVisitor { count: 0 };
     visitor.visit_program(&program);
-    assert_eq!(visitor.count, 4);
+    assert_eq!(visitor.count, 5);
 }
 
-struct ClassCounter {
-    classes: usize,
+struct FunctionExprCounter {
+    count: usize,
 }
 
-impl<'ast> Visitor<'ast> for ClassCounter {
-    fn visit_expression(&mut self, expr: &'ast Expression) {
-        if matches!(expr, Expression::ClassExpr(_)) {
-            self.classes += 1;
+impl Visitor for FunctionExprCounter {
+    fn visit_expression(&mut self, expr: &Expression) {
+        if matches!(expr, Expression::Function(_)) {
+            self.count += 1;
         }
-        walk_program::walk_expression(self, expr);
+        walk_expression(self, expr);
     }
 }
 
 #[test]
-fn test_class_expression_visitor() {
-    let mut parser = JsParser::new("const Cls = class {};");
+fn test_function_expression_visitor() {
+    let mut parser = JsParser::new("const fn = function() {};");
     let program = parser.parse().expect("should parse");
-    let mut visitor = ClassCounter { classes: 0 };
+    let mut visitor = FunctionExprCounter { count: 0 };
     visitor.visit_program(&program);
-    assert_eq!(visitor.classes, 1);
+    assert_eq!(visitor.count, 1);
 }
 
 struct StatementCounter {
     count: usize,
 }
 
-impl<'ast> Visitor<'ast> for StatementCounter {
-    fn visit_statement(&mut self, _: &'ast Statement) {
+impl Visitor for StatementCounter {
+    fn visit_statement(&mut self, _: &Statement) {
         self.count += 1;
     }
 }
@@ -69,12 +80,12 @@ struct FunctionCounter {
     functions: usize,
 }
 
-impl<'ast> Visitor<'ast> for FunctionCounter {
-    fn visit_statement(&mut self, stmt: &'ast Statement) {
+impl Visitor for FunctionCounter {
+    fn visit_statement(&mut self, stmt: &Statement) {
         if matches!(stmt, Statement::FunctionDecl(_)) {
             self.functions += 1;
         }
-        walk_program::walk_statement(self, stmt);
+        walk_statement(self, stmt);
     }
 }
 
@@ -108,7 +119,10 @@ impl VisitorMut for MutRenamer {
 fn test_visitor_mut_renames_identifier() {
     let mut parser = JsParser::new("let x = 1; console.log(x);");
     let mut program = parser.parse().expect("should parse");
-    let mut renamer = MutRenamer { from: "x".into(), to: "y".into() };
+    let mut renamer = MutRenamer {
+        from: "x".into(),
+        to: "y".into(),
+    };
     renamer.visit_program_mut(&mut program);
     // After rename, we should get undeclared 'y' in semantic analysis
     let diags = motarjim_js::SemanticAnalyzer::new().analyze(&program);
@@ -124,12 +138,10 @@ impl Fold for FoldAddWrapper {
         match expr {
             Expression::Number(num) => {
                 // Wrap each number in an array: [n]
-                Expression::Array(
-                    motarjim_js::ArrayLit {
-                        elements: vec![motarjim_js::ArrayElement::Expr(Box::new(Expression::Number(num)))],
-                        span: Default::default(),
-                    }
-                )
+                Expression::Array(Box::new(motarjim_js::ArrayLit {
+                    elements: vec![motarjim_js::ArrayElement::Some(Expression::Number(num))],
+                    span: Default::default(),
+                }))
             }
             other => motarjim_js::visitor::walk_fold_expression(self, other),
         }
@@ -142,6 +154,11 @@ fn test_fold_wraps_numbers_in_array() {
     let program = parser.parse().expect("should parse");
     let mut f = FoldAddWrapper;
     let result = f.fold_program(program);
-    let Statement::VarDecl(decl) = &result.body[0] else { panic!("expected var decl") };
-    assert!(matches!(decl.declarators[0].init, Some(Expression::Array(_))));
+    let Statement::VarDecl(decl) = &result.body[0] else {
+        panic!("expected var decl")
+    };
+    assert!(matches!(
+        decl.declarators[0].init,
+        Some(Expression::Array(_))
+    ));
 }

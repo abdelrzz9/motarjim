@@ -1,5 +1,5 @@
 use motarjim_diag::Severity;
-use motarjim_js::{JsDiagnosticCode, JsDiagnostic};
+use motarjim_js::{JsDiagnostic, JsDiagnosticCode};
 
 #[test]
 fn test_diagnostic_code_values() {
@@ -41,9 +41,9 @@ fn test_diagnostic_warning_severity() {
 
 #[test]
 fn test_diagnostic_with_span() {
-    let diag = JsDiagnostic::error(JsDiagnosticCode::JS_INVALID_LHS, "invalid")
-        .with_span((5..10).into());
-    assert_eq!(diag.span.start, 5);
+    let diag =
+        JsDiagnostic::error(JsDiagnosticCode::JS_INVALID_LHS, "invalid").with_span((5..10).into());
+    assert_eq!(diag.span.start.offset, 5);
 }
 
 #[test]
