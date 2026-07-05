@@ -1,9 +1,9 @@
 import type { Platform } from '../services/types';
 
 export const PLATFORMS: { value: Platform; label: string; color: string }[] = [
-  { value: 'flutter', label: 'Flutter', color: '#1389fd' },
-  { value: 'compose', label: 'Jetpack Compose', color: '#4285f4' },
-  { value: 'swiftui', label: 'SwiftUI', color: '#f05138' },
+  { value: 'flutter', label: 'Flutter', color: 'var(--flutter)' },
+  { value: 'compose', label: 'Jetpack Compose', color: 'var(--compose)' },
+  { value: 'swiftui', label: 'SwiftUI', color: 'var(--swiftui)' },
 ];
 
 export const PIPELINE_STAGES = [
