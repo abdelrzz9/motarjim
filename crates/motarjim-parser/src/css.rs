@@ -6,9 +6,7 @@ use motarjim_ast::css::{
     KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
     SupportsRule,
 };
-use motarjim_ast_css::{
-    AttributeOperator, PseudoClass, PseudoElement, Selector, SimpleSelector,
-};
+use motarjim_ast_css::{AttributeOperator, PseudoClass, PseudoElement, Selector, SimpleSelector};
 use motarjim_diag::codes;
 use motarjim_diag::{Diagnostic, DiagnosticBag};
 use motarjim_lexer::css::{CssTokenKind, CssTokenizer};

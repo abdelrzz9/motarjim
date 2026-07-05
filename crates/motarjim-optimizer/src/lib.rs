@@ -15,8 +15,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use motarjim_ast::ir::{IrNode, IrTree, SemanticIr, TargetIr};
-use motarjim_ast_html::{Border, ComputedStyle, DisplayType, EdgeValues};
 use motarjim_ast::NodeId;
+use motarjim_ast_html::{Border, ComputedStyle, DisplayType, EdgeValues};
 use motarjim_diag::Diagnostic;
 use smallvec::SmallVec;
 

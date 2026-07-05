@@ -1,6 +1,6 @@
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr, TargetIr};
-use motarjim_ast_html::ComputedStyle;
 use motarjim_ast::NodeId;
+use motarjim_ast_html::ComputedStyle;
 use motarjim_optimizer::{register_default_passes, PassManager};
 
 fn make_text_node(id: u32, text: &str) -> IrNode {

@@ -21,13 +21,21 @@ impl SourceLocation {
     /// Creates a new source location.
     #[must_use]
     pub const fn new(line: u32, column: u32, offset: usize) -> Self {
-        Self { line, column, offset }
+        Self {
+            line,
+            column,
+            offset,
+        }
     }
 }
 
 impl Default for SourceLocation {
     fn default() -> Self {
-        Self { line: 1, column: 1, offset: 0 }
+        Self {
+            line: 1,
+            column: 1,
+            offset: 0,
+        }
     }
 }
 
