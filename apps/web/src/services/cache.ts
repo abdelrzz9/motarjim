@@ -5,15 +5,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const cache = new Map<string, CompilerCacheEntry>();
 
-function hashRequest(request: CompileRequest): string {
-  const key = `${request.platform}:${request.minify ?? false}:${request.html}:${request.css ?? ''}`;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) {
-    const char = key.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return `${hash}`;
+function cacheKey(request: CompileRequest): string {
+  return `${request.platform}:${request.minify ?? false}:${request.html.length}:${request.html}:${request.css ?? ''}`;
 }
 
 function isExpired(entry: CompilerCacheEntry): boolean {
@@ -22,7 +15,7 @@ function isExpired(entry: CompilerCacheEntry): boolean {
 
 export const compilerCache = {
   get(request: CompileRequest): CompileResult | null {
-    const key = hashRequest(request);
+    const key = cacheKey(request);
     const entry = cache.get(key);
     if (!entry) return null;
     if (isExpired(entry)) {
@@ -38,7 +31,7 @@ export const compilerCache = {
       const oldest = cache.entries().next().value;
       if (oldest) cache.delete(oldest[0]);
     }
-    const key = hashRequest(request);
+    const key = cacheKey(request);
     cache.set(key, {
       result,
       timestamp: Date.now(),
@@ -47,7 +40,7 @@ export const compilerCache = {
   },
 
   invalidate(request: CompileRequest): void {
-    const key = hashRequest(request);
+    const key = cacheKey(request);
     cache.delete(key);
   },
 

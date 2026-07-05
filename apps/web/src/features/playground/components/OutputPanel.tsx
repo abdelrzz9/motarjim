@@ -103,7 +103,7 @@ export function OutputPanel() {
     setCss(SAMPLE_CSS);
     setJs(SAMPLE_JS);
     notify('Sample loaded! Compiling...', 'info', 2000);
-    document.dispatchEvent(new CustomEvent('compile-trigger'));
+    window.dispatchEvent(new CustomEvent('compile-trigger'));
   }, [setHtml, setCss, setJs, notify]);
 
   const handleUpload = useCallback(() => {

@@ -462,9 +462,11 @@ function matchesSelector(
   if (last === '*') return true;
 
   const tagMatch = last.startsWith(tagName) || !/^[a-zA-Z]/.test(last);
-  const classMatch = classNames.length === 0 || last.includes('.')
-    ? classNames.some(c => last.includes(`.${c}`)) || last.includes('.')
-    : true;
+  const classMatch = classNames.length === 0
+    ? true
+    : last.includes('.')
+      ? classNames.some(c => last.includes(`.${c}`))
+      : true;
   const idMatch = !id || !last.includes('#') || last.includes(`#${id}`);
 
   if (tagMatch && classMatch && idMatch) return true;

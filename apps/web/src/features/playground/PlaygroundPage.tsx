@@ -12,7 +12,7 @@ export default function PlaygroundPage() {
   const [shortcutModalOpen, setShortcutModalOpen] = useState(false);
 
   const compile = useCallback(() => {
-    document.dispatchEvent(new CustomEvent('compile-trigger'));
+    window.dispatchEvent(new CustomEvent('compile-trigger'));
   }, []);
 
   const commands = useMemo(() => [

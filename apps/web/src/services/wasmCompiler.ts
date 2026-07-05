@@ -46,9 +46,24 @@ export async function compile(
     try {
       const compileFn = compiler.compile as (html: string, css: string | null, platform: string) => string;
       const resultJson = compileFn(request.html, request.css || null, request.platform);
-      const result = JSON.parse(resultJson) as CompileResult;
+      const raw = JSON.parse(resultJson) as Record<string, unknown>;
 
-      if (result && typeof result === 'object' && 'code' in result) {
+      if (raw && typeof raw === 'object' && 'code' in raw) {
+        const stats = raw.stats as Record<string, unknown> | undefined;
+        const result: CompileResult = {
+          success: true,
+          code: String(raw.code),
+          diagnostics: [],
+          stats: {
+            nodesParsed: Number(stats?.nodes ?? 0),
+            cssRules: Number(stats?.css_rules ?? 0),
+            irNodes: 0,
+            jsNodes: 0,
+            timeMs: Number(stats?.time_ms ?? 0),
+            parseTimeMs: 0,
+            genTimeMs: 0,
+          },
+        };
         logger.info('WasmCompiler', 'WASM compilation successful');
         return result;
       }
