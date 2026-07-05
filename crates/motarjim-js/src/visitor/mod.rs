@@ -130,7 +130,10 @@ pub fn walk_statement<V: Visitor + ?Sized>(visitor: &mut V, stmt: &Statement) {
                 visitor.visit_statement(stmt);
             }
         }
-        Statement::Break(_) | Statement::Continue(_) | Statement::Empty(_) | Statement::Debugger(_) => {}
+        Statement::Break(_)
+        | Statement::Continue(_)
+        | Statement::Empty(_)
+        | Statement::Debugger(_) => {}
         Statement::Throw(s) => visitor.visit_expression(&s.argument),
         Statement::Try(s) => {
             for stmt in &s.block.body {
@@ -172,11 +175,50 @@ pub fn walk_statement<V: Visitor + ?Sized>(visitor: &mut V, stmt: &Statement) {
                     visitor.visit_statement(stmt);
                 }
             }
-            ExportDefaultKind::ClassDecl(_) => {}
+            ExportDefaultKind::ClassDecl(c) => {
+                for member in &c.body.body {
+                    match member {
+                        ClassMember::Method(m) => {
+                            for param in &m.function.params {
+                                if let Some(default) = &param.default {
+                                    visitor.visit_expression(default);
+                                }
+                            }
+                            for stmt in &m.function.body.body {
+                                visitor.visit_statement(stmt);
+                            }
+                        }
+                        ClassMember::Property(p) => {
+                            if let Some(value) = &p.value {
+                                visitor.visit_expression(value);
+                            }
+                        }
+                    }
+                }
+            }
         },
         Statement::ClassDecl(c) => {
             if let Some(super_class) = &c.super_class {
                 visitor.visit_expression(super_class);
+            }
+            for member in &c.body.body {
+                match member {
+                    ClassMember::Method(m) => {
+                        for param in &m.function.params {
+                            if let Some(default) = &param.default {
+                                visitor.visit_expression(default);
+                            }
+                        }
+                        for stmt in &m.function.body.body {
+                            visitor.visit_statement(stmt);
+                        }
+                    }
+                    ClassMember::Property(p) => {
+                        if let Some(value) = &p.value {
+                            visitor.visit_expression(value);
+                        }
+                    }
+                }
             }
         }
         Statement::Labelled { body, .. } => visitor.visit_statement(body),
@@ -243,7 +285,9 @@ pub fn walk_expression<V: Visitor + ?Sized>(visitor: &mut V, expr: &Expression) 
                 ArrowBody::Expr(expr) => visitor.visit_expression(expr),
             }
         }
-        Expression::Unary(unary) | Expression::Update(unary) => visitor.visit_expression(&unary.argument),
+        Expression::Unary(unary) | Expression::Update(unary) => {
+            visitor.visit_expression(&unary.argument)
+        }
         Expression::Binary(bin) => {
             visitor.visit_expression(&bin.left);
             visitor.visit_expression(&bin.right);
@@ -295,6 +339,30 @@ pub fn walk_expression<V: Visitor + ?Sized>(visitor: &mut V, expr: &Expression) 
         Expression::MetaProperty(_) => {}
         Expression::Spread(expr) => visitor.visit_expression(expr),
         Expression::Parenthesized(expr) => visitor.visit_expression(expr),
+        Expression::ClassExpr(c) => {
+            if let Some(super_class) = &c.super_class {
+                visitor.visit_expression(super_class);
+            }
+            for member in &c.body.body {
+                match member {
+                    ClassMember::Method(m) => {
+                        for param in &m.function.params {
+                            if let Some(default) = &param.default {
+                                visitor.visit_expression(default);
+                            }
+                        }
+                        for stmt in &m.function.body.body {
+                            visitor.visit_statement(stmt);
+                        }
+                    }
+                    ClassMember::Property(p) => {
+                        if let Some(value) = &p.value {
+                            visitor.visit_expression(value);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -411,7 +479,10 @@ pub fn walk_statement_mut<V: VisitorMut + ?Sized>(visitor: &mut V, stmt: &mut St
                 visitor.visit_statement_mut(stmt);
             }
         }
-        Statement::Break(_) | Statement::Continue(_) | Statement::Empty(_) | Statement::Debugger(_) => {}
+        Statement::Break(_)
+        | Statement::Continue(_)
+        | Statement::Empty(_)
+        | Statement::Debugger(_) => {}
         Statement::Throw(s) => visitor.visit_expression_mut(&mut s.argument),
         Statement::Try(s) => {
             for stmt in &mut s.block.body {
@@ -453,11 +524,50 @@ pub fn walk_statement_mut<V: VisitorMut + ?Sized>(visitor: &mut V, stmt: &mut St
                     visitor.visit_statement_mut(stmt);
                 }
             }
-            ExportDefaultKind::ClassDecl(_) => {}
+            ExportDefaultKind::ClassDecl(c) => {
+                for member in &mut c.body.body {
+                    match member {
+                        ClassMember::Method(m) => {
+                            for param in &mut m.function.params {
+                                if let Some(default) = &mut param.default {
+                                    visitor.visit_expression_mut(default);
+                                }
+                            }
+                            for stmt in &mut m.function.body.body {
+                                visitor.visit_statement_mut(stmt);
+                            }
+                        }
+                        ClassMember::Property(p) => {
+                            if let Some(value) = &mut p.value {
+                                visitor.visit_expression_mut(value);
+                            }
+                        }
+                    }
+                }
+            }
         },
         Statement::ClassDecl(c) => {
             if let Some(super_class) = &mut c.super_class {
                 visitor.visit_expression_mut(super_class);
+            }
+            for member in &mut c.body.body {
+                match member {
+                    ClassMember::Method(m) => {
+                        for param in &mut m.function.params {
+                            if let Some(default) = &mut param.default {
+                                visitor.visit_expression_mut(default);
+                            }
+                        }
+                        for stmt in &mut m.function.body.body {
+                            visitor.visit_statement_mut(stmt);
+                        }
+                    }
+                    ClassMember::Property(p) => {
+                        if let Some(value) = &mut p.value {
+                            visitor.visit_expression_mut(value);
+                        }
+                    }
+                }
             }
         }
         Statement::Labelled { body, .. } => visitor.visit_statement_mut(body),
@@ -485,10 +595,8 @@ pub fn walk_expression_mut<V: VisitorMut + ?Sized>(visitor: &mut V, expr: &mut E
         Expression::Array(arr) => {
             for el in &mut arr.elements {
                 match el {
-                    ArrayElement::Some(expr) =>
-                        visitor.visit_expression_mut(expr),
-                    ArrayElement::Spread(expr) =>
-                        visitor.visit_expression_mut(expr),
+                    ArrayElement::Some(expr) => visitor.visit_expression_mut(expr),
+                    ArrayElement::Spread(expr) => visitor.visit_expression_mut(expr),
                     ArrayElement::None(_) => {}
                 }
             }
@@ -526,7 +634,9 @@ pub fn walk_expression_mut<V: VisitorMut + ?Sized>(visitor: &mut V, expr: &mut E
                 ArrowBody::Expr(expr) => visitor.visit_expression_mut(expr),
             }
         }
-        Expression::Unary(unary) | Expression::Update(unary) => visitor.visit_expression_mut(&mut unary.argument),
+        Expression::Unary(unary) | Expression::Update(unary) => {
+            visitor.visit_expression_mut(&mut unary.argument)
+        }
         Expression::Binary(bin) => {
             visitor.visit_expression_mut(&mut bin.left);
             visitor.visit_expression_mut(&mut bin.right);
@@ -578,6 +688,30 @@ pub fn walk_expression_mut<V: VisitorMut + ?Sized>(visitor: &mut V, expr: &mut E
         Expression::MetaProperty(_) => {}
         Expression::Spread(expr) => visitor.visit_expression_mut(expr),
         Expression::Parenthesized(expr) => visitor.visit_expression_mut(expr),
+        Expression::ClassExpr(c) => {
+            if let Some(super_class) = &mut c.super_class {
+                visitor.visit_expression_mut(super_class);
+            }
+            for member in &mut c.body.body {
+                match member {
+                    ClassMember::Method(m) => {
+                        for param in &mut m.function.params {
+                            if let Some(default) = &mut param.default {
+                                visitor.visit_expression_mut(default);
+                            }
+                        }
+                        for stmt in &mut m.function.body.body {
+                            visitor.visit_statement_mut(stmt);
+                        }
+                    }
+                    ClassMember::Property(p) => {
+                        if let Some(value) = &mut p.value {
+                            visitor.visit_expression_mut(value);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -617,7 +751,11 @@ pub fn walk_pattern_mut<V: VisitorMut + ?Sized>(visitor: &mut V, pat: &mut Patte
 
 pub fn walk_fold_program<F: Fold>(mut folder: &mut F, program: Program) -> Program {
     Program {
-        body: program.body.into_iter().map(|s| folder.fold_statement(s)).collect(),
+        body: program
+            .body
+            .into_iter()
+            .map(|s| folder.fold_statement(s))
+            .collect(),
         ..program
     }
 }
@@ -641,7 +779,11 @@ pub fn walk_fold_statement<F: Fold>(folder: &mut F, stmt: Statement) -> Statemen
             Statement::Return(ret)
         }
         Statement::Block(block) => Statement::Block(BlockStmt {
-            body: block.body.into_iter().map(|s| folder.fold_statement(s)).collect(),
+            body: block
+                .body
+                .into_iter()
+                .map(|s| folder.fold_statement(s))
+                .collect(),
             ..block
         }),
         Statement::Expr(stmt) => Statement::Expr(ExprStmt {
