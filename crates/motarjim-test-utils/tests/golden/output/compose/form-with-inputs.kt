@@ -16,7 +16,7 @@ fun GeneratedPage() {
                 label = { Text("Input") }
             )
             Button(onClick = { }) {
-                Text("Button")
+                Text("Submit")
             }
         }
     }

@@ -17,7 +17,8 @@ class GeneratedPage extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {},
-                child: const Text('Button'),
+                child: 
+                  Text('Submit'),
               ),
             ],
           ),

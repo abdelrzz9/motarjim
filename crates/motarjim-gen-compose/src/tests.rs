@@ -24,6 +24,7 @@ fn make_node(
         computed_style: ComputedStyle::default(),
         children: children.into_iter().map(NodeId).collect(),
         parent: parent.map(NodeId),
+        text: None,
     }
 }
 
@@ -65,7 +66,7 @@ fn test_root_with_text() {
     let gen = ComposeGenerator::new();
     let output = gen.generate(&tree);
     assert!(output.contains("fun GeneratedPage()"));
-    assert!(output.contains("Text(\"Text content\")"));
+    assert!(output.contains("Text(\"text\")"));
 }
 
 #[test]
@@ -136,7 +137,7 @@ fn test_heading_composable() {
     );
     let gen = ComposeGenerator::new();
     let output = gen.generate(&tree);
-    assert!(output.contains("Heading 2"));
+    assert!(output.contains("text = \"text\""));
     assert!(output.contains("fontSize = 28.sp"));
 }
 
@@ -213,5 +214,5 @@ fn test_hero_section() {
     let gen = ComposeGenerator::new();
     let output = gen.generate(&tree);
     assert!(output.contains("Box("));
-    assert!(output.contains("Heading 1"));
+    assert!(output.contains("text = \"text\""));
 }

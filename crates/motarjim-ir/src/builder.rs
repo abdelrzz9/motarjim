@@ -82,6 +82,7 @@ impl IrBuilder {
                 computed_style,
                 children: html_node.children.clone(),
                 parent: html_node.parent,
+                text: html_node.value.clone(),
             });
         }
 

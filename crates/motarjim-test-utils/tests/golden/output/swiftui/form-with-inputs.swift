@@ -6,7 +6,9 @@ struct GeneratedPage: View {
             Section {
                 TextField("Input", text: .constant(""))
                 .textFieldStyle(.roundedBorder)
-                Button("Button") { }
+                Button(action: { }) {
+                    Text("Submit")
+                }
             }
         }
     }

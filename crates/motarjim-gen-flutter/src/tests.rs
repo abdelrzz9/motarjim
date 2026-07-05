@@ -24,6 +24,7 @@ fn make_node(
         computed_style: ComputedStyle::default(),
         children: children.into_iter().map(NodeId).collect(),
         parent: parent.map(NodeId),
+        text: None,
     }
 }
 
@@ -136,7 +137,8 @@ fn test_heading_widget() {
     );
     let gen = FlutterGenerator::new();
     let output = gen.generate(&tree);
-    assert!(output.contains("Heading 1"));
+    // heading with no text children falls back to "text"
+    assert!(output.contains("'text',"));
     assert!(output.contains("fontSize: 32.0"));
 }
 
@@ -246,5 +248,5 @@ fn test_hero_section() {
     let gen = FlutterGenerator::new();
     let output = gen.generate(&tree);
     assert!(output.contains("SizedBox"));
-    assert!(output.contains("Heading 1"));
+    assert!(output.contains("'text',"));
 }

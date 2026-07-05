@@ -8,5 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun GeneratedPage() {
-    // empty page
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text("Card 1")
+    }
 }

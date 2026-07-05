@@ -21,6 +21,8 @@ pub struct IrNode {
     pub children: SmallVec<[motarjim_ast_html::NodeId; 4]>,
     /// The ID of this node's parent, if any.
     pub parent: Option<motarjim_ast_html::NodeId>,
+    /// The text content of this node, if it is a text node.
+    pub text: Option<String>,
 }
 
 /// The full IR tree.
@@ -254,6 +256,7 @@ mod tests {
             computed_style: motarjim_ast_html::ComputedStyle::default(),
             children: SmallVec::new(),
             parent: None,
+            text: None,
         }
     }
 

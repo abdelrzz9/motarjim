@@ -161,6 +161,7 @@ mod tests {
                 computed_style: ComputedStyle::default(),
                 children: smallvec::smallvec![],
                 parent: None,
+                text: None,
             }],
             root_id: NodeId(0),
             target_hints: vec![],
@@ -204,6 +205,7 @@ mod tests {
             computed_style: ComputedStyle::default(),
             children: smallvec::smallvec![],
             parent: None,
+            text: None,
         };
         let json = ir_json::node_to_string(&node).unwrap();
         assert!(json.contains("Button"));

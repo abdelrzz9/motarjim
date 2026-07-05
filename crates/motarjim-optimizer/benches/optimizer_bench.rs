@@ -26,6 +26,7 @@ fn make_node(
         computed_style: ComputedStyle::default(),
         children,
         parent,
+        text: None,
     }
 }
 
@@ -46,6 +47,7 @@ fn make_text_node(
         computed_style: ComputedStyle::default(),
         children,
         parent,
+        text: None,
     }
 }
 
