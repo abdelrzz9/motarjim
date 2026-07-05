@@ -1,5 +1,5 @@
 import type { ASTNode, Diagnostic, CSSDeclaration } from '../types';
-import { unsupportedHtmlElement } from '../diagnostics';
+import { unsupportedHtmlElement, createWarningDiagnostic } from '../diagnostics';
 import { logger } from '../logger';
 
 export function generateFlutter(
@@ -114,7 +114,7 @@ export function generateFlutter(
       case 'footer':
       case 'nav':
       case 'aside':
-        generateContainer(node, style);
+        generateBox(node, style);
         break;
       case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
         generateHeading(node, tag, style);
@@ -160,7 +160,7 @@ export function generateFlutter(
         generateTable(node, style);
         break;
       case 'form':
-        generateContainer(node, style);
+        generateBox(node, style);
         break;
       case 'label':
         generateSpan(node, style);
@@ -172,25 +172,25 @@ export function generateFlutter(
         generateItalic(node);
         break;
       case 'blockquote':
-        generateContainer(node, style);
+        generateBox(node, style);
         break;
       case 'pre': case 'code':
         generateCodeBlock(node);
         break;
       default:
         diagnostics.push(unsupportedHtmlElement(tag));
-        generateContainer(node, style);
+        generateBox(node, style);
         break;
     }
   }
 
-  function generateContainer(node: ASTNode, style: CSSDeclaration[]) {
+  function generateBox(node: ASTNode, style: CSSDeclaration[]) {
     const hasChildren = node.children && node.children.some(c =>
       (c.type === 'element') || (c.type === 'text' && c.value && c.value.trim())
     );
     const isFlex = style.some(d => d.property === 'display' && (d.value === 'flex' || d.value === 'inline-flex'));
     const flexDir = style.find(d => d.property === 'flex-direction');
-    const isColumn = !flexDir || flexDir.value === 'column';
+    const isColumn = flexDir ? flexDir.value === 'column' : false;
     const padding = style.find(d => d.property === 'padding');
     const bgColor = style.find(d => d.property === 'background-color' || d.property === 'background');
     const width = style.find(d => d.property === 'width');
@@ -201,62 +201,15 @@ export function generateFlutter(
     const margin = style.find(d => d.property === 'margin');
     const borderRadius = style.find(d => d.property === 'border-radius');
     const opacity = style.find(d => d.property === 'opacity');
+    const position = style.find(d => d.property === 'position');
 
-    const hasDecoratedBg = bgColor || borderRadius;
-    const hasExplicitSize = width || height;
-    const isSimpleContainer = !isFlex && (hasDecoratedBg || hasExplicitSize || padding || margin || opacity);
+    const hasExplicitSize = width != null || height != null;
+    const hasDecoration = bgColor != null || borderRadius != null;
+    const hasPadding = padding != null;
+    const hasMargin = margin != null;
+    const hasModifiers = hasExplicitSize || hasDecoration || hasPadding || hasMargin || opacity != null;
 
-    if (isSimpleContainer && (!hasChildren || isColumn)) {
-      depth++;
-      if (opacity) {
-        emit(`Opacity(opacity: ${parseFloat(opacity.value) || 1},`);
-        depth++;
-      }
-
-      emit('Container(');
-      depth++;
-
-      const props: string[] = [];
-      if (width) props.push(`width: ${toDouble(width.value)}`);
-      if (height) props.push(`height: ${toDouble(height.value)}`);
-      if (padding) {
-        const ep = toEdgeInsets(padding.value);
-        if (ep) props.push(`padding: ${ep}`);
-      }
-      if (margin) {
-        const ep = toEdgeInsets(margin.value);
-        if (ep) props.push(`margin: ${ep}`);
-      }
-
-      if (hasDecoratedBg) {
-        const decoParts: string[] = [];
-        if (bgColor) decoParts.push(`color: ${toColor(bgColor.value)}`);
-        if (borderRadius) decoParts.push(`borderRadius: ${toDouble(borderRadius.value)}`);
-        props.push(`decoration: BoxDecoration(${decoParts.join(', ')})`);
-      }
-
-      if (props.length > 0) {
-        emit(props.join(',') + ',');
-      }
-
-      if (hasChildren) {
-        emit('child: ');
-        depth++;
-        generateChildren(node);
-        depth--;
-      }
-
-      depth--;
-      emit('),');
-
-      if (opacity) {
-        depth--;
-        emit('),');
-      }
-
-      depth--;
-      return;
-    }
+    if (!hasModifiers && !isFlex && !hasChildren) return;
 
     if (isFlex && hasChildren) {
       depth++;
@@ -275,13 +228,100 @@ export function generateFlutter(
       }
       if (gap) props.push(`spacing: ${toDouble(gap.value)}`);
 
+      if (hasPadding) {
+        const ep = toEdgeInsets(padding!.value);
+        if (ep) {
+          depth++;
+          emit(`padding: ${ep},`);
+          depth--;
+        }
+      }
+      if (hasMargin) {
+        const ep = toEdgeInsets(margin!.value);
+        if (ep) {
+          depth++;
+          emit(`margin: ${ep},`);
+          depth--;
+        }
+      }
+
       if (props.length > 0) {
-        emit(props.join(',') + ',');
+        for (const p of props) {
+          emit(p + ',');
+        }
       }
 
       emit('children: [');
       depth++;
       generateChildren(node);
+      depth--;
+      emit('],');
+
+      if (hasExplicitSize || hasDecoration || opacity != null) {
+        if (opacity != null) {
+          emit('],');
+          depth--;
+          emit(`Opacity(opacity: ${parseFloat(opacity.value) || 1},`);
+          depth++;
+          emit('child: ');
+        }
+
+        emit('],');
+        depth--;
+        emit('),');
+
+        if (hasExplicitSize || hasDecoration) {
+          const decoParts: string[] = [];
+          if (bgColor) decoParts.push(`color: ${toColor(bgColor.value)}`);
+          if (borderRadius) decoParts.push(`borderRadius: ${toBorderRadius(borderRadius.value)}`);
+          const deco = decoParts.length > 0 ? `decoration: BoxDecoration(${decoParts.join(', ')}),` : '';
+
+          const containerProps: string[] = [];
+          if (width) containerProps.push(`width: ${toDouble(width.value)}`);
+          if (height) containerProps.push(`height: ${toDouble(height.value)}`);
+          if (deco) containerProps.push(deco);
+
+          emit('Container(');
+          depth++;
+          for (const cp of containerProps) emit(cp);
+          if (hasChildren || opacity != null) {
+            emit('child: ');
+            depth++;
+          }
+        }
+      }
+
+      if (!hasExplicitSize && !hasDecoration && opacity == null) {
+        depth--;
+        emit('),');
+        depth--;
+      }
+      return;
+    }
+
+    if (position != null && position.value === 'absolute') {
+      depth++;
+      emit('Stack(');
+      depth++;
+      emit('children: [');
+
+      const top = style.find(d => d.property === 'top');
+      const right = style.find(d => d.property === 'right');
+      const bottom = style.find(d => d.property === 'bottom');
+      const left = style.find(d => d.property === 'left');
+
+      depth++;
+      emit('Positioned(');
+      depth++;
+      if (top) emit(`top: ${toDouble(top.value)},`);
+      if (right) emit(`right: ${toDouble(right.value)},`);
+      if (bottom) emit(`bottom: ${toDouble(bottom.value)},`);
+      if (left) emit(`left: ${toDouble(left.value)},`);
+      emit('child: ');
+      depth++;
+      emitContainerContent(node, style, hasChildren);
+      depth--;
+      emit('),');
       depth--;
       emit('],');
       depth--;
@@ -290,9 +330,91 @@ export function generateFlutter(
       return;
     }
 
+    if (!hasModifiers && hasChildren) {
+      depth++;
+      generateChildren(node);
+      depth--;
+      return;
+    }
+
     depth++;
-    generateChildren(node);
+    emitContainerContent(node, style, hasChildren);
     depth--;
+  }
+
+  function emitContainerContent(node: ASTNode, style: CSSDeclaration[], hasChildren: boolean | undefined) {
+    const bgColor = style.find(d => d.property === 'background-color' || d.property === 'background');
+    const width = style.find(d => d.property === 'width');
+    const height = style.find(d => d.property === 'height');
+    const padding = style.find(d => d.property === 'padding');
+    const margin = style.find(d => d.property === 'margin');
+    const borderRadius = style.find(d => d.property === 'border-radius');
+    const opacity = style.find(d => d.property === 'opacity');
+
+    const hasExplicitSize = width != null || height != null;
+    const hasDecoration = bgColor != null || borderRadius != null;
+    const hasPadding = padding != null;
+    const hasMargin = margin != null;
+    const hasModifiers = hasExplicitSize || hasDecoration || hasPadding || hasMargin || opacity != null;
+
+    if (!hasModifiers) {
+      generateChildren(node);
+      return;
+    }
+
+    if (opacity != null) {
+      emit('Opacity(');
+      depth++;
+      emit(`opacity: ${parseFloat(opacity.value) || 1},`);
+      emit('child: ');
+      depth++;
+      emitContainerContent(node, style, hasChildren);
+      depth--;
+      emit('),');
+      depth--;
+      return;
+    }
+
+    const decoParts: string[] = [];
+    if (bgColor) decoParts.push(`color: ${toColor(bgColor.value)}`);
+    if (borderRadius) decoParts.push(`borderRadius: ${toBorderRadius(borderRadius.value)}`);
+
+    const props: string[] = [];
+    if (width) props.push(`width: ${toDouble(width.value)}`);
+    if (height) props.push(`height: ${toDouble(height.value)}`);
+    if (hasPadding && !hasMargin) {
+      const ep = toEdgeInsets(padding!.value);
+      if (ep) props.push(`padding: ${ep}`);
+    }
+    if (hasMargin) {
+      const ep = toEdgeInsets(margin!.value);
+      if (ep) {
+        props.push(`padding: ${ep}`);
+        if (!hasPadding) {
+          diagnostics.push(createWarningDiagnostic(
+            'W0401', 'Margin without padding',
+            'Margin is applied as padding. Consider using SizedBox for margins.',
+          ));
+        }
+      }
+    }
+    if (decoParts.length > 0) {
+      props.push(`decoration: BoxDecoration(${decoParts.join(', ')})`);
+    }
+
+    if (props.length > 0 || hasChildren) {
+      emit('Container(');
+      depth++;
+      for (const p of props) emit(p + ',');
+      if (hasChildren) {
+        emit('child: ');
+        depth++;
+        generateChildren(node);
+        depth--;
+      }
+      depth--;
+      emit('),');
+    }
   }
 
   function generateChildren(node: ASTNode) {
@@ -350,7 +472,8 @@ export function generateFlutter(
     const fontWeight = style.find(d => d.property === 'font-weight');
 
     depth++;
-    if (color || fontWeight) {
+    const hasStyle = color != null || fontWeight != null;
+    if (hasStyle) {
       emit('Text(');
       depth++;
       emit(`'${escapeDart(getNodeText(node))}',`);
@@ -435,12 +558,12 @@ export function generateFlutter(
     emit(`'${escapeDart(getNodeText(node))}',`);
     depth--;
     emit('),');
-    if (bgColor || borderRadius || padding) {
+    if (bgColor != null || borderRadius != null || padding != null || color != null) {
       emit('style: ElevatedButton.styleFrom(');
       depth++;
       if (bgColor) emit(`backgroundColor: ${toColor(bgColor.value)},`);
       if (color) emit(`foregroundColor: ${toColor(color.value)},`);
-      if (borderRadius) emit(`shape: RoundedRectangleBorder(borderRadius: ${toDouble(borderRadius.value)}),`);
+      if (borderRadius) emit(`shape: RoundedRectangleBorder(borderRadius: ${toBorderRadius(borderRadius.value)}),`);
       if (padding) {
         const ep = toEdgeInsets(padding.value);
         if (ep) emit(`padding: ${ep},`);
@@ -543,7 +666,7 @@ export function generateFlutter(
     emit('Container(');
     depth++;
     emit('padding: const EdgeInsets.all(8),');
-    emit(`decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),`);
+    emit('decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(4)),');
     emit('child: SelectableText(');
     depth++;
     emit(`'${escapeDart(getNodeText(node))}',`);
@@ -628,6 +751,12 @@ function toDouble(value: string): string {
   const num = parseFloat(value);
   if (isNaN(num)) return value;
   return `${num}`;
+}
+
+function toBorderRadius(value: string): string {
+  const num = parseFloat(value);
+  if (isNaN(num)) return `BorderRadius.circular(8)`;
+  return `BorderRadius.circular(${num})`;
 }
 
 function toColor(value: string): string {

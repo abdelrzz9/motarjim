@@ -16,6 +16,26 @@ export function generateSwiftUI(
     buf.push(indent.repeat(depth) + line);
   }
 
+  const styleCache = new Map<string, CSSDeclaration[]>();
+
+  function getMatchingStyles(tagName: string, classNames: string[], id?: string): CSSDeclaration[] {
+    const key = `${tagName}|${classNames.join(',')}|${id || ''}`;
+    const cached = styleCache.get(key);
+    if (cached) return cached;
+
+    const all: CSSDeclaration[] = [];
+    for (const [selector, decls] of cssDeclarations) {
+      if (selector === tagName || classNames.some(c => selector === `.${c}` || selector === `${tagName}.${c}`)) {
+        all.push(...decls);
+      }
+      if (id && (selector === `#${id}` || selector === `${tagName}#${id}`)) {
+        all.push(...decls);
+      }
+    }
+    styleCache.set(key, all);
+    return all;
+  }
+
   buf.push('import SwiftUI');
   buf.push('');
 
@@ -53,26 +73,6 @@ export function generateSwiftUI(
   depth = 1;
   emit('}');
   emit('}');
-
-  const styleCache = new Map<string, CSSDeclaration[]>();
-
-  function getMatchingStyles(tagName: string, classNames: string[], id?: string): CSSDeclaration[] {
-    const key = `${tagName}|${classNames.join(',')}|${id || ''}`;
-    const cached = styleCache.get(key);
-    if (cached) return cached;
-
-    const all: CSSDeclaration[] = [];
-    for (const [selector, decls] of cssDeclarations) {
-      if (selector === tagName || classNames.some(c => selector === `.${c}` || selector === `${tagName}.${c}`)) {
-        all.push(...decls);
-      }
-      if (id && (selector === `#${id}` || selector === `${tagName}#${id}`)) {
-        all.push(...decls);
-      }
-    }
-    styleCache.set(key, all);
-    return all;
-  }
 
   function generateNode(node: ASTNode) {
     if (node.type === 'text') {
@@ -155,34 +155,97 @@ export function generateSwiftUI(
   }
 
   function generateContainer(node: ASTNode, style: CSSDeclaration[]) {
+    const hasChildren = node.children && node.children.some(c =>
+      (c.type === 'element') || (c.type === 'text' && c.value && c.value.trim())
+    );
+    const isFlex = style.some(d => d.property === 'display' && (d.value === 'flex' || d.value === 'inline-flex'));
+    const flexDir = style.find(d => d.property === 'flex-direction');
+    const isColumn = flexDir ? flexDir.value === 'column' : false;
     const padding = style.find(d => d.property === 'padding');
     const bgColor = style.find(d => d.property === 'background-color' || d.property === 'background');
     const width = style.find(d => d.property === 'width');
     const height = style.find(d => d.property === 'height');
+    const margin = style.find(d => d.property === 'margin');
     const borderRadius = style.find(d => d.property === 'border-radius');
+    const opacity = style.find(d => d.property === 'opacity');
+    const align = style.find(d => d.property === 'align-items');
+    const gap = style.find(d => d.property === 'gap');
 
-    depth++;
-    emit('VStack(alignment: .leading, spacing: 4) {');
-    depth++;
-    generateChildren(node);
-    depth--;
-    emit('}');
+    const hasDecor = bgColor != null || borderRadius != null || padding != null || width != null || height != null || margin != null || opacity != null;
 
-    const modifiers: string[] = [];
-    if (padding) modifiers.push(`.padding(${toCGFloat(padding.value)})`);
-    if (bgColor) modifiers.push(`.background(${toSwiftUIColor(bgColor.value)})`);
-    if (width) modifiers.push(`.frame(width: ${toCGFloat(width.value)})`);
-    if (height) modifiers.push(`.frame(height: ${toCGFloat(height.value)})`);
-    if (borderRadius) modifiers.push(`.cornerRadius(${toCGFloat(borderRadius.value)})`);
+    if (!hasChildren && !hasDecor) return;
 
-    for (const mod of modifiers) {
-      emit(mod);
+    if (isFlex && hasChildren) {
+      depth++;
+      if (isColumn) {
+        emit('VStack(alignment: .leading, spacing: 4) {');
+      } else {
+        emit('HStack(spacing: 4) {');
+      }
+      depth++;
+      generateChildren(node);
+      depth--;
+      emit('}');
+
+      const mods: string[] = [];
+      if (padding) mods.push(`.padding(${toCGFloat(padding.value)})`);
+      if (margin) mods.push(`.padding(${toCGFloat(margin.value)})`);
+      if (width) mods.push(`.frame(width: ${toCGFloat(width.value)})`);
+      if (height) mods.push(`.frame(height: ${toCGFloat(height.value)})`);
+      if (bgColor) mods.push(`.background(${toSwiftUIColor(bgColor.value)})`);
+      if (borderRadius) mods.push(`.cornerRadius(${toCGFloat(borderRadius.value)})`);
+      if (opacity) mods.push(`.opacity(${parseFloat(opacity.value) / 100})`);
+      if (align) {
+        if (isColumn) {
+          if (align.value === 'center') mods.push('.frame(maxWidth: .infinity, alignment: .center)');
+          else if (align.value === 'flex-end') mods.push('.frame(maxWidth: .infinity, alignment: .trailing)');
+        } else {
+          if (align.value === 'center') mods.push('.frame(maxHeight: .infinity, alignment: .center)');
+          else if (align.value === 'flex-end') mods.push('.frame(maxHeight: .infinity, alignment: .bottom)');
+        }
+      }
+      if (gap) mods.push(`.padding(.horizontal, ${toCGFloat(gap.value)})`);
+
+      for (const m of mods) emit(m);
+      depth--;
+      return;
     }
-    depth--;
+
+    if (hasDecor) {
+      depth++;
+      emit('VStack(alignment: .leading, spacing: 4) {');
+      depth++;
+      generateChildren(node);
+      depth--;
+      emit('}');
+
+      const mods: string[] = [];
+      if (padding) mods.push(`.padding(${toCGFloat(padding.value)})`);
+      if (margin) mods.push(`.padding(${toCGFloat(margin.value)})`);
+      if (width) mods.push(`.frame(width: ${toCGFloat(width.value)})`);
+      if (height) mods.push(`.frame(height: ${toCGFloat(height.value)})`);
+      if (bgColor) mods.push(`.background(${toSwiftUIColor(bgColor.value)})`);
+      if (borderRadius) mods.push(`.cornerRadius(${toCGFloat(borderRadius.value)})`);
+      if (opacity) mods.push(`.opacity(${parseFloat(opacity.value)})`);
+
+      for (const m of mods) emit(m);
+      depth--;
+    } else {
+      depth++;
+      generateChildren(node);
+      depth--;
+    }
+  }
+
+  function generateChildren(node: ASTNode) {
+    if (!node.children) return;
+    for (const child of node.children) {
+      generateNode(child);
+    }
   }
 
   function generateHeading(node: ASTNode, tag: string, style: CSSDeclaration[]) {
-    const fontSize = tag === 'h1' ? 'title' : tag === 'h2' ? 'title2' : tag === 'h3' ? 'title3' : 'headline';
+    const fontSize = tag === 'h1' ? 'largeTitle' : tag === 'h2' ? 'title' : tag === 'h3' ? 'title2' : tag === 'h4' ? 'title3' : tag === 'h5' ? 'headline' : 'subheadline';
     const color = style.find(d => d.property === 'color');
 
     depth++;
@@ -336,13 +399,6 @@ export function generateSwiftUI(
     depth--;
   }
 
-  function generateChildren(node: ASTNode) {
-    if (!node.children) return;
-    for (const child of node.children) {
-      generateNode(child);
-    }
-  }
-
   logger.info('SwiftUIGenerator', `Generated SwiftUI code (${buf.length} lines)`);
   return buf.join('\n');
 }
@@ -377,10 +433,10 @@ function toSwiftUIColor(value: string): string {
   if (v.startsWith('#')) {
     const hex = v.slice(1);
     if (hex.length === 6) {
-      let r = hex.slice(0, 2);
-      let g = hex.slice(2, 4);
-      let b = hex.slice(4, 6);
-      return `Color(red: ${parseInt(r, 16) / 255}, green: ${parseInt(g, 16) / 255}, blue: ${parseInt(b, 16) / 255})`;
+      const r = parseInt(hex.slice(0, 2), 16) / 255;
+      const g = parseInt(hex.slice(2, 4), 16) / 255;
+      const b = parseInt(hex.slice(4, 6), 16) / 255;
+      return `Color(red: ${r}, green: ${g}, blue: ${b})`;
     }
   }
   const named: Record<string, string> = {
