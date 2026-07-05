@@ -44,8 +44,8 @@ export async function compile(
   const compiler = await loadWasm();
   if (compiler) {
     try {
-      const compileFn = compiler.compile as (html: string, css: string | null, platform: string) => string;
-      const resultJson = compileFn(request.html, request.css || null, request.platform);
+      const compileFn = compiler.compile as (html: string, css: string | null, js: string | null, platform: string) => string;
+      const resultJson = compileFn(request.html, request.css || null, request.js || null, request.platform);
       const raw = JSON.parse(resultJson) as Record<string, unknown>;
 
       if (raw && typeof raw === 'object' && 'code' in raw) {

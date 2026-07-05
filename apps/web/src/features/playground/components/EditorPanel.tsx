@@ -1,8 +1,10 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback } from 'react';
 import { usePlaygroundStore } from '../../../stores/playgroundStore';
 import { Icon } from '../../../components/Icons';
 import { Tooltip } from '../../../design-system';
 import { useNotificationsStore } from '../../../stores/notificationsStore';
+import Editor, { type OnMount } from '@monaco-editor/react';
+import { useTheme } from '../../../hooks/useTheme';
 
 const SAMPLES: Record<string, { html: string; css: string; js: string }> = {
   'Card Grid': {
@@ -17,266 +19,77 @@ const SAMPLES: Record<string, { html: string; css: string; js: string }> = {
   },
 };
 
-function hsv(tag: string, color: string, key: number) {
-  return <span key={key} style={{ color }}>{tag}</span>;
-}
-
-function highlightHTML(code: string): React.ReactNode[] {
-  const lines = code.split('\n');
-  return lines.map((line, i) => {
-    const tokens: React.ReactNode[] = [];
-    let remaining = line;
-    let key = 0;
-    while (remaining.length > 0) {
-      const tag = remaining.match(/^(<\/?[\w-]+)/);
-      const attr = remaining.match(/^(\s+[\w-]+=)/);
-      const str = remaining.match(/^("[^"]*"|'[^']*')/);
-      const comment = remaining.match(/^(<!--[\s\S]*?-->)/);
-
-      if (comment) {
-        tokens.push(hsv(comment[1], 'var(--text-tertiary)', key++));
-        remaining = remaining.slice(comment[1].length);
-      } else if (tag) {
-        tokens.push(hsv(tag[1], '#c792ea', key++));
-        remaining = remaining.slice(tag[1].length);
-      } else if (attr) {
-        tokens.push(hsv(attr[1], '#82aaff', key++));
-        remaining = remaining.slice(attr[1].length);
-      } else if (str) {
-        tokens.push(hsv(str[1], '#c3e88d', key++));
-        remaining = remaining.slice(str[1].length);
-      } else {
-        tokens.push(hsv(remaining[0], 'var(--text-primary)', key++));
-        remaining = remaining.slice(1);
-      }
-    }
-    return <div key={i}>{tokens}</div>;
-  });
-}
-
-function highlightCSS(code: string): React.ReactNode[] {
-  const lines = code.split('\n');
-  return lines.map((line, i) => {
-    const tokens: React.ReactNode[] = [];
-    let remaining = line;
-    let key = 0;
-    while (remaining.length > 0) {
-      const prop = remaining.match(/^([\w-]+)(?=\s*:)/);
-      const val = remaining.match(/^(:[\s\S]*?;)/);
-      const sel = remaining.match(/^([.#]?[\w-]+(?=\s*\{))/);
-      const comment = remaining.match(/^(\/\*[\s\S]*?\*\/)/);
-
-      if (comment) {
-        tokens.push(hsv(comment[1], 'var(--text-tertiary)', key++));
-        remaining = remaining.slice(comment[1].length);
-      } else if (prop) {
-        tokens.push(hsv(prop[1], '#82aaff', key++));
-        remaining = remaining.slice(prop[1].length);
-      } else if (val) {
-        const v = val[1];
-        tokens.push(hsv(v[0], 'var(--text-tertiary)', key++));
-        const c = v.slice(1).match(/(#[0-9a-fA-F]+|rgba?\([^)]+\))/);
-        if (c) {
-          const idx = v.slice(1).indexOf(c[1]);
-          tokens.push(hsv(v.slice(1, idx + 1), 'var(--text-primary)', key++));
-          tokens.push(hsv(c[1], '#c3e88d', key++));
-          tokens.push(hsv(v.slice(1).slice(idx + c[1].length), 'var(--text-primary)', key++));
-        } else {
-          tokens.push(hsv(v.slice(1), '#f78c6c', key++));
-        }
-      } else if (sel) {
-        tokens.push(hsv(sel[1], '#c792ea', key++));
-        remaining = remaining.slice(sel[1].length);
-      } else {
-        tokens.push(hsv(remaining[0], 'var(--text-primary)', key++));
-        remaining = remaining.slice(1);
-      }
-    }
-    return <div key={i}>{tokens}</div>;
-  });
-}
-
-const JS_KEYWORDS = new Set([
-  'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue',
-  'debugger', 'default', 'delete', 'do', 'else', 'export', 'extends', 'finally',
-  'for', 'function', 'if', 'import', 'in', 'instanceof', 'let', 'new', 'of',
-  'return', 'static', 'super', 'switch', 'this', 'throw', 'try', 'typeof',
-  'var', 'void', 'while', 'with', 'yield', 'from', 'as', 'enum', 'implements',
-  'interface', 'package', 'private', 'protected', 'public',
-]);
-
-function highlightJS(code: string): React.ReactNode[] {
-  const lines = code.split('\n');
-  return lines.map((line, i) => {
-    const tokens: React.ReactNode[] = [];
-    let remaining = line;
-    let key = 0;
-    while (remaining.length > 0) {
-      const comment = remaining.match(/^(\/\/.*)/);
-      const multiComment = remaining.match(/^(\/\*[\s\S]*?\*\/)/);
-      const str = remaining.match(/^("[^"]*"|'[^']*'|`[^`]*`)/);
-      const num = remaining.match(/^(\b\d+\.?\d*\b)/);
-      const word = remaining.match(/^([$\w]+)/);
-
-      if (comment) {
-        tokens.push(hsv(comment[1], 'var(--text-tertiary)', key++));
-        remaining = remaining.slice(comment[1].length);
-      } else if (multiComment) {
-        tokens.push(hsv(multiComment[1], 'var(--text-tertiary)', key++));
-        remaining = remaining.slice(multiComment[1].length);
-      } else if (str) {
-        tokens.push(hsv(str[1], '#c3e88d', key++));
-        remaining = remaining.slice(str[1].length);
-      } else if (num) {
-        tokens.push(hsv(num[1], '#f78c6c', key++));
-        remaining = remaining.slice(num[1].length);
-      } else if (word) {
-        const w = word[1];
-        if (JS_KEYWORDS.has(w)) {
-          tokens.push(hsv(w, '#c792ea', key++));
-        } else if (w[0] === w[0]?.toUpperCase() && w[0] !== w[0]?.toLowerCase()) {
-          tokens.push(hsv(w, '#82aaff', key++));
-        } else {
-          tokens.push(hsv(w, 'var(--text-primary)', key++));
-        }
-        remaining = remaining.slice(w.length);
-      } else {
-        tokens.push(hsv(remaining[0], 'var(--text-primary)', key++));
-        remaining = remaining.slice(1);
-      }
-    }
-    return <div key={i}>{tokens}</div>;
-  });
-}
+const LANG_MAP: Record<string, string> = {
+  html: 'html',
+  css: 'css',
+  js: 'javascript',
+};
 
 function CodeEditor({
   value,
   onChange,
   language,
-  placeholder,
+  onMount,
 }: {
   value: string;
   onChange: (val: string) => void;
   language: 'html' | 'css' | 'js';
   placeholder?: string;
+  onMount?: (language: string, editor: Parameters<OnMount>[0]) => void;
 }) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const syncRef = useRef<HTMLDivElement>(null);
-  const lineCount = value.split('\n').length;
+  const { theme } = useTheme();
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  const handleScroll = useCallback(() => {
-    if (syncRef.current && textareaRef.current) {
-      syncRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  }, []);
-
-  const getLang = () => {
-    switch (language) {
-      case 'html': return 'HTML';
-      case 'css': return 'CSS';
-      case 'js': return 'JavaScript';
-    }
-  };
-
-  const highlight = () => {
-    if (!value) return null;
-    switch (language) {
-      case 'html': return highlightHTML(value);
-      case 'css': return highlightCSS(value);
-      case 'js': return highlightJS(value);
-    }
+  const handleMount: OnMount = (editor) => {
+    onMount?.(language, editor);
   };
 
   return (
-    <div style={{
-      position: 'relative',
-      flex: 1,
-      overflow: 'hidden',
-      background: 'var(--bg-base)',
-    }}>
-      <div style={{ display: 'flex', height: '100%', position: 'relative' }}>
-        <div style={{
-          width: 44,
-          flexShrink: 0,
-          padding: '12px 0',
-          textAlign: 'right',
-          color: 'var(--text-tertiary)',
-          fontSize: 11,
-          lineHeight: 'var(--editor-line-height)',
-          fontFamily: 'var(--font-mono)',
-          userSelect: 'none',
-          borderRight: '1px solid var(--border-subtle)',
-          background: 'var(--bg-base)',
-          paddingRight: 10,
-          opacity: 0.4,
-          overflow: 'hidden',
-        }}>
-          {Array.from({ length: Math.max(1, lineCount) }).map((_, i) => (
-            <div key={i}>{i + 1}</div>
-          ))}
-        </div>
-
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <div
-            ref={syncRef}
-            style={{
-              padding: '12px 16px',
-              fontSize: 12,
-              lineHeight: 'var(--editor-line-height)',
-              fontFamily: 'var(--font-mono)',
-              color: 'var(--text-primary)',
-              pointerEvents: 'none',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              minHeight: '100%',
-              overflow: 'auto',
-              position: 'absolute',
-              inset: 0,
-            }}>
-            {highlight()}
-            {!value && (
-              <span style={{ color: 'var(--text-tertiary)', opacity: 0.4 }}>
-                {placeholder || `Enter ${getLang()} code...`}
-              </span>
-            )}
-          </div>
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onScroll={handleScroll}
-            spellCheck={false}
-            aria-label={`${getLang()} editor`}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              background: 'transparent',
-              color: 'transparent',
-              caretColor: 'var(--accent)',
-              resize: 'none',
-              outline: 'none',
-              padding: '12px 16px',
-              fontSize: 12,
-              lineHeight: 'var(--editor-line-height)',
-              fontFamily: 'var(--font-mono)',
-              overflow: 'auto',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          />
-        </div>
-      </div>
-    </div>
+    <Editor
+      key={language}
+      defaultLanguage={LANG_MAP[language]}
+      language={LANG_MAP[language]}
+      value={value}
+      onChange={(val) => onChange(val ?? '')}
+      theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+      onMount={handleMount}
+      options={{
+        minimap: { enabled: false },
+        fontSize: 13,
+        fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace',
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        wordWrap: 'off',
+        padding: { top: 12, bottom: 12 },
+        glyphMargin: false,
+        folding: true,
+        lineDecorationsWidth: 8,
+        lineNumbersMinChars: 3,
+        renderLineHighlight: 'line',
+        cursorBlinking: 'smooth',
+        cursorSmoothCaretAnimation: 'on',
+        smoothScrolling: true,
+        bracketPairColorization: { enabled: true },
+        autoClosingBrackets: 'always',
+        autoClosingQuotes: 'always',
+        autoClosingDelete: 'always',
+        autoIndent: 'full',
+        formatOnPaste: true,
+        formatOnType: true,
+        suggestOnTriggerCharacters: true,
+        acceptSuggestionOnEnter: 'on',
+        quickSuggestions: true,
+        parameterHints: { enabled: true },
+        hover: { enabled: true },
+        inlayHints: { enabled: 'on' },
+        colorDecorators: true,
+        selectionHighlight: true,
+        occurrencesHighlight: 'singleFile',
+        matchBrackets: 'always',
+        linkedEditing: true,
+      }}
+    />
   );
 }
 
@@ -284,6 +97,18 @@ export function EditorPanel() {
   const { html, css, js, activeTab, setHtml, setCss, setJs, setActiveTab } = usePlaygroundStore();
   const notify = useNotificationsStore((s) => s.notify);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRefs = useRef<Record<string, Parameters<OnMount>[0] | null>>({});
+
+  const handleEditorMount = useCallback((language: string, editor: Parameters<OnMount>[0]) => {
+    editorRefs.current[language] = editor;
+  }, []);
+
+  const handleFormat = useCallback(() => {
+    const editor = editorRefs.current[LANG_MAP[activeTab]];
+    if (editor) {
+      editor.getAction('editor.action.formatDocument')?.run();
+    }
+  }, [activeTab]);
 
   const handlePasteFromClipboard = useCallback(async () => {
     try {
@@ -408,7 +233,7 @@ export function EditorPanel() {
             </IconButton>
           </Tooltip>
           <Tooltip content="Format code">
-            <IconButton onClick={() => {}} aria-label="Format">
+            <IconButton onClick={handleFormat} aria-label="Format">
               <Icon.Format size={13} />
             </IconButton>
           </Tooltip>
@@ -443,7 +268,7 @@ export function EditorPanel() {
             value={html}
             onChange={setHtml}
             language="html"
-            placeholder={'<div>\n  Enter your HTML here...\n</div>'}
+            onMount={handleEditorMount}
           />
         )}
         {activeTab === 'css' && (
@@ -451,7 +276,7 @@ export function EditorPanel() {
             value={css}
             onChange={setCss}
             language="css"
-            placeholder={'.container {\n  /* Enter your CSS here */\n}'}
+            onMount={handleEditorMount}
           />
         )}
         {activeTab === 'js' && (
@@ -459,7 +284,7 @@ export function EditorPanel() {
             value={js}
             onChange={setJs}
             language="js"
-            placeholder={'// Enter your JavaScript here\nconsole.log("hello");'}
+            onMount={handleEditorMount}
           />
         )}
       </div>

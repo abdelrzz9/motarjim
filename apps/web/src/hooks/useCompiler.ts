@@ -51,6 +51,7 @@ export function useCompiler(): UseCompilerReturn {
     const request: CompileRequest = {
       html: state.html,
       css: state.css || '',
+      js: state.js || '',
       platform: state.platform,
       minify: state.minify,
     };
@@ -60,6 +61,7 @@ export function useCompiler(): UseCompilerReturn {
       platform: request.platform,
       htmlLength: request.html.length,
       cssLength: request.css?.length || 0,
+      jsLength: request.js?.length || 0,
     });
 
     compile(request, (stage: string) => {

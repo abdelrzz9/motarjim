@@ -1,6 +1,6 @@
 import type {
   CompileRequest, CompileResult, Diagnostic,
-  ASTNode, CSSRule, CSSDeclaration, PipelineStage,
+  ASTNode, CSSRule, CSSDeclaration, PipelineStage, SourcePosition,
 } from './types';
 import { parseHtml } from './htmlParser';
 import { parseCss, findMatchingRules } from './cssParser';
@@ -9,6 +9,7 @@ import { generateCompose } from './codeGenerators/composeGenerator';
 import { generateSwiftUI } from './codeGenerators/swiftuiGenerator';
 import { compilerCache } from './cache';
 import { logger } from './logger';
+import { jsParseError } from './diagnostics';
 
 export type StageCallback = (stage: PipelineStage) => void;
 
@@ -84,6 +85,28 @@ export async function compile(
     buildCssMap(htmlAst, cssRules, cssDeclMap);
 
     let jsNodes = 0;
+
+    reportStage('processing_javascript');
+    checkAborted();
+    if (request.js && request.js.trim()) {
+      try {
+        new Function(request.js);
+      } catch (e) {
+        const msg = e instanceof SyntaxError ? e.message : String(e);
+        const lineMatch = msg.match(/at line (\d+)/);
+        const colMatch = msg.match(/column (\d+)/);
+        const pos: SourcePosition | undefined = lineMatch ? {
+          line: parseInt(lineMatch[1]),
+          column: colMatch ? parseInt(colMatch[1]) : 1,
+          offset: 0,
+        } : undefined;
+        allDiagnostics.push(jsParseError(
+          msg,
+          pos ? { start: pos, end: { ...pos, column: pos.column + 1, offset: 0 } } : undefined,
+        ));
+      }
+      jsNodes = (request.js.match(/\n/g) || []).length + 1;
+    }
 
     reportStage('building_ir');
     checkAborted();
