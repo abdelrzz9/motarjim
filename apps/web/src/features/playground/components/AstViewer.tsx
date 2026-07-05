@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePlaygroundStore } from '../../../stores/playgroundStore';
+import styles from './AstViewer.module.css';
 
 interface TreeNode {
   key: string;
@@ -46,7 +47,7 @@ export default function AstViewer() {
 
   if (!ast) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      <div className={styles.empty}>
         No AST available
       </div>
     );
@@ -66,43 +67,39 @@ export default function AstViewer() {
   const isObject = (val: unknown): val is Record<string, unknown> | unknown[] =>
     val !== null && typeof val === 'object';
 
+  const renderValue = (value: unknown, _key: string, index: number) => {
+    if (isObject(value)) {
+      const isCollapsed = collapsed.has(`${index}`);
+      return (
+        <button
+          className={styles.toggleBtn}
+          onClick={() => toggleCollapse(`${index}`)}
+        >
+          {isCollapsed ? '{...}' : '{'}
+        </button>
+      );
+    }
+    return (
+      <span className={styles.value}>
+        {String(value)}
+      </span>
+    );
+  };
+
   return (
-    <div style={{ padding: '0.5rem', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>
+    <div className={styles.tree}>
       {nodes.map((node, i) => {
-        const indent = node.depth * 1.25;
+        const indent = node.depth * 16;
         return (
           <div
             key={i}
-            style={{
-              marginLeft: `${indent}rem`,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              lineHeight: '1.6',
-            }}
+            className={styles.node}
+            style={{ paddingLeft: `${indent}px` }}
           >
             {node.key && (
-              <span style={{ color: 'var(--accent)' }}>{node.key}:</span>
+              <span className={styles.key}>{node.key}:</span>
             )}
-            {isObject(node.value) ? (
-              <button
-                onClick={() => toggleCollapse(`${i}`)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.8rem',
-                }}
-              >
-                {collapsed.has(`${i}`) ? '{...}' : '{'}
-              </button>
-            ) : (
-              <span style={{ color: 'var(--text-secondary)' }}>
-                {String(node.value)}
-              </span>
-            )}
+            {renderValue(node.value, node.key, i)}
           </div>
         );
       })}

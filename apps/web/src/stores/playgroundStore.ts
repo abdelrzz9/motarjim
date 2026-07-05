@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { Platform, Diagnostic, CompileStats } from '../services/types';
 
+export type EditorTab = 'html' | 'css';
+export type OutputTab = 'code' | 'diagnostics' | 'ast';
+
 interface PlaygroundStore {
   html: string;
   css: string;
@@ -12,8 +15,11 @@ interface PlaygroundStore {
   ast: unknown;
   ir: unknown;
   isCompiling: boolean;
-  activeTab: 'html' | 'css';
-  outputTab: 'code' | 'diagnostics' | 'ast';
+  pipelineStage: number;
+  backendOnline: boolean;
+  panelRatio: number;
+  activeTab: EditorTab;
+  outputTab: OutputTab;
   setHtml: (html: string) => void;
   setCss: (css: string) => void;
   setPlatform: (platform: Platform) => void;
@@ -24,30 +30,17 @@ interface PlaygroundStore {
   setAst: (ast: unknown) => void;
   setIr: (ir: unknown) => void;
   setIsCompiling: (isCompiling: boolean) => void;
-  setActiveTab: (tab: 'html' | 'css') => void;
-  setOutputTab: (tab: 'code' | 'diagnostics' | 'ast') => void;
+  setPipelineStage: (stage: number) => void;
+  setBackendOnline: (online: boolean) => void;
+  setPanelRatio: (ratio: number) => void;
+  setActiveTab: (tab: EditorTab) => void;
+  setOutputTab: (tab: OutputTab) => void;
   reset: () => void;
 }
 
-const DEFAULT_HTML = `<div class="container">
-  <h1>Hello, Motarjim!</h1>
-  <p>Start editing to see the compiled output.</p>
-</div>`;
+const DEFAULT_HTML = '';
 
-const DEFAULT_CSS = `.container {
-  padding: 20px;
-  font-family: system-ui, sans-serif;
-}
-
-h1 {
-  color: #6366f1;
-  font-size: 2rem;
-}
-
-p {
-  color: #666;
-  line-height: 1.6;
-}`;
+const DEFAULT_CSS = '';
 
 export const usePlaygroundStore = create<PlaygroundStore>((set) => ({
   html: DEFAULT_HTML,
@@ -60,6 +53,9 @@ export const usePlaygroundStore = create<PlaygroundStore>((set) => ({
   ast: null,
   ir: null,
   isCompiling: false,
+  pipelineStage: -1,
+  backendOnline: true,
+  panelRatio: 0.5,
   activeTab: 'html',
   outputTab: 'code',
   setHtml: (html) => set({ html }),
@@ -72,6 +68,9 @@ export const usePlaygroundStore = create<PlaygroundStore>((set) => ({
   setAst: (ast) => set({ ast }),
   setIr: (ir) => set({ ir }),
   setIsCompiling: (isCompiling) => set({ isCompiling }),
+  setPipelineStage: (pipelineStage) => set({ pipelineStage }),
+  setBackendOnline: (backendOnline) => set({ backendOnline }),
+  setPanelRatio: (panelRatio) => set({ panelRatio }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   setOutputTab: (tab) => set({ outputTab: tab }),
   reset: () => set({
@@ -84,5 +83,6 @@ export const usePlaygroundStore = create<PlaygroundStore>((set) => ({
     stats: null,
     ast: null,
     ir: null,
+    pipelineStage: -1,
   }),
 }));

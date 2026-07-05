@@ -1,0 +1,44 @@
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.tree {
+  padding: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.7;
+}
+
+.key {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.value {
+  color: var(--text-secondary);
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0;
+}
+
+.toggleBtn:hover {
+  color: var(--accent);
+}

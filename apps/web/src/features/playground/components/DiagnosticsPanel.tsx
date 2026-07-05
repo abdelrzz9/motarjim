@@ -1,12 +1,20 @@
 import { usePlaygroundStore } from '../../../stores/playgroundStore';
-import { SEVERITY_ICONS } from '../../../utils/constants';
+import styles from './DiagnosticsPanel.module.css';
 
 const SEVERITY_COLORS: Record<string, string> = {
   error: 'var(--error)',
   warning: 'var(--warning)',
   info: 'var(--info)',
   hint: 'var(--success)',
-  note: 'var(--text-muted)',
+  note: 'var(--text-tertiary)',
+};
+
+const SEVERITY_LABELS: Record<string, string> = {
+  error: '✕',
+  warning: '⚠',
+  info: 'ℹ',
+  hint: '💡',
+  note: '→',
 };
 
 export default function DiagnosticsPanel() {
@@ -14,41 +22,34 @@ export default function DiagnosticsPanel() {
 
   if (diagnostics.length === 0) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      <div className={styles.empty}>
         No diagnostics
       </div>
     );
   }
 
   return (
-    <div>
+    <div className={styles.list}>
       {diagnostics.map((diag, i) => (
-        <div
-          key={i}
-          style={{
-            padding: '0.625rem 1rem',
-            borderBottom: '1px solid var(--border)',
-            fontSize: '0.85rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: SEVERITY_COLORS[diag.severity] }}>
-              {SEVERITY_ICONS[diag.severity]}
+        <div key={i} className={styles.item}>
+          <div className={styles.itemHeader}>
+            <span className={styles.severity} style={{ color: SEVERITY_COLORS[diag.severity] }}>
+              {SEVERITY_LABELS[diag.severity]}
             </span>
-            <span style={{ fontWeight: 600 }}>{diag.code}</span>
-            <span style={{ color: 'var(--text-secondary)' }}>{diag.message}</span>
+            <span className={styles.code}>{diag.code}</span>
+            <span className={styles.message}>{diag.message}</span>
           </div>
           {diag.suggestions.length > 0 && (
-            <div style={{ marginTop: '0.25rem', paddingLeft: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            <div className={styles.additional}>
               {diag.suggestions.map((s, j) => (
-                <div key={j}>Suggestion: {s}</div>
+                <div key={j} className={styles.suggestion}>Suggestion: {s}</div>
               ))}
             </div>
           )}
           {diag.notes.length > 0 && (
-            <div style={{ marginTop: '0.25rem', paddingLeft: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            <div className={styles.additional}>
               {diag.notes.map((n, j) => (
-                <div key={j}>Note: {n}</div>
+                <div key={j} className={styles.note}>Note: {n}</div>
               ))}
             </div>
           )}
