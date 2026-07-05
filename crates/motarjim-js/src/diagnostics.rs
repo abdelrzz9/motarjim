@@ -1,8 +1,9 @@
 //! Diagnostic codes, severity, and structured error reporting.
 
-use motarjim_diag::{Diagnostic, Severity, DiagnosticCode};
+use motarjim_diag::{Diagnostic, DiagnosticCode, Severity};
 use motarjim_span::SourceSpan;
 
+#[derive(Debug, Clone, Copy)]
 pub struct JsDiagnosticCode(pub u32);
 
 impl JsDiagnosticCode {
@@ -27,7 +28,7 @@ impl JsDiagnosticCode {
 
 impl From<JsDiagnosticCode> for DiagnosticCode {
     fn from(code: JsDiagnosticCode) -> Self {
-        DiagnosticCode::new(code.0, "JS diagnostic")
+        DiagnosticCode::new(code.0, "JS diagnostic").with_prefix("JS")
     }
 }
 

@@ -4,6 +4,7 @@
 
 use crate::SourceLocation;
 use std::fmt;
+use std::ops::Range;
 
 /// A range between two [`SourceLocation`]s in a source file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -25,7 +26,10 @@ impl SourceSpan {
     /// Creates a span from a single location (zero-width span).
     #[must_use]
     pub const fn from_location(loc: SourceLocation) -> Self {
-        Self { start: loc, end: loc }
+        Self {
+            start: loc,
+            end: loc,
+        }
     }
 
     /// Returns the length of the span in bytes.
@@ -43,8 +47,16 @@ impl SourceSpan {
     /// Merges two spans into one that covers both.
     #[must_use]
     pub fn merge(&self, other: &Self) -> Self {
-        let start = if self.start.offset < other.start.offset { self.start } else { other.start };
-        let end = if self.end.offset > other.end.offset { self.end } else { other.end };
+        let start = if self.start.offset < other.start.offset {
+            self.start
+        } else {
+            other.start
+        };
+        let end = if self.end.offset > other.end.offset {
+            self.end
+        } else {
+            other.end
+        };
         Self { start, end }
     }
 }
@@ -52,7 +64,11 @@ impl SourceSpan {
 impl fmt::Display for SourceSpan {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.start.line == self.end.line {
-            write!(f, "{}:{}-{}", self.start.line, self.start.column, self.end.column)
+            write!(
+                f,
+                "{}:{}-{}",
+                self.start.line, self.start.column, self.end.column
+            )
         } else {
             write!(f, "{}-{}", self.start, self.end)
         }
@@ -64,6 +80,21 @@ impl Default for SourceSpan {
         Self {
             start: SourceLocation::default(),
             end: SourceLocation::default(),
+        }
+    }
+}
+
+impl From<Range<usize>> for SourceSpan {
+    fn from(range: Range<usize>) -> Self {
+        Self {
+            start: SourceLocation {
+                offset: range.start,
+                ..SourceLocation::default()
+            },
+            end: SourceLocation {
+                offset: range.end,
+                ..SourceLocation::default()
+            },
         }
     }
 }
