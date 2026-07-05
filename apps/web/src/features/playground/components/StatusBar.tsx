@@ -19,19 +19,15 @@ export default function StatusBar() {
           <>
             <span className="statusBarItem">
               <Icon.Zap size={11} />
-              <span>{stats.time_ms < 1000 ? `${stats.time_ms.toFixed(0)}ms` : `${(stats.time_ms / 1000).toFixed(2)}s`}</span>
+              <span>{stats.timeMs < 1000 ? `${stats.timeMs.toFixed(0)}ms` : `${(stats.timeMs / 1000).toFixed(2)}s`}</span>
             </span>
             <span className="statusBarItem">
               <Icon.Code size={11} />
-              <span>{stats.nodes_parsed} nodes</span>
+              <span>{stats.nodesParsed} nodes</span>
             </span>
             <span className="statusBarItem">
               <Icon.Palette size={11} />
-              <span>{stats.css_rules} rules</span>
-            </span>
-            <span className="statusBarItem">
-              <Icon.Node size={11} />
-              <span>{stats.ir_nodes} IR</span>
+              <span>{stats.cssRules} rules</span>
             </span>
           </>
         )}

@@ -59,6 +59,16 @@
   transform: translateY(-50%) scale(1);
 }
 
+.compileBtnActive {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.compileBtnActive:hover {
+  background: var(--error-soft);
+  border-color: var(--error);
+}
+
 .content {
   display: flex;
   flex: 1;

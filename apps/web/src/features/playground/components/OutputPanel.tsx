@@ -77,14 +77,24 @@ export default function OutputPanel() {
   const errorCount = diagnostics.filter((d) => d.severity === 'error').length;
   const warningCount = diagnostics.filter((d) => d.severity === 'warning').length;
 
-  const STATUS_MESSAGES = [
-    'Parsing HTML document…',
-    'Building style tree…',
-    'Analyzing semantics and structure…',
-    'Constructing intermediate representation…',
-    'Optimizing layout and widget tree…',
-    'Generating native code…',
-  ];
+  const getStatusMessage = () => {
+    switch (pipelineStage) {
+      case 'parsing_html': return 'Parsing HTML document…';
+      case 'parsing_css': return 'Building style tree…';
+      case 'building_ast': return 'Analyzing semantics and structure…';
+      case 'processing_javascript': return 'Processing JavaScript…';
+      case 'building_ir': return 'Constructing intermediate representation…';
+      case 'optimizing': return 'Optimizing layout and widget tree…';
+      case 'generating_code': return 'Generating native code…';
+      default: return 'Preparing...';
+    }
+  };
+
+  const getProgressPercent = () => {
+    const stages = ['parsing_html', 'parsing_css', 'building_ast', 'building_ir', 'optimizing', 'generating_code'];
+    const idx = stages.indexOf(pipelineStage);
+    return idx >= 0 ? ((idx + 1) / stages.length) * 100 : 0;
+  };
 
   return (
     <div className={styles.panel}>
@@ -185,13 +195,11 @@ export default function OutputPanel() {
             <div className={styles.loadingProgress}>
               <div
                 className={styles.loadingProgressBar}
-                style={{ width: `${pipelineStage >= 0 ? ((pipelineStage + 1) / 6) * 100 : 0}%` }}
+                style={{ width: `${getProgressPercent()}%` }}
               />
             </div>
             <div className={styles.loadingStatus}>
-              {pipelineStage >= 0 && pipelineStage < STATUS_MESSAGES.length
-                ? STATUS_MESSAGES[pipelineStage]
-                : 'Preparing...'}
+              {getStatusMessage()}
             </div>
           </div>
         </div>

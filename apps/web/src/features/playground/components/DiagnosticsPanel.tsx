@@ -1,4 +1,5 @@
 import { usePlaygroundStore } from '../../../stores/playgroundStore';
+import type { Diagnostic } from '../../../services/types';
 import styles from './DiagnosticsPanel.module.css';
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -23,7 +24,8 @@ export default function DiagnosticsPanel() {
   if (diagnostics.length === 0) {
     return (
       <div className={styles.empty}>
-        No diagnostics
+        <div className={styles.emptyIcon}>✓</div>
+        <div className={styles.emptyText}>No diagnostics</div>
       </div>
     );
   }
@@ -31,30 +33,48 @@ export default function DiagnosticsPanel() {
   return (
     <div className={styles.list}>
       {diagnostics.map((diag, i) => (
-        <div key={i} className={styles.item}>
-          <div className={styles.itemHeader}>
-            <span className={styles.severity} style={{ color: SEVERITY_COLORS[diag.severity] }}>
-              {SEVERITY_LABELS[diag.severity]}
-            </span>
-            <span className={styles.code}>{diag.code}</span>
-            <span className={styles.message}>{diag.message}</span>
-          </div>
-          {diag.suggestions.length > 0 && (
-            <div className={styles.additional}>
-              {diag.suggestions.map((s, j) => (
-                <div key={j} className={styles.suggestion}>Suggestion: {s}</div>
-              ))}
-            </div>
-          )}
-          {diag.notes.length > 0 && (
-            <div className={styles.additional}>
-              {diag.notes.map((n, j) => (
-                <div key={j} className={styles.note}>Note: {n}</div>
-              ))}
-            </div>
-          )}
-        </div>
+        <DiagnosticItem key={`${diag.code}-${i}`} diagnostic={diag} index={i} />
       ))}
+    </div>
+  );
+}
+
+function DiagnosticItem({ diagnostic: d }: { diagnostic: Diagnostic; index?: number }) {
+  const loc = d.location
+    ? `Line ${d.location.start.line}, Col ${d.location.start.column}`
+    : null;
+
+  return (
+    <div className={`${styles.item} ${styles[d.severity] || ''}`}>
+      <div className={styles.itemHeader}>
+        <span className={styles.severity} style={{ color: SEVERITY_COLORS[d.severity] }}>
+          {SEVERITY_LABELS[d.severity]}
+        </span>
+        <span className={styles.code}>{d.code}</span>
+        <span className={styles.title}>{d.title}</span>
+      </div>
+      <div className={styles.explanation}>{d.explanation}</div>
+      {loc && (
+        <div className={styles.location}>at {loc}</div>
+      )}
+      {d.suggestions.length > 0 && (
+        <div className={styles.suggestions}>
+          {d.suggestions.map((s, j) => (
+            <div key={j} className={styles.suggestion}>
+              Suggestion: {s}
+            </div>
+          ))}
+        </div>
+      )}
+      {d.notes.length > 0 && (
+        <div className={styles.notes}>
+          {d.notes.map((n, j) => (
+            <div key={j} className={styles.note}>
+              Note: {n}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

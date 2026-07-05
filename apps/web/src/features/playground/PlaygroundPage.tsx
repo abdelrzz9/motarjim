@@ -9,70 +9,34 @@ import { useKeyboard } from '../../hooks/useKeyboard';
 import { Icon } from '../../components/Icons';
 import styles from './PlaygroundPage.module.css';
 
-const PIPELINE_TOTAL = 5;
-const PIPELINE_INTERVAL = 250;
-
 export default function PlaygroundPage() {
-  const { html, css, platform, minify, panelRatio, setPanelRatio, setIsCompiling, setPipelineStage, setOutput, setDiagnostics, setStats, setAst, setIr, isCompiling } = usePlaygroundStore();
-  const compileMutation = useCompiler();
+  const { panelRatio, setPanelRatio } = usePlaygroundStore();
+  const { compile, cancel, isCompiling } = useCompiler();
   const [isResizing, setIsResizing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleCompile = useCallback(() => {
-    if (!html.trim()) return;
+    if (isCompiling) {
+      cancel();
+    } else {
+      compile();
+    }
+  }, [isCompiling, compile, cancel]);
 
-    let cancelled = false;
-    let stage = 0;
-
-    const advancePipeline = () => {
-      if (cancelled) return;
-      if (stage <= PIPELINE_TOTAL) {
-        setPipelineStage(stage);
-        stage++;
-        setTimeout(advancePipeline, PIPELINE_INTERVAL);
-      }
-    };
-    advancePipeline();
-
-    compileMutation.mutate(
-      { html, css, platform, minify },
-      {
-        onSuccess: (result) => {
-          if (cancelled) return;
-          setOutput(result.code);
-          setDiagnostics(result.diagnostics || []);
-          setStats(result.stats || null);
-          setAst(result.ast || null);
-          setIr(result.ir || null);
-          setPipelineStage(PIPELINE_TOTAL + 1);
-          setTimeout(() => {
-            if (!cancelled) setPipelineStage(-1);
-          }, 1200);
-        },
-        onError: (error: Error) => {
-          if (cancelled) return;
-          setDiagnostics([{
-            severity: 'error',
-            code: 'E9999',
-            message: error.message,
-            suggestions: [],
-            notes: [],
-          }]);
-          setPipelineStage(-1);
-        },
-        onSettled: () => {
-          if (!cancelled) setIsCompiling(false);
-        },
-      }
-    );
-
-    return () => { cancelled = true; };
-  }, [html, css, platform, minify, compileMutation, setPipelineStage, setOutput, setDiagnostics, setStats, setAst, setIr, setIsCompiling]);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleCompile();
+    }
+  }, [handleCompile]);
 
   const shortcuts = useMemo(() => [
     { key: 'Enter', ctrl: true, handler: handleCompile },
     { key: 's', ctrl: true, handler: handleCompile },
-  ], [handleCompile]);
+    { key: 'Escape', handler: () => {
+      if (isCompiling) cancel();
+    }},
+  ], [handleCompile, isCompiling, cancel]);
 
   useKeyboard(shortcuts);
 
@@ -100,17 +64,17 @@ export default function PlaygroundPage() {
   }, [panelRatio, setPanelRatio]);
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} onKeyDown={handleKeyDown}>
       <div className={styles.topBar}>
         <PipelineVisualizer />
         <button
-          className={styles.compileBtn}
+          className={`${styles.compileBtn} ${isCompiling ? styles.compileBtnActive : ''}`}
           onClick={handleCompile}
-          disabled={isCompiling || !html.trim()}
-          title="Compile (Ctrl+Enter)"
+          disabled={false}
+          title={isCompiling ? 'Cancel (Escape)' : 'Compile (Ctrl+Enter)'}
         >
           <Icon.Compile size={12} />
-          <span>Compile</span>
+          <span>{isCompiling ? 'Cancel' : 'Compile'}</span>
         </button>
       </div>
       <div className={styles.content} ref={containerRef}>
