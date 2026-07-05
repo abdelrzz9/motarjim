@@ -173,6 +173,16 @@ fn test_throw() {
 }
 
 #[test]
+fn test_import_meta_not_supported() {
+    let diags = parse_err("import.meta;");
+    assert!(
+        diags.iter().any(|d| d.code.number == 105),
+        "import.meta should emit JS_UNSUPPORTED_SYNTAX (E0105), got codes: {:?}",
+        diags.iter().map(|d| d.code.number).collect::<Vec<_>>()
+    );
+}
+
+#[test]
 fn test_import_default() {
     let body = parse("import React from 'react';");
     let Statement::Import(decl) = &body[0] else {

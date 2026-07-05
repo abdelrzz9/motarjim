@@ -507,6 +507,19 @@ impl JsParser {
 
     fn parse_import(&mut self) -> Statement {
         let start = self.advance().span;
+
+        // import.meta is not supported yet
+        if self.at(JsTokenKind::Dot) {
+            self.advance();
+            self.advance(); // consume meta identifier
+            self.eat_semicolon();
+            self.error_with_code(
+                JsDiagnosticCode::JS_UNSUPPORTED_SYNTAX,
+                "'import.meta' is not supported",
+            );
+            return Statement::Empty(self.span_from(start));
+        }
+
         let mut default = None;
         let mut namespace = None;
         let mut named = Vec::new();

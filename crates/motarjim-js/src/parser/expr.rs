@@ -767,6 +767,24 @@ impl JsParser {
                 self.parse_async_function_expr()
             }
             JsTokenKind::Class => self.parse_class_expr(),
+            JsTokenKind::Import => {
+                self.advance();
+                if self.eat(JsTokenKind::Dot) {
+                    // import.meta is not supported yet
+                    self.advance(); // consume the meta identifier
+                    self.error_with_code(
+                        JsDiagnosticCode::JS_UNSUPPORTED_SYNTAX,
+                        "'import.meta' is not supported",
+                    );
+                    Expression::Undefined(self.cur().span)
+                } else {
+                    self.error_with_code(
+                        JsDiagnosticCode::JS_UNEXPECTED_TOKEN,
+                        format!("unexpected token: {:?}", self.kind()),
+                    );
+                    Expression::Undefined(self.cur().span)
+                }
+            }
             JsTokenKind::Star => {
                 self.advance();
                 let argument = self.parse_unary();
