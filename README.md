@@ -246,11 +246,47 @@ motarjim supports `motarjim.json` and `motarjim.toml` configuration files:
 }
 ```
 
+## Web Playground
+
+The project includes a web-based playground for compiling HTML/CSS to native UI code in the browser.
+
+### Quick Start
+
+```bash
+# From the project root, start the web dev server
+npm run dev
+
+# Or specify the workspace directly
+npm run dev -w @motarjim/web
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Build for Production
+
+```bash
+npm run build -w @motarjim/web
+```
+
+The output is written to `apps/web/dist/`.
+
+### Web Architecture
+
+The web playground is a React 18 + Vite application using:
+
+- **Monaco Editor** — Code editing (HTML/CSS input and generated code output)
+- **Zustand** — Lightweight state management
+- **React Query** — Async compilation state
+- **WASM** — WebAssembly bindings for the Rust compiler engine
+
+See [docs/WEB_GUIDE.md](docs/WEB_GUIDE.md) for detailed development documentation.
+
 ## Development
 
 ### Prerequisites
 
 - Rust 1.75+
+- Node.js 18+
 
 ### Build
 
