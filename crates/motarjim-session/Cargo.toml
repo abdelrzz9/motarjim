@@ -1,0 +1,19 @@
+[package]
+name = "motarjim-session"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+motarjim-config = { workspace = true }
+motarjim-diag = { workspace = true }
+motarjim-span = { workspace = true }
+motarjim-fs = { workspace = true }
+motarjim-cache = { workspace = true }
+motarjim-incremental = { workspace = true }
+motarjim-profiling = { workspace = true }
+
+[features]
+default = []
+cancellation = []

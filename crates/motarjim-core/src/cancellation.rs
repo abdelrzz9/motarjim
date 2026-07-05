@@ -1,74 +1,12 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+//! Cancellation token support for long-running operations.
+//!
+//! Provides [`CancelToken`] and [`Cancelled`] for cooperative cancellation
+//! throughout the compilation pipeline.
+//!
+//! This module re-exports from [`motarjim_session`] so that consumers using
+//! `motarjim_core::cancellation::CancelToken` continue to work.
 
-/// A token that signals cancellation of a long-running compilation.
-///
-/// Cloning shares the underlying cancellation state — cancelling any clone
-/// cancels all of them.
-#[derive(Clone)]
-pub struct CancelToken {
-    /// Shared atomic flag; `true` once [`cancel`](Self::cancel) is called.
-    cancelled: Arc<AtomicBool>,
-}
-
-impl CancelToken {
-    /// Creates a new cancellation token that is **not** cancelled.
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            cancelled: Arc::new(AtomicBool::new(false)),
-        }
-    }
-
-    /// Requests cancellation. All clones of this token will now report
-    /// [`is_cancelled`](Self::is_cancelled) as `true` and [`check`](Self::check)
-    /// will return `Err`.
-    pub fn cancel(&self) {
-        self.cancelled.store(true, Ordering::SeqCst);
-    }
-
-    /// Returns `true` if [`cancel`](Self::cancel) has been called on any clone.
-    #[must_use]
-    pub fn is_cancelled(&self) -> bool {
-        self.cancelled.load(Ordering::SeqCst)
-    }
-
-    /// Returns `Ok(())` if not cancelled, or `Err(Cancelled)` if cancelled.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Cancelled`] when [`cancel`](Self::cancel) has been called.
-    pub fn check(&self) -> Result<(), Cancelled> {
-        if self.is_cancelled() {
-            Err(Cancelled {
-                message: String::from("compilation cancelled"),
-            })
-        } else {
-            Ok(())
-        }
-    }
-}
-
-impl Default for CancelToken {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-/// Error returned when a cancelled operation is detected.
-#[derive(Debug, Clone)]
-pub struct Cancelled {
-    /// Human-readable reason for the cancellation.
-    pub message: String,
-}
-
-impl std::fmt::Display for Cancelled {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl std::error::Error for Cancelled {}
+pub use motarjim_session::{CancelToken, Cancelled};
 
 #[cfg(test)]
 mod tests {
