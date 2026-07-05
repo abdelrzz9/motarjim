@@ -44,16 +44,16 @@ pub use ast::{
     ExportSpecifier, ExprStmt, Expression, ForInStmt, ForInit, ForOfStmt, ForStmt, FunctionDecl,
     FunctionExpr, IfStmt, ImportDecl, ImportSpecifier, LogicalExpr, LogicalOp, MemberExpr,
     MemberProp, MethodKind, NewExpr, NumberLit, ObjectLit, ObjectPat, ObjectPatProp, ObjectProp,
-    Param, Pattern, Program, PropKey, ReturnStmt, SequenceExpr, Statement, StringLit,
+    Param, Pattern, Program, PropKey, ReturnStmt, SequenceExpr, SourceType, Statement, StringLit,
     SwitchCase, SwitchStmt, TemplateLiteral, ThrowStmt, TryStmt, UnaryExpr, UnaryOp, VarDecl,
-    VarDeclarator, VarKind, WhileStmt, YieldExpr, SourceType,
+    VarDeclarator, VarKind, WhileStmt, YieldExpr,
 };
 pub use diagnostics::{JsDiagnostic, JsDiagnosticCode};
 pub use events::{find_dom_event_bindings, DomEventBinding};
 pub use lexer::JsLexer;
 pub use parser::JsParser;
 pub use semantic::SemanticAnalyzer;
-pub use token::{keyword_from_str, is_reserved_word, JsToken, JsTokenKind, TokenValue};
+pub use token::{is_reserved_word, keyword_from_str, JsToken, JsTokenKind, TokenValue};
 pub use transform::passes::TemplateLiteralToConcat;
 pub use transform::{run_transforms, Transform};
 pub use visitor::{walk_expression, walk_program, walk_statement, Fold, Visitor, VisitorMut};

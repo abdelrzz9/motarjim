@@ -8,7 +8,9 @@ use crate::ast::program::Program;
 use crate::ast::stmt::*;
 use crate::diagnostics::{JsDiagnostic, JsDiagnosticCode};
 use crate::semantic::scope::{Binding, ScopeStack};
-use crate::visitor::{walk_expression, walk_expression_mut, walk_statement, walk_statement_mut, Visitor, VisitorMut};
+use crate::visitor::{
+    walk_expression, walk_expression_mut, walk_statement, walk_statement_mut, Visitor, VisitorMut,
+};
 
 mod scope;
 
@@ -68,7 +70,10 @@ impl SemanticAnalyzer {
 
     fn check_assignment_target(&mut self, name: &str, span: SourceSpan) {
         match self.scopes.lookup(name) {
-            Some(Binding { kind: VarKind::Const, .. }) => {
+            Some(Binding {
+                kind: VarKind::Const,
+                ..
+            }) => {
                 self.diagnostics.push(
                     JsDiagnostic::error(
                         JsDiagnosticCode::JS_ASSIGN_TO_CONST,
@@ -208,24 +213,33 @@ impl Visitor for SemanticAnalyzer {
             Statement::Break(span) => {
                 if self.loop_depth == 0 {
                     self.diagnostics.push(
-                        JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_BREAK, "'break' outside of loop")
-                            .with_span(*span),
+                        JsDiagnostic::error(
+                            JsDiagnosticCode::JS_ILLEGAL_BREAK,
+                            "'break' outside of loop",
+                        )
+                        .with_span(*span),
                     );
                 }
             }
             Statement::Continue(span) => {
                 if self.loop_depth == 0 {
                     self.diagnostics.push(
-                        JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_CONTINUE, "'continue' outside of loop")
-                            .with_span(*span),
+                        JsDiagnostic::error(
+                            JsDiagnosticCode::JS_ILLEGAL_CONTINUE,
+                            "'continue' outside of loop",
+                        )
+                        .with_span(*span),
                     );
                 }
             }
             Statement::Return(ret) => {
                 if self.function_depth == 0 {
                     self.diagnostics.push(
-                        JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_RETURN, "'return' outside of function")
-                            .with_span(ret.span),
+                        JsDiagnostic::error(
+                            JsDiagnosticCode::JS_ILLEGAL_RETURN,
+                            "'return' outside of function",
+                        )
+                        .with_span(ret.span),
                     );
                 }
                 if let Some(arg) = &ret.argument {
@@ -274,8 +288,11 @@ impl Visitor for SemanticAnalyzer {
             Expression::Await(await_expr) => {
                 if self.function_depth == 0 {
                     self.diagnostics.push(
-                        JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_AWAIT, "'await' outside of async function")
-                            .with_span(await_expr.span),
+                        JsDiagnostic::error(
+                            JsDiagnosticCode::JS_ILLEGAL_AWAIT,
+                            "'await' outside of async function",
+                        )
+                        .with_span(await_expr.span),
                     );
                 }
                 self.visit_expression(&await_expr.argument);
@@ -283,8 +300,11 @@ impl Visitor for SemanticAnalyzer {
             Expression::Yield(yield_expr) => {
                 if self.function_depth == 0 {
                     self.diagnostics.push(
-                        JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_YIELD, "'yield' outside of generator")
-                            .with_span(yield_expr.span),
+                        JsDiagnostic::error(
+                            JsDiagnosticCode::JS_ILLEGAL_YIELD,
+                            "'yield' outside of generator",
+                        )
+                        .with_span(yield_expr.span),
                     );
                 }
                 if let Some(arg) = &yield_expr.argument {
@@ -293,8 +313,11 @@ impl Visitor for SemanticAnalyzer {
             }
             Expression::Super(span) => {
                 self.diagnostics.push(
-                    JsDiagnostic::error(JsDiagnosticCode::JS_ILLEGAL_RETURN, "'super' outside of class")
-                        .with_span(*span),
+                    JsDiagnostic::error(
+                        JsDiagnosticCode::JS_ILLEGAL_RETURN,
+                        "'super' outside of class",
+                    )
+                    .with_span(*span),
                 );
             }
             _ => walk_expression(self, expr),
@@ -319,26 +342,89 @@ impl SemanticAnalyzer {
 fn is_known_global(name: &str) -> bool {
     matches!(
         name,
-        "window" | "document" | "console" | "Math" | "JSON" | "Array"
-            | "Object" | "String" | "Number" | "Boolean" | "Promise"
-            | "Map" | "Set" | "Symbol" | "Error" | "RegExp" | "Date"
-            | "parseInt" | "parseFloat" | "isNaN" | "isFinite"
-            | "setTimeout" | "setInterval" | "clearTimeout" | "clearInterval"
-            | "fetch" | "alert" | "confirm" | "prompt"
-            | "localStorage" | "sessionStorage" | "navigator" | "location"
-            | "history" | "NaN" | "Infinity" | "globalThis"
-            | "requestAnimationFrame" | "self" | "Event" | "CustomEvent"
-            | "Element" | "Node" | "HTMLElement" | "console"
-            | "undefined" | "null" | "true" | "false"
-            | "eval" | "isNaN" | "isFinite" | "encodeURI"
-            | "encodeURIComponent" | "decodeURI" | "decodeURIComponent"
-            | "Intl" | "Proxy" | "Reflect" | "WeakMap" | "WeakSet"
-            | "WeakRef" | "FinalizationRegistry" | "Atomics"
-            | "SharedArrayBuffer" | "BigInt" | "BigInt64Array"
-            | "BigUint64Array" | "Float32Array" | "Float64Array"
-            | "Int8Array" | "Int16Array" | "Int32Array" | "Uint8Array"
-            | "Uint8ClampedArray" | "Uint16Array" | "Uint32Array"
-            | "ArrayBuffer" | "DataView" | "Generator" | "GeneratorFunction"
-            | "AsyncFunction" | "AsyncGenerator" | "AsyncGeneratorFunction"
+        "window"
+            | "document"
+            | "console"
+            | "Math"
+            | "JSON"
+            | "Array"
+            | "Object"
+            | "String"
+            | "Number"
+            | "Boolean"
+            | "Promise"
+            | "Map"
+            | "Set"
+            | "Symbol"
+            | "Error"
+            | "RegExp"
+            | "Date"
+            | "parseInt"
+            | "parseFloat"
+            | "isNaN"
+            | "isFinite"
+            | "setTimeout"
+            | "setInterval"
+            | "clearTimeout"
+            | "clearInterval"
+            | "fetch"
+            | "alert"
+            | "confirm"
+            | "prompt"
+            | "localStorage"
+            | "sessionStorage"
+            | "navigator"
+            | "location"
+            | "history"
+            | "NaN"
+            | "Infinity"
+            | "globalThis"
+            | "requestAnimationFrame"
+            | "self"
+            | "Event"
+            | "CustomEvent"
+            | "Element"
+            | "Node"
+            | "HTMLElement"
+            | "console"
+            | "undefined"
+            | "null"
+            | "true"
+            | "false"
+            | "eval"
+            | "isNaN"
+            | "isFinite"
+            | "encodeURI"
+            | "encodeURIComponent"
+            | "decodeURI"
+            | "decodeURIComponent"
+            | "Intl"
+            | "Proxy"
+            | "Reflect"
+            | "WeakMap"
+            | "WeakSet"
+            | "WeakRef"
+            | "FinalizationRegistry"
+            | "Atomics"
+            | "SharedArrayBuffer"
+            | "BigInt"
+            | "BigInt64Array"
+            | "BigUint64Array"
+            | "Float32Array"
+            | "Float64Array"
+            | "Int8Array"
+            | "Int16Array"
+            | "Int32Array"
+            | "Uint8Array"
+            | "Uint8ClampedArray"
+            | "Uint16Array"
+            | "Uint32Array"
+            | "ArrayBuffer"
+            | "DataView"
+            | "Generator"
+            | "GeneratorFunction"
+            | "AsyncFunction"
+            | "AsyncGenerator"
+            | "AsyncGeneratorFunction"
     )
 }

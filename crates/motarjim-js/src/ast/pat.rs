@@ -37,8 +37,15 @@ pub struct ObjectPat {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ObjectPatProp {
-    KeyValue { key: PropKey, value: Box<Pattern>, span: SourceSpan },
-    Shorthand { name: String, span: SourceSpan },
+    KeyValue {
+        key: PropKey,
+        value: Box<Pattern>,
+        span: SourceSpan,
+    },
+    Shorthand {
+        name: String,
+        span: SourceSpan,
+    },
     Rest(Box<Pattern>, SourceSpan),
 }
 

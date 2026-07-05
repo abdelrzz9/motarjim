@@ -268,7 +268,11 @@ pub enum Statement {
     ExportNamed(ExportNamedDecl),
     ExportDefault(ExportDefaultDecl),
     Empty(SourceSpan),
-    Labelled { label: String, body: Box<Statement>, span: SourceSpan },
+    Labelled {
+        label: String,
+        body: Box<Statement>,
+        span: SourceSpan,
+    },
 }
 
 impl Statement {
@@ -286,7 +290,10 @@ impl Statement {
             Self::While(s) => s.span,
             Self::DoWhile(s) => s.span,
             Self::Block(s) => s.span,
-            Self::Break(span) | Self::Continue(span) | Self::Empty(span) | Self::Debugger(DebuggerStmt { span }) => *span,
+            Self::Break(span)
+            | Self::Continue(span)
+            | Self::Empty(span)
+            | Self::Debugger(DebuggerStmt { span }) => *span,
             Self::Throw(s) => s.span,
             Self::Try(s) => s.span,
             Self::Expr(s) => s.span,

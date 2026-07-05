@@ -24,7 +24,9 @@ pub struct ScopeStack {
 
 impl ScopeStack {
     pub fn new() -> Self {
-        Self { scopes: vec![Scope::default()] }
+        Self {
+            scopes: vec![Scope::default()],
+        }
     }
 
     pub fn push(&mut self) {
@@ -36,23 +38,48 @@ impl ScopeStack {
     }
 
     pub fn declare(&mut self, name: &str, kind: VarKind, span: SourceSpan) -> Option<Binding> {
-        let scope = self.scopes.last_mut().expect("at least one scope");
+        let scope = match self.scopes.last_mut() {
+            Some(s) => s,
+            None => return None,
+        };
         if let Some(existing) = scope.bindings.get(name) {
             if kind != VarKind::Var {
                 return Some(*existing);
             }
         }
-        scope.bindings.insert(name.to_string(), Binding { kind, span });
+        scope
+            .bindings
+            .insert(name.to_string(), Binding { kind, span });
         None
     }
 
     pub fn lookup(&self, name: &str) -> Option<Binding> {
-        self.scopes.iter().rev().find_map(|s| s.bindings.get(name).copied())
+        self.scopes
+            .iter()
+            .rev()
+            .find_map(|s| s.bindings.get(name).copied())
     }
 }
 
 impl Default for ScopeStack {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::stmt::VarKind;
+
+    #[test]
+    fn test_declare_on_empty_scope_does_not_panic() {
+        let mut stack = ScopeStack::new();
+        stack.pop(); // remove initial scope — now empty
+        let result = stack.declare("x", VarKind::Let, (0..1).into());
+        assert!(
+            result.is_none(),
+            "declare on empty stack should return None instead of panicking"
+        );
     }
 }

@@ -152,24 +152,52 @@ impl JsTokenKind {
     pub const fn is_binary_operator(self) -> bool {
         matches!(
             self,
-            Self::Plus | Self::Minus | Self::Star | Self::Slash | Self::Percent | Self::StarStar |
-            Self::EqEq | Self::EqEqEq | Self::NotEq | Self::NotEqEq |
-            Self::Lt | Self::Gt | Self::LtEq | Self::GtEq |
-            Self::In | Self::Instanceof |
-            Self::Amp | Self::Pipe | Self::Caret | Self::LtLt | Self::GtGt | Self::GtGtGt |
-            Self::AmpAmp | Self::PipePipe
+            Self::Plus
+                | Self::Minus
+                | Self::Star
+                | Self::Slash
+                | Self::Percent
+                | Self::StarStar
+                | Self::EqEq
+                | Self::EqEqEq
+                | Self::NotEq
+                | Self::NotEqEq
+                | Self::Lt
+                | Self::Gt
+                | Self::LtEq
+                | Self::GtEq
+                | Self::In
+                | Self::Instanceof
+                | Self::Amp
+                | Self::Pipe
+                | Self::Caret
+                | Self::LtLt
+                | Self::GtGt
+                | Self::GtGtGt
+                | Self::AmpAmp
+                | Self::PipePipe
         )
     }
 
     pub const fn is_assignment(self) -> bool {
         matches!(
             self,
-            Self::Assign | Self::PlusAssign | Self::MinusAssign |
-            Self::StarAssign | Self::SlashAssign | Self::PercentAssign |
-            Self::StarStarAssign | Self::AmpAssign | Self::PipeAssign |
-            Self::CaretAssign | Self::LtLtAssign | Self::GtGtAssign |
-            Self::GtGtGtAssign | Self::AmpAmpAssign | Self::PipePipeAssign |
-            Self::NullishAssign
+            Self::Assign
+                | Self::PlusAssign
+                | Self::MinusAssign
+                | Self::StarAssign
+                | Self::SlashAssign
+                | Self::PercentAssign
+                | Self::StarStarAssign
+                | Self::AmpAssign
+                | Self::PipeAssign
+                | Self::CaretAssign
+                | Self::LtLtAssign
+                | Self::GtGtAssign
+                | Self::GtGtGtAssign
+                | Self::AmpAmpAssign
+                | Self::PipePipeAssign
+                | Self::NullishAssign
         )
     }
 
@@ -181,8 +209,7 @@ impl JsTokenKind {
             Self::Caret => 4,
             Self::Amp => 5,
             Self::EqEq | Self::EqEqEq | Self::NotEq | Self::NotEqEq => 6,
-            Self::Lt | Self::Gt | Self::LtEq | Self::GtEq |
-            Self::In | Self::Instanceof => 7,
+            Self::Lt | Self::Gt | Self::LtEq | Self::GtEq | Self::In | Self::Instanceof => 7,
             Self::LtLt | Self::GtGt | Self::GtGtGt => 8,
             Self::Plus | Self::Minus => 9,
             Self::Star | Self::Slash | Self::Percent => 10,
@@ -279,12 +306,46 @@ pub fn keyword_from_str(s: &str) -> Option<JsTokenKind> {
 pub fn is_reserved_word(s: &str) -> bool {
     matches!(
         s,
-        "var" | "let" | "const" | "function" | "return" | "if" | "else"
-            | "for" | "while" | "do" | "break" | "continue" | "switch"
-            | "case" | "default" | "try" | "catch" | "finally" | "throw"
-            | "async" | "await" | "yield" | "class" | "extends" | "super"
-            | "new" | "this" | "typeof" | "void" | "delete" | "true"
-            | "false" | "null" | "import" | "export" | "instanceof"
-            | "in" | "of" | "as" | "debugger" | "static"
+        "var"
+            | "let"
+            | "const"
+            | "function"
+            | "return"
+            | "if"
+            | "else"
+            | "for"
+            | "while"
+            | "do"
+            | "break"
+            | "continue"
+            | "switch"
+            | "case"
+            | "default"
+            | "try"
+            | "catch"
+            | "finally"
+            | "throw"
+            | "async"
+            | "await"
+            | "yield"
+            | "class"
+            | "extends"
+            | "super"
+            | "new"
+            | "this"
+            | "typeof"
+            | "void"
+            | "delete"
+            | "true"
+            | "false"
+            | "null"
+            | "import"
+            | "export"
+            | "instanceof"
+            | "in"
+            | "of"
+            | "as"
+            | "debugger"
+            | "static"
     )
 }

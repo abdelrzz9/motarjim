@@ -51,7 +51,11 @@ impl JsParser {
         }
         let span = self.span_from(start);
         if self.errors.is_empty() {
-            Ok(Program { body, span, source_type })
+            Ok(Program {
+                body,
+                span,
+                source_type,
+            })
         } else {
             Err(std::mem::take(&mut self.errors))
         }
@@ -68,7 +72,13 @@ impl JsParser {
     // ---- token stream helpers -------------------------------------------
 
     fn cur(&self) -> &JsToken {
-        &self.tokens[self.pos]
+        // Use get() instead of direct indexing to avoid panic on out-of-bounds.
+        // tokenize() always produces at least one token (Eof).
+        self.tokens.get(self.pos).unwrap_or_else(|| {
+            self.tokens
+                .last()
+                .expect("token stream should never be empty")
+        })
     }
 
     fn kind(&self) -> JsTokenKind {
@@ -84,7 +94,9 @@ impl JsParser {
     }
 
     fn peek_kind_at(&self, offset: usize) -> JsTokenKind {
-        self.tokens.get(self.pos + offset).map_or(JsTokenKind::Eof, |t| t.kind)
+        self.tokens
+            .get(self.pos + offset)
+            .map_or(JsTokenKind::Eof, |t| t.kind)
     }
 
     fn advance(&mut self) -> JsToken {
@@ -130,12 +142,16 @@ impl JsParser {
 
     fn span_from(&self, start: SourceSpan) -> SourceSpan {
         let end = self.tokens[self.pos.saturating_sub(1)].span.end;
-        SourceSpan { start: start.start, end }
+        SourceSpan {
+            start: start.start,
+            end,
+        }
     }
 
     fn error(&mut self, message: impl Into<String>) {
         let msg = message.into();
-        self.errors.push(JsDiagnostic::parse_error(msg, self.cur().span));
+        self.errors
+            .push(JsDiagnostic::parse_error(msg, self.cur().span));
     }
 
     fn error_at(&mut self, span: SourceSpan, message: impl Into<String>) {

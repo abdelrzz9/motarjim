@@ -2,10 +2,10 @@
 
 use motarjim_span::SourceSpan;
 
-use crate::ast::stmt::*;
 use crate::ast::expr::*;
-use crate::ast::pat::*;
 use crate::ast::lit::*;
+use crate::ast::pat::*;
+use crate::ast::stmt::*;
 use crate::parser::JsParser;
 use crate::token::JsTokenKind;
 
@@ -102,7 +102,11 @@ impl JsParser {
             }
         }
         let span = self.span_from(start);
-        VarDecl { kind, declarators, span }
+        VarDecl {
+            kind,
+            declarators,
+            span,
+        }
     }
 
     fn parse_var_decl_stmt(&mut self) -> Statement {
@@ -163,7 +167,10 @@ impl JsParser {
 
     fn parse_return(&mut self) -> Statement {
         let start = self.advance().span;
-        let argument = if matches!(self.kind(), JsTokenKind::Semicolon | JsTokenKind::RBrace | JsTokenKind::Eof) {
+        let argument = if matches!(
+            self.kind(),
+            JsTokenKind::Semicolon | JsTokenKind::RBrace | JsTokenKind::Eof
+        ) {
             None
         } else {
             Some(self.parse_expression())
@@ -185,7 +192,12 @@ impl JsParser {
             None
         };
         let span = self.span_from(start);
-        Statement::If(IfStmt { test, consequent, alternate, span })
+        Statement::If(IfStmt {
+            test,
+            consequent,
+            alternate,
+            span,
+        })
     }
 
     fn parse_switch(&mut self) -> Statement {
@@ -200,20 +212,38 @@ impl JsParser {
                 let test = self.parse_expression();
                 self.expect(JsTokenKind::Colon, ":");
                 let mut consequent = Vec::new();
-                while !self.at_any(&[JsTokenKind::Case, JsTokenKind::Default, JsTokenKind::RBrace, JsTokenKind::Eof]) {
+                while !self.at_any(&[
+                    JsTokenKind::Case,
+                    JsTokenKind::Default,
+                    JsTokenKind::RBrace,
+                    JsTokenKind::Eof,
+                ]) {
                     consequent.push(self.parse_statement());
                 }
                 let span = self.span_from(start);
-                cases.push(SwitchCase { test: Some(test), consequent, span });
+                cases.push(SwitchCase {
+                    test: Some(test),
+                    consequent,
+                    span,
+                });
             } else if self.at(JsTokenKind::Default) {
                 self.advance();
                 self.expect(JsTokenKind::Colon, ":");
                 let mut consequent = Vec::new();
-                while !self.at_any(&[JsTokenKind::Case, JsTokenKind::Default, JsTokenKind::RBrace, JsTokenKind::Eof]) {
+                while !self.at_any(&[
+                    JsTokenKind::Case,
+                    JsTokenKind::Default,
+                    JsTokenKind::RBrace,
+                    JsTokenKind::Eof,
+                ]) {
                     consequent.push(self.parse_statement());
                 }
                 let span = self.span_from(start);
-                cases.push(SwitchCase { test: None, consequent, span });
+                cases.push(SwitchCase {
+                    test: None,
+                    consequent,
+                    span,
+                });
             } else {
                 self.error("expected 'case' or 'default'");
                 self.advance();
@@ -221,7 +251,11 @@ impl JsParser {
         }
         self.expect(JsTokenKind::RBrace, "}");
         let span = self.span_from(start);
-        Statement::Switch(SwitchStmt { discriminant, cases, span })
+        Statement::Switch(SwitchStmt {
+            discriminant,
+            cases,
+            span,
+        })
     }
 
     fn parse_while(&mut self) -> Statement {
@@ -248,6 +282,10 @@ impl JsParser {
 
     fn parse_for(&mut self) -> Statement {
         let start = self.advance().span;
+
+        // `for await ( ... of ... )` — await comes between `for` and `(`
+        let r#await = self.eat(JsTokenKind::Await);
+
         self.expect(JsTokenKind::LParen, "(");
 
         if self.eat(JsTokenKind::Semicolon) {
@@ -272,7 +310,7 @@ impl JsParser {
                     left: name,
                     right,
                     body,
-                    r#await: false,
+                    r#await,
                     span,
                 });
             }
@@ -281,7 +319,12 @@ impl JsParser {
                 self.expect(JsTokenKind::RParen, ")");
                 let body = Box::new(self.parse_statement());
                 let span = self.span_from(start);
-                return Statement::ForIn(ForInStmt { left: name, right, body, span });
+                return Statement::ForIn(ForInStmt {
+                    left: name,
+                    right,
+                    body,
+                    span,
+                });
             }
 
             let init_expr = if self.eat(JsTokenKind::Assign) {
@@ -308,7 +351,11 @@ impl JsParser {
                 });
             }
             self.expect(JsTokenKind::Semicolon, ";");
-            let decl = VarDecl { kind, declarators, span: self.span_from(start) };
+            let decl = VarDecl {
+                kind,
+                declarators,
+                span: self.span_from(start),
+            };
             return self.parse_for_rest(start, Some(ForInit::VarDecl(decl)));
         }
 
@@ -324,7 +371,7 @@ impl JsParser {
                     left: Pattern::Ident(name.clone(), expr.span()),
                     right,
                     body,
-                    r#await: false,
+                    r#await,
                     span,
                 });
             }
@@ -333,7 +380,7 @@ impl JsParser {
                 left: Pattern::Ident(String::new(), expr.span()),
                 right,
                 body,
-                r#await: false,
+                r#await,
                 span,
             });
         }
@@ -365,15 +412,27 @@ impl JsParser {
     }
 
     fn parse_for_rest(&mut self, start: SourceSpan, init: Option<ForInit>) -> Statement {
-        let test = if self.at(JsTokenKind::Semicolon) { None }
-        else { Some(self.parse_expression()) };
+        let test = if self.at(JsTokenKind::Semicolon) {
+            None
+        } else {
+            Some(self.parse_expression())
+        };
         self.expect(JsTokenKind::Semicolon, ";");
-        let update = if self.at(JsTokenKind::RParen) { None }
-        else { Some(self.parse_expression()) };
+        let update = if self.at(JsTokenKind::RParen) {
+            None
+        } else {
+            Some(self.parse_expression())
+        };
         self.expect(JsTokenKind::RParen, ")");
         let body = Box::new(self.parse_statement());
         let span = self.span_from(start);
-        Statement::For(Box::new(ForStmt { init, test, update, body, span }))
+        Statement::For(Box::new(ForStmt {
+            init,
+            test,
+            update,
+            body,
+            span,
+        }))
     }
 
     fn parse_throw(&mut self) -> Statement {
@@ -408,7 +467,12 @@ impl JsParser {
             None
         };
         let span = self.span_from(start);
-        Statement::Try(TryStmt { block, handler, finalizer, span })
+        Statement::Try(TryStmt {
+            block,
+            handler,
+            finalizer,
+            span,
+        })
     }
 
     fn parse_import(&mut self) -> Statement {
@@ -435,7 +499,11 @@ impl JsParser {
                     imported.clone()
                 };
                 let span = self.span_from(spec_start);
-                named.push(ImportSpecifier { imported, local, span });
+                named.push(ImportSpecifier {
+                    imported,
+                    local,
+                    span,
+                });
                 self.eat(JsTokenKind::Comma);
             }
             self.expect(JsTokenKind::RBrace, "}");
@@ -451,7 +519,13 @@ impl JsParser {
 
         self.eat_semicolon();
         let span = self.span_from(start);
-        Statement::Import(ImportDecl { default, namespace, named, source, span })
+        Statement::Import(ImportDecl {
+            default,
+            namespace,
+            named,
+            source,
+            span,
+        })
     }
 
     fn parse_string_literal_value(&mut self) -> String {
@@ -474,21 +548,23 @@ impl JsParser {
         if self.eat(JsTokenKind::Default) {
             if self.at(JsTokenKind::Function) {
                 let decl = self.parse_function_decl();
-                return self.make_export_default(start, ExportDefaultKind::FunctionDecl(
-                    match decl {
+                return self.make_export_default(
+                    start,
+                    ExportDefaultKind::FunctionDecl(match decl {
                         Statement::FunctionDecl(f) => f,
                         _ => unreachable!(),
-                    }
-                ));
+                    }),
+                );
             }
             if self.at(JsTokenKind::Class) {
                 let decl = self.parse_class_decl();
-                return self.make_export_default(start, ExportDefaultKind::ClassDecl(
-                    match decl {
+                return self.make_export_default(
+                    start,
+                    ExportDefaultKind::ClassDecl(match decl {
                         Statement::ClassDecl(c) => c,
                         _ => unreachable!(),
-                    }
-                ));
+                    }),
+                );
             }
             let expr = self.parse_assignment_expr();
             self.eat_semicolon();
@@ -510,7 +586,11 @@ impl JsParser {
                     local.clone()
                 };
                 let span = self.span_from(spec_start);
-                specifiers.push(ExportSpecifier { local, exported, span });
+                specifiers.push(ExportSpecifier {
+                    local,
+                    exported,
+                    span,
+                });
                 self.eat(JsTokenKind::Comma);
             }
             self.expect(JsTokenKind::RBrace, "}");
@@ -554,7 +634,12 @@ impl JsParser {
         };
         let body = self.parse_class_body();
         let span = self.span_from(start);
-        Statement::ClassDecl(ClassDecl { name, super_class, body, span })
+        Statement::ClassDecl(ClassDecl {
+            name,
+            super_class,
+            body,
+            span,
+        })
     }
 
     pub(crate) fn parse_class_body(&mut self) -> ClassBody {
@@ -563,8 +648,26 @@ impl JsParser {
         let mut body = Vec::new();
         while !self.at(JsTokenKind::RBrace) && !self.at(JsTokenKind::Eof) {
             let r#static = self.eat(JsTokenKind::Static);
-            if self.at_any(&[JsTokenKind::Star, JsTokenKind::Identifier, JsTokenKind::LBracket, JsTokenKind::String, JsTokenKind::Number]) {
+            if self.at_any(&[
+                JsTokenKind::Star,
+                JsTokenKind::Get,
+                JsTokenKind::Set,
+                JsTokenKind::Identifier,
+                JsTokenKind::PrivateIdentifier,
+                JsTokenKind::LBracket,
+                JsTokenKind::String,
+                JsTokenKind::Number,
+            ]) {
                 let is_generator = self.eat(JsTokenKind::Star);
+                let kind = if self.at(JsTokenKind::Get) {
+                    self.advance();
+                    MethodKind::Get
+                } else if self.at(JsTokenKind::Set) {
+                    self.advance();
+                    MethodKind::Set
+                } else {
+                    MethodKind::Method
+                };
                 let computed = self.at(JsTokenKind::LBracket);
                 let key = self.parse_prop_key();
                 if self.eat(JsTokenKind::LParen) {
@@ -580,10 +683,11 @@ impl JsParser {
                         r#async: false,
                         span,
                     };
-                    let kind = if key_is_constructor(&key) { MethodKind::Constructor }
-                        else if self.eat(JsTokenKind::Get) { MethodKind::Get }
-                        else if self.eat(JsTokenKind::Set) { MethodKind::Set }
-                        else { MethodKind::Method };
+                    let kind = if key_is_constructor(&key) {
+                        MethodKind::Constructor
+                    } else {
+                        kind
+                    };
                     body.push(ClassMember::Method(ClassMethod {
                         key,
                         kind,
@@ -631,6 +735,10 @@ impl JsParser {
             JsTokenKind::String => {
                 let tok = self.advance();
                 PropKey::String(tok.raw)
+            }
+            JsTokenKind::PrivateIdentifier => {
+                let tok = self.advance();
+                PropKey::PrivateIdent(tok.raw)
             }
             JsTokenKind::Number => {
                 let tok = self.advance();

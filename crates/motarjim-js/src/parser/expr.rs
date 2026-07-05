@@ -31,18 +31,34 @@ impl JsParser {
         }
 
         let start = self.cur().span;
-        if self.eat(JsTokenKind::Async) && !self.at_any(&[JsTokenKind::Arrow, JsTokenKind::LParen, JsTokenKind::Identifier]) {
+        if self.eat(JsTokenKind::Async)
+            && !self.at_any(&[
+                JsTokenKind::Arrow,
+                JsTokenKind::LParen,
+                JsTokenKind::Identifier,
+            ])
+        {
             self.pos -= 1;
         }
 
         let left = self.parse_conditional();
 
         if self.at_any(&[
-            JsTokenKind::Assign, JsTokenKind::PlusAssign, JsTokenKind::MinusAssign,
-            JsTokenKind::StarAssign, JsTokenKind::SlashAssign, JsTokenKind::PercentAssign,
-            JsTokenKind::StarStarAssign, JsTokenKind::AmpAssign, JsTokenKind::PipeAssign,
-            JsTokenKind::CaretAssign, JsTokenKind::LtLtAssign, JsTokenKind::GtGtAssign,
-            JsTokenKind::GtGtGtAssign, JsTokenKind::AmpAmpAssign, JsTokenKind::PipePipeAssign,
+            JsTokenKind::Assign,
+            JsTokenKind::PlusAssign,
+            JsTokenKind::MinusAssign,
+            JsTokenKind::StarAssign,
+            JsTokenKind::SlashAssign,
+            JsTokenKind::PercentAssign,
+            JsTokenKind::StarStarAssign,
+            JsTokenKind::AmpAssign,
+            JsTokenKind::PipeAssign,
+            JsTokenKind::CaretAssign,
+            JsTokenKind::LtLtAssign,
+            JsTokenKind::GtGtAssign,
+            JsTokenKind::GtGtGtAssign,
+            JsTokenKind::AmpAmpAssign,
+            JsTokenKind::PipePipeAssign,
             JsTokenKind::NullishAssign,
         ]) {
             let op = self.parse_assign_op();
@@ -77,7 +93,13 @@ impl JsParser {
             JsTokenKind::AmpAmpAssign => AssignOp::LogicalAndAssign,
             JsTokenKind::PipePipeAssign => AssignOp::LogicalOrAssign,
             JsTokenKind::NullishAssign => AssignOp::NullishAssign,
-            _ => unreachable!(),
+            _ => {
+                self.error(format!(
+                    "unexpected token in assignment operator: {:?}",
+                    tok.kind
+                ));
+                AssignOp::Assign
+            }
         }
     }
 
@@ -96,12 +118,17 @@ impl JsParser {
             let body = self.parse_arrow_body();
             let span = self.span_from(start);
             return Some(Expression::Arrow(Box::new(ArrowFunction {
-                params, body, r#async: false, span,
+                params,
+                body,
+                r#async: false,
+                span,
             })));
         }
 
-        let async_arrow = self.at(JsTokenKind::Async) && self.peek_kind_at(1) == JsTokenKind::LParen;
-        let async_ident = self.at(JsTokenKind::Async) && self.peek_kind_at(1) == JsTokenKind::Identifier
+        let async_arrow =
+            self.at(JsTokenKind::Async) && self.peek_kind_at(1) == JsTokenKind::LParen;
+        let async_ident = self.at(JsTokenKind::Async)
+            && self.peek_kind_at(1) == JsTokenKind::Identifier
             && self.peek_kind_at(2) == JsTokenKind::Arrow;
 
         if async_ident {
@@ -117,8 +144,15 @@ impl JsParser {
             let body = self.parse_arrow_body();
             let span = self.span_from(start);
             return Some(Expression::Arrow(Box::new(ArrowFunction {
-                params, body, r#async: true, span,
+                params,
+                body,
+                r#async: true,
+                span,
             })));
+        }
+
+        if async_arrow {
+            self.advance();
         }
 
         if self.at(JsTokenKind::LParen) && self.arrow_params_follow() {
@@ -129,7 +163,7 @@ impl JsParser {
             return Some(Expression::Arrow(Box::new(ArrowFunction {
                 params,
                 body,
-                r#async: async_arrow,
+                r#async: true,
                 span,
             })));
         }
@@ -166,7 +200,7 @@ impl JsParser {
 
     fn parse_conditional(&mut self) -> Expression {
         let start = self.cur().span;
-        let test = self.parse_nullish();
+        let test = self.parse_logical();
         if self.eat(JsTokenKind::Question) {
             let consequent = self.parse_assignment_expr();
             self.expect(JsTokenKind::Colon, ":");
@@ -182,46 +216,37 @@ impl JsParser {
         test
     }
 
-    fn parse_nullish(&mut self) -> Expression {
-        let start = self.cur().span;
-        let mut left = self.parse_logical_or();
-        while self.eat(JsTokenKind::Nullish) {
-            let right = self.parse_logical_or();
-            let span = self.span_from(start);
-            left = Expression::Logical(Box::new(LogicalExpr {
-                op: LogicalOp::NullishCoalesce,
-                left: Box::new(left),
-                right: Box::new(right),
-                span,
-            }));
-        }
-        left
-    }
-
-    fn parse_logical_or(&mut self) -> Expression {
-        let start = self.cur().span;
-        let mut left = self.parse_logical_and();
-        while self.eat(JsTokenKind::PipePipe) {
-            let right = self.parse_logical_and();
-            let span = self.span_from(start);
-            left = Expression::Logical(Box::new(LogicalExpr {
-                op: LogicalOp::Or,
-                left: Box::new(left),
-                right: Box::new(right),
-                span,
-            }));
-        }
-        left
-    }
-
-    fn parse_logical_and(&mut self) -> Expression {
+    fn parse_logical(&mut self) -> Expression {
         let start = self.cur().span;
         let mut left = self.parse_bitwise_or();
-        while self.eat(JsTokenKind::AmpAmp) {
+        loop {
+            let op = match self.kind() {
+                JsTokenKind::Nullish => LogicalOp::NullishCoalesce,
+                JsTokenKind::PipePipe => LogicalOp::Or,
+                JsTokenKind::AmpAmp => LogicalOp::And,
+                _ => break,
+            };
+            // JS forbids mixing ?? with && or || without parentheses
+            if let Expression::Logical(existing) = &left {
+                if existing.op != op
+                    && (existing.op == LogicalOp::NullishCoalesce
+                        || op == LogicalOp::NullishCoalesce)
+                {
+                    self.error("cannot mix '??' with '&&' or '||' without parentheses");
+                }
+            }
+            self.advance();
             let right = self.parse_bitwise_or();
+            if let Expression::Logical(r) = &right {
+                if r.op != op
+                    && (r.op == LogicalOp::NullishCoalesce || op == LogicalOp::NullishCoalesce)
+                {
+                    self.error("cannot mix '??' with '&&' or '||' without parentheses");
+                }
+            }
             let span = self.span_from(start);
             left = Expression::Logical(Box::new(LogicalExpr {
-                op: LogicalOp::And,
+                op,
                 left: Box::new(left),
                 right: Box::new(right),
                 span,
@@ -466,7 +491,11 @@ impl JsParser {
                 Vec::new()
             };
             let span = self.span_from(start);
-            Expression::New(Box::new(NewExpr { callee: Box::new(callee), args, span }))
+            Expression::New(Box::new(NewExpr {
+                callee: Box::new(callee),
+                args,
+                span,
+            }))
         } else if self.at(JsTokenKind::Super) {
             let span = self.advance().span;
             Expression::Super(span)
@@ -677,19 +706,31 @@ impl JsParser {
                     TokenValue::String(s) => s.clone(),
                     _ => tok.raw.clone(),
                 };
-                Expression::String(Box::new(StringLit { value, span: tok.span }))
+                Expression::String(Box::new(StringLit {
+                    value,
+                    span: tok.span,
+                }))
             }
             JsTokenKind::TemplateString => self.parse_template_literal(),
             JsTokenKind::Regex => {
                 let tok = self.advance();
+                let last_slash = tok.raw.rfind('/').unwrap_or(0);
+                let pattern = tok.raw[1..last_slash].to_string();
+                let flags = tok.raw[last_slash + 1..].to_string();
                 Expression::Regex(Box::new(RegexLit {
-                    pattern: tok.raw.clone(),
-                    flags: String::new(),
+                    pattern,
+                    flags,
                     span: tok.span,
                 }))
             }
-            JsTokenKind::True => Expression::Bool(Box::new(BoolLit { value: true, span: self.advance().span })),
-            JsTokenKind::False => Expression::Bool(Box::new(BoolLit { value: false, span: self.advance().span })),
+            JsTokenKind::True => Expression::Bool(Box::new(BoolLit {
+                value: true,
+                span: self.advance().span,
+            })),
+            JsTokenKind::False => Expression::Bool(Box::new(BoolLit {
+                value: false,
+                span: self.advance().span,
+            })),
             JsTokenKind::Null => Expression::Null(self.advance().span),
             JsTokenKind::Undefined => Expression::Undefined(self.advance().span),
             JsTokenKind::This => Expression::This(self.advance().span),
@@ -710,7 +751,9 @@ impl JsParser {
             JsTokenKind::LBracket => self.parse_array_literal(),
             JsTokenKind::LBrace => self.parse_object_literal(),
             JsTokenKind::Function => self.parse_function_expr(),
-            JsTokenKind::Async if self.peek_kind_at(1) == JsTokenKind::Function => self.parse_async_function_expr(),
+            JsTokenKind::Async if self.peek_kind_at(1) == JsTokenKind::Function => {
+                self.parse_async_function_expr()
+            }
             JsTokenKind::Class => self.parse_class_expr(),
             JsTokenKind::Star => {
                 self.advance();
@@ -723,9 +766,7 @@ impl JsParser {
                 }))
             }
             JsTokenKind::Yield => self.parse_yield_expr(),
-            JsTokenKind::Slash | JsTokenKind::SlashAssign => {
-                self.parse_regex_literal()
-            }
+            JsTokenKind::Slash | JsTokenKind::SlashAssign => self.parse_regex_literal(),
             _ => {
                 self.error(format!("unexpected token in expression: {:?}", self.kind()));
                 Expression::Undefined(self.advance().span)
@@ -736,13 +777,25 @@ impl JsParser {
     fn parse_yield_expr(&mut self) -> Expression {
         let start = self.advance().span;
         let delegate = self.eat(JsTokenKind::Star);
-        let argument = if !self.at_any(&[JsTokenKind::Semicolon, JsTokenKind::RBrace, JsTokenKind::RParen, JsTokenKind::RBracket, JsTokenKind::Comma, JsTokenKind::Colon, JsTokenKind::Eof]) {
+        let argument = if !self.at_any(&[
+            JsTokenKind::Semicolon,
+            JsTokenKind::RBrace,
+            JsTokenKind::RParen,
+            JsTokenKind::RBracket,
+            JsTokenKind::Comma,
+            JsTokenKind::Colon,
+            JsTokenKind::Eof,
+        ]) {
             Some(Box::new(self.parse_assignment_expr()))
         } else {
             None
         };
         let span = self.span_from(start);
-        Expression::Yield(Box::new(YieldExpr { argument, delegate, span }))
+        Expression::Yield(Box::new(YieldExpr {
+            argument,
+            delegate,
+            span,
+        }))
     }
 
     fn parse_array_literal(&mut self) -> Expression {
@@ -778,12 +831,24 @@ impl JsParser {
                 shorthand = false;
                 let value = self.parse_assignment_expr();
                 let span = self.span_from(prop_start);
-                props.push(ObjectProp { key, value, shorthand, computed, span });
+                props.push(ObjectProp {
+                    key,
+                    value,
+                    shorthand,
+                    computed,
+                    span,
+                });
             } else if let PropKey::Ident(ref name) = key {
                 shorthand = true;
                 let value = Expression::Identifier(name.clone(), prop_start);
                 let span = self.span_from(prop_start);
-                props.push(ObjectProp { key, value, shorthand, computed, span });
+                props.push(ObjectProp {
+                    key,
+                    value,
+                    shorthand,
+                    computed,
+                    span,
+                });
             } else {
                 self.error("expected ':' in object literal");
             }
@@ -809,7 +874,10 @@ impl JsParser {
         }
         self.advance();
         let id = if self.at(JsTokenKind::Identifier) {
-            Some(Box::new(Pattern::Ident(self.advance().raw, self.cur().span)))
+            Some(Box::new(Pattern::Ident(
+                self.advance().raw,
+                self.cur().span,
+            )))
         } else {
             None
         };
@@ -829,9 +897,9 @@ impl JsParser {
     fn parse_class_expr(&mut self) -> Expression {
         let start = self.advance().span;
         let name = if self.at(JsTokenKind::Identifier) {
-            Pattern::Ident(self.advance().raw, self.cur().span)
+            Some(Pattern::Ident(self.advance().raw, self.cur().span))
         } else {
-            Pattern::Ident(String::new(), start)
+            None
         };
         let super_class = if self.eat(JsTokenKind::Extends) {
             Some(self.parse_expression())
@@ -840,21 +908,22 @@ impl JsParser {
         };
         let body = self.parse_class_body();
         let span = self.span_from(start);
-        Expression::Function(Box::new(FunctionExpr {
-            id: Some(Box::new(name)),
-            params: Vec::new(),
-            body: BlockStmt { body: Vec::new(), span },
-            generator: false,
-            r#async: false,
+        Expression::ClassExpr(Box::new(ClassExpr {
+            name,
+            super_class,
+            body,
             span,
         }))
     }
 
     fn parse_regex_literal(&mut self) -> Expression {
         let tok = self.advance();
+        let last_slash = tok.raw.rfind('/').unwrap_or(0);
+        let pattern = tok.raw[1..last_slash].to_string();
+        let flags = tok.raw[last_slash + 1..].to_string();
         Expression::Regex(Box::new(RegexLit {
-            pattern: tok.raw,
-            flags: String::new(),
+            pattern,
+            flags,
             span: tok.span,
         }))
     }
@@ -862,14 +931,20 @@ impl JsParser {
     fn parse_template_literal(&mut self) -> Expression {
         let tok = self.advance();
         let base_offset = tok.span.start.offset;
-        let inner = tok.raw.get(1..tok.raw.len().saturating_sub(1)).unwrap_or("");
+        let inner = tok
+            .raw
+            .get(1..tok.raw.len().saturating_sub(1))
+            .unwrap_or("");
 
         let mut quasis = Vec::new();
         let mut exprs = Vec::new();
         for part in split_template_parts(inner) {
             match part {
                 TemplatePart::Quasi(text) => quasis.push(text),
-                TemplatePart::Expr { source, offset_in_inner } => {
+                TemplatePart::Expr {
+                    source,
+                    offset_in_inner,
+                } => {
                     let mut sub_parser = Self::new(source);
                     let mut expr = sub_parser.parse_expression();
                     self.errors.extend(sub_parser.errors);
@@ -881,20 +956,24 @@ impl JsParser {
         }
         quasis.resize(exprs.len() + 1, String::new());
 
-        Expression::TemplateLiteral(Box::new(TemplateLiteral { quasis, exprs, span: tok.span }))
+        Expression::TemplateLiteral(Box::new(TemplateLiteral {
+            quasis,
+            exprs,
+            span: tok.span,
+        }))
     }
 
     pub(crate) fn parse_pattern(&mut self) -> Pattern {
-        self.parse_pattern_inner()
+        self.parse_pattern_inner(false)
     }
 
-    fn parse_pattern_inner(&mut self) -> Pattern {
+    fn parse_pattern_inner(&mut self, consume_assign: bool) -> Pattern {
         let start = self.cur().span;
         if self.eat(JsTokenKind::LBrace) {
             let mut props = Vec::new();
             while !self.at(JsTokenKind::RBrace) && !self.at(JsTokenKind::Eof) {
                 if self.eat(JsTokenKind::Ellipsis) {
-                    let rest = self.parse_pattern_inner();
+                    let rest = self.parse_pattern_inner(true);
                     let span = self.span_from(start);
                     props.push(ObjectPatProp::Rest(Box::new(rest), span));
                     break;
@@ -902,7 +981,7 @@ impl JsParser {
                 let prop_start = self.cur().span;
                 let key = self.parse_prop_key();
                 if self.eat(JsTokenKind::Colon) {
-                    let value = self.parse_pattern_inner();
+                    let value = self.parse_pattern_inner(true);
                     let span = self.span_from(prop_start);
                     props.push(ObjectPatProp::KeyValue {
                         key,
@@ -911,7 +990,10 @@ impl JsParser {
                     });
                 } else if let PropKey::Ident(name) = &key {
                     let span = self.span_from(prop_start);
-                    props.push(ObjectPatProp::Shorthand { name: name.clone(), span });
+                    props.push(ObjectPatProp::Shorthand {
+                        name: name.clone(),
+                        span,
+                    });
                 } else {
                     self.error("invalid destructuring pattern");
                 }
@@ -930,9 +1012,9 @@ impl JsParser {
                     continue;
                 }
                 let pat = if self.eat(JsTokenKind::Ellipsis) {
-                    Some(Pattern::Rest(Box::new(self.parse_pattern_inner())))
+                    Some(Pattern::Rest(Box::new(self.parse_pattern_inner(true))))
                 } else {
-                    Some(self.parse_pattern_inner())
+                    Some(self.parse_pattern_inner(true))
                 };
                 elements.push(pat);
                 self.eat(JsTokenKind::Comma);
@@ -943,7 +1025,7 @@ impl JsParser {
         }
 
         if self.eat(JsTokenKind::Ellipsis) {
-            let arg = self.parse_pattern_inner();
+            let arg = self.parse_pattern_inner(true);
             return Pattern::Rest(Box::new(arg));
         }
 
@@ -954,7 +1036,7 @@ impl JsParser {
             String::new()
         };
 
-        if self.eat(JsTokenKind::Assign) {
+        if consume_assign && self.eat(JsTokenKind::Assign) {
             let right = self.parse_assignment_expr();
             let span = self.span_from(start);
             return Pattern::Default(Box::new(DefaultPat {
@@ -970,7 +1052,10 @@ impl JsParser {
 
 fn parse_number_literal(raw: &str) -> f64 {
     let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
-    if let Some(hex) = cleaned.strip_prefix("0x").or_else(|| cleaned.strip_prefix("0X")) {
+    if let Some(hex) = cleaned
+        .strip_prefix("0x")
+        .or_else(|| cleaned.strip_prefix("0X"))
+    {
         u64::from_str_radix(hex, 16).map_or(0.0, |v| v as f64)
     } else {
         cleaned.parse::<f64>().unwrap_or(0.0)
@@ -979,7 +1064,10 @@ fn parse_number_literal(raw: &str) -> f64 {
 
 enum TemplatePart<'a> {
     Quasi(String),
-    Expr { source: &'a str, offset_in_inner: usize },
+    Expr {
+        source: &'a str,
+        offset_in_inner: usize,
+    },
 }
 
 fn split_template_parts(inner: &str) -> Vec<TemplatePart<'_>> {
@@ -993,11 +1081,14 @@ fn split_template_parts(inner: &str) -> Vec<TemplatePart<'_>> {
             continue;
         }
         if bytes[i] == b'$' && bytes.get(i + 1) == Some(&b'{') {
-            parts.push(TemplatePart::Quasi(inner[quasi_start..i].to_string()));
+            parts.push(TemplatePart::Quasi(
+                inner.get(quasi_start..i).unwrap_or("").to_string(),
+            ));
             let expr_start = i + 2;
             let expr_end = find_matching_brace(inner, expr_start);
+            let source = inner.get(expr_start..expr_end).unwrap_or("");
             parts.push(TemplatePart::Expr {
-                source: &inner[expr_start..expr_end],
+                source,
                 offset_in_inner: expr_start,
             });
             i = (expr_end + 1).min(bytes.len());
@@ -1016,17 +1107,24 @@ fn find_matching_brace(inner: &str, start: usize) -> usize {
     let mut depth: u32 = 1;
     while i < bytes.len() {
         match bytes[i] {
-            b'{' => { depth += 1; i += 1; }
+            b'{' => {
+                depth += 1;
+                i += 1;
+            }
             b'}' => {
                 depth -= 1;
-                if depth == 0 { return i; }
+                if depth == 0 {
+                    return i;
+                }
                 i += 1;
             }
             b'\'' | b'"' => {
                 let quote = bytes[i];
                 i += 1;
                 while i < bytes.len() && bytes[i] != quote {
-                    if bytes[i] == b'\\' { i += 1; }
+                    if bytes[i] == b'\\' {
+                        i += 1;
+                    }
                     i += 1;
                 }
                 i = (i + 1).min(bytes.len());
@@ -1062,11 +1160,21 @@ pub(crate) trait ShiftSpans {
 impl Expression {
     pub fn shift_spans(&mut self, delta: usize) {
         match self {
-            Self::Identifier(_, span) | Self::PrivateIdentifier(_, span) |
-            Self::Null(span) | Self::Undefined(span) | Self::This(span) | Self::Super(span) => {
+            Self::Identifier(_, span)
+            | Self::PrivateIdentifier(_, span)
+            | Self::Null(span)
+            | Self::Undefined(span)
+            | Self::This(span)
+            | Self::Super(span) => {
                 *span = SourceSpan {
-                    start: SourceLocation { offset: span.start.offset + delta, ..span.start },
-                    end: SourceLocation { offset: span.end.offset + delta, ..span.end },
+                    start: SourceLocation {
+                        offset: span.start.offset + delta,
+                        ..span.start
+                    },
+                    end: SourceLocation {
+                        offset: span.end.offset + delta,
+                        ..span.end
+                    },
                 };
             }
             Self::Number(lit) => lit.span.shift(delta),
@@ -1194,6 +1302,9 @@ impl Expression {
             Self::Parenthesized(e) => {
                 e.shift_spans(delta);
             }
+            Self::ClassExpr(e) => {
+                e.span.shift(delta);
+            }
         }
     }
 }
@@ -1201,13 +1312,45 @@ impl Expression {
 impl Pattern {
     fn shift_spans(&mut self, delta: usize) {
         match self {
-            Pattern::Ident(_, span) => { *span = SourceSpan { start: SourceLocation { offset: span.start.offset + delta, ..span.start }, end: SourceLocation { offset: span.end.offset + delta, ..span.end } }; }
-            Pattern::Object(p) => { p.span.shift(delta); }
-            Pattern::Array(p) => { p.span.shift(delta); for el in &mut p.elements { if let Some(pat) = el { pat.shift_spans(delta); } } }
-            Pattern::Assign(p) => { p.span.shift(delta); p.left.shift_spans(delta); p.right.shift_spans(delta); }
-            Pattern::Rest(p) => { p.shift_spans(delta); }
-            Pattern::Member(p) => { p.span.shift(delta); }
-            Pattern::Default(p) => { p.span.shift(delta); p.left.shift_spans(delta); p.right.shift_spans(delta); }
+            Pattern::Ident(_, span) => {
+                *span = SourceSpan {
+                    start: SourceLocation {
+                        offset: span.start.offset + delta,
+                        ..span.start
+                    },
+                    end: SourceLocation {
+                        offset: span.end.offset + delta,
+                        ..span.end
+                    },
+                };
+            }
+            Pattern::Object(p) => {
+                p.span.shift(delta);
+            }
+            Pattern::Array(p) => {
+                p.span.shift(delta);
+                for el in &mut p.elements {
+                    if let Some(pat) = el {
+                        pat.shift_spans(delta);
+                    }
+                }
+            }
+            Pattern::Assign(p) => {
+                p.span.shift(delta);
+                p.left.shift_spans(delta);
+                p.right.shift_spans(delta);
+            }
+            Pattern::Rest(p) => {
+                p.shift_spans(delta);
+            }
+            Pattern::Member(p) => {
+                p.span.shift(delta);
+            }
+            Pattern::Default(p) => {
+                p.span.shift(delta);
+                p.left.shift_spans(delta);
+                p.right.shift_spans(delta);
+            }
         }
     }
 }
@@ -1225,8 +1368,14 @@ impl Statement {
     fn shift_spans(&mut self, delta: usize) {
         let shift_span = |span: &mut SourceSpan| {
             *span = SourceSpan {
-                start: SourceLocation { offset: span.start.offset + delta, ..span.start },
-                end: SourceLocation { offset: span.end.offset + delta, ..span.end },
+                start: SourceLocation {
+                    offset: span.start.offset + delta,
+                    ..span.start
+                },
+                end: SourceLocation {
+                    offset: span.end.offset + delta,
+                    ..span.end
+                },
             };
         };
         match self {
@@ -1281,8 +1430,12 @@ impl Statement {
                         ForInit::Expr(e) => e.shift_spans(delta),
                     }
                 }
-                if let Some(t) = &mut s.test { t.shift_spans(delta); }
-                if let Some(u) = &mut s.update { u.shift_spans(delta); }
+                if let Some(t) = &mut s.test {
+                    t.shift_spans(delta);
+                }
+                if let Some(u) = &mut s.update {
+                    u.shift_spans(delta);
+                }
                 s.body.shift_spans(delta);
             }
             Self::ForOf(s) => {
@@ -1306,7 +1459,10 @@ impl Statement {
                 s.body.shift_spans(delta);
             }
             Self::Block(b) => b.shift_spans(delta),
-            Self::Break(span) | Self::Continue(span) | Self::Empty(span) | Self::Debugger(DebuggerStmt { span }) => {
+            Self::Break(span)
+            | Self::Continue(span)
+            | Self::Empty(span)
+            | Self::Debugger(DebuggerStmt { span }) => {
                 shift_span(span);
             }
             Self::Throw(s) => {
@@ -1382,12 +1538,37 @@ trait SpanShift {
 impl SpanShift for SourceSpan {
     fn shift(&mut self, delta: usize) {
         self.start = SourceLocation {
-            offset: self.start.offset + delta,
+            offset: self.start.offset.saturating_add(delta),
             ..self.start
         };
         self.end = SourceLocation {
-            offset: self.end.offset + delta,
+            offset: self.end.offset.saturating_add(delta),
             ..self.end
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use motarjim_span::{SourceLocation, SourceSpan};
+
+    #[test]
+    fn test_span_shift_no_overflow() {
+        let mut span = SourceSpan {
+            start: SourceLocation {
+                offset: usize::MAX - 1,
+                line: 1,
+                column: 1,
+            },
+            end: SourceLocation {
+                offset: usize::MAX,
+                line: 1,
+                column: 2,
+            },
+        };
+        span.shift(5); // would overflow with plain +
+        assert_eq!(span.start.offset, usize::MAX); // saturates
+        assert_eq!(span.end.offset, usize::MAX);
     }
 }

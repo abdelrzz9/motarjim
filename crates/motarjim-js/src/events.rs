@@ -15,7 +15,9 @@ pub struct DomEventBinding {
 }
 
 pub fn find_dom_event_bindings(program: &Program) -> Vec<DomEventBinding> {
-    let mut collector = EventCollector { bindings: Vec::new() };
+    let mut collector = EventCollector {
+        bindings: Vec::new(),
+    };
     collector.visit_program(program);
     collector.bindings
 }
@@ -26,10 +28,18 @@ struct EventCollector {
 
 impl EventCollector {
     fn check_add_event_listener(&mut self, call: &CallExpr) {
-        let Expression::Member(member) = call.callee.as_ref() else { return };
-        let MemberProp::Ident(name) = &member.property else { return };
-        if name != "addEventListener" || call.args.len() < 2 { return }
-        let Expression::String(event_name) = &call.args[0] else { return };
+        let Expression::Member(member) = call.callee.as_ref() else {
+            return;
+        };
+        let MemberProp::Ident(name) = &member.property else {
+            return;
+        };
+        if name != "addEventListener" || call.args.len() < 2 {
+            return;
+        }
+        let Expression::String(event_name) = &call.args[0] else {
+            return;
+        };
         self.bindings.push(DomEventBinding {
             target: describe_expr(&member.object),
             event_name: event_name.value.clone(),
@@ -39,9 +49,15 @@ impl EventCollector {
     }
 
     fn check_handler_assignment(&mut self, assign: &AssignExpr) {
-        let Expression::Member(member) = assign.target.as_ref() else { return };
-        let MemberProp::Ident(name) = &member.property else { return };
-        let Some(event_name) = name.strip_prefix("on").filter(|s| !s.is_empty()) else { return };
+        let Expression::Member(member) = assign.target.as_ref() else {
+            return;
+        };
+        let MemberProp::Ident(name) = &member.property else {
+            return;
+        };
+        let Some(event_name) = name.strip_prefix("on").filter(|s| !s.is_empty()) else {
+            return;
+        };
         self.bindings.push(DomEventBinding {
             target: describe_expr(&member.object),
             event_name: event_name.to_string(),

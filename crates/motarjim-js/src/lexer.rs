@@ -109,7 +109,9 @@ impl<'a> JsLexer<'a> {
     fn skip_whitespace(&mut self) {
         while let Some(c) = self.peek() {
             match c {
-                ' ' | '\t' => { self.advance(); }
+                ' ' | '\t' => {
+                    self.advance();
+                }
                 '\n' => {
                     self.advance();
                     self.line += 1;
@@ -196,8 +198,14 @@ impl<'a> JsLexer<'a> {
     fn read_plus(&mut self) -> JsToken {
         self.advance();
         match self.peek() {
-            Some('+') => { self.advance(); self.make_token(JsTokenKind::Increment) }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::PlusAssign) }
+            Some('+') => {
+                self.advance();
+                self.make_token(JsTokenKind::Increment)
+            }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::PlusAssign)
+            }
             _ => self.make_token(JsTokenKind::Plus),
         }
     }
@@ -205,8 +213,14 @@ impl<'a> JsLexer<'a> {
     fn read_minus(&mut self) -> JsToken {
         self.advance();
         match self.peek() {
-            Some('-') => { self.advance(); self.make_token(JsTokenKind::Decrement) }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::MinusAssign) }
+            Some('-') => {
+                self.advance();
+                self.make_token(JsTokenKind::Decrement)
+            }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::MinusAssign)
+            }
             _ => self.make_token(JsTokenKind::Minus),
         }
     }
@@ -223,7 +237,10 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::StarStar)
                 }
             }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::StarAssign) }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::StarAssign)
+            }
             _ => self.make_token(JsTokenKind::Star),
         }
     }
@@ -250,7 +267,10 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::EqEq)
                 }
             }
-            Some('>') => { self.advance(); self.make_token(JsTokenKind::Arrow) }
+            Some('>') => {
+                self.advance();
+                self.make_token(JsTokenKind::Arrow)
+            }
             _ => self.make_token(JsTokenKind::Assign),
         }
     }
@@ -283,7 +303,10 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::LtLt)
                 }
             }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::LtEq) }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::LtEq)
+            }
             _ => self.make_token(JsTokenKind::Lt),
         }
     }
@@ -308,7 +331,10 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::GtGt)
                 }
             }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::GtEq) }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::GtEq)
+            }
             _ => self.make_token(JsTokenKind::Gt),
         }
     }
@@ -325,7 +351,10 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::AmpAmp)
                 }
             }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::AmpAssign) }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::AmpAssign)
+            }
             _ => self.make_token(JsTokenKind::Amp),
         }
     }
@@ -342,7 +371,10 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::PipePipe)
                 }
             }
-            Some('=') => { self.advance(); self.make_token(JsTokenKind::PipeAssign) }
+            Some('=') => {
+                self.advance();
+                self.make_token(JsTokenKind::PipeAssign)
+            }
             _ => self.make_token(JsTokenKind::Pipe),
         }
     }
@@ -414,13 +446,21 @@ impl<'a> JsLexer<'a> {
         while depth > 0 {
             match self.peek() {
                 None => break,
-                Some('{') => { depth += 1; self.advance(); }
-                Some('}') => { depth -= 1; self.advance(); }
+                Some('{') => {
+                    depth += 1;
+                    self.advance();
+                }
+                Some('}') => {
+                    depth -= 1;
+                    self.advance();
+                }
                 Some('\'' | '"') => {
                     let q = self.peek().unwrap();
                     self.advance();
                     while self.peek().map_or(false, |c| c != q) {
-                        if self.peek() == Some('\\') { self.advance(); }
+                        if self.peek() == Some('\\') {
+                            self.advance();
+                        }
                         self.advance();
                     }
                     self.advance();
@@ -429,18 +469,28 @@ impl<'a> JsLexer<'a> {
                     self.advance();
                     loop {
                         match self.peek() {
-                            None | Some('`') => { self.advance(); break; }
-                            Some('\\') => { self.advance(); self.advance(); }
+                            None | Some('`') => {
+                                self.advance();
+                                break;
+                            }
+                            Some('\\') => {
+                                self.advance();
+                                self.advance();
+                            }
                             Some('$') if self.peek_at(1) == Some('{') => {
                                 self.advance();
                                 self.advance();
                                 self.skip_balanced_braces();
                             }
-                            Some(_) => { self.advance(); }
+                            Some(_) => {
+                                self.advance();
+                            }
                         }
                     }
                 }
-                Some(_) => { self.advance(); }
+                Some(_) => {
+                    self.advance();
+                }
             }
         }
     }
@@ -448,14 +498,38 @@ impl<'a> JsLexer<'a> {
     fn read_escape(&mut self) -> char {
         match self.peek() {
             None => '\\',
-            Some('n') => { self.advance(); '\n' }
-            Some('t') => { self.advance(); '\t' }
-            Some('r') => { self.advance(); '\r' }
-            Some('0') => { self.advance(); '\0' }
-            Some('\'') => { self.advance(); '\'' }
-            Some('\"') => { self.advance(); '"' }
-            Some('\\') => { self.advance(); '\\' }
-            Some('`') => { self.advance(); '`' }
+            Some('n') => {
+                self.advance();
+                '\n'
+            }
+            Some('t') => {
+                self.advance();
+                '\t'
+            }
+            Some('r') => {
+                self.advance();
+                '\r'
+            }
+            Some('0') => {
+                self.advance();
+                '\0'
+            }
+            Some('\'') => {
+                self.advance();
+                '\''
+            }
+            Some('\"') => {
+                self.advance();
+                '"'
+            }
+            Some('\\') => {
+                self.advance();
+                '\\'
+            }
+            Some('`') => {
+                self.advance();
+                '`'
+            }
             Some('x') => {
                 self.advance();
                 let hi = self.read_hex_digit();
@@ -468,7 +542,10 @@ impl<'a> JsLexer<'a> {
                     self.advance();
                     let mut code = 0u32;
                     while let Some(c) = self.peek() {
-                        if c == '}' { self.advance(); break; }
+                        if c == '}' {
+                            self.advance();
+                            break;
+                        }
                         code = code * 16 + self.read_hex_digit() as u32;
                     }
                     char::from_u32(code).unwrap_or('\u{FFFD}')
@@ -480,7 +557,10 @@ impl<'a> JsLexer<'a> {
                     char::from_u32(code).unwrap_or('\u{FFFD}')
                 }
             }
-            Some(c) => { self.advance(); c }
+            Some(c) => {
+                self.advance();
+                c
+            }
         }
     }
 
@@ -499,7 +579,8 @@ impl<'a> JsLexer<'a> {
         if self.peek() == Some('0') {
             match self.peek_at(1) {
                 Some('x' | 'X') => {
-                    self.advance(); self.advance();
+                    self.advance();
+                    self.advance();
                     self.take_while(|c| c.is_ascii_hexdigit() || c == '_');
                     let raw = self.slice();
                     let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
@@ -507,7 +588,8 @@ impl<'a> JsLexer<'a> {
                     return self.make_token_value(JsTokenKind::Number, TokenValue::Number(value));
                 }
                 Some('o' | 'O') => {
-                    self.advance(); self.advance();
+                    self.advance();
+                    self.advance();
                     self.take_while(|c| matches!(c, '0'..='7') || c == '_');
                     let raw = self.slice();
                     let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
@@ -515,7 +597,8 @@ impl<'a> JsLexer<'a> {
                     return self.make_token_value(JsTokenKind::Number, TokenValue::Number(value));
                 }
                 Some('b' | 'B') => {
-                    self.advance(); self.advance();
+                    self.advance();
+                    self.advance();
                     self.take_while(|c| c == '0' || c == '1' || c == '_');
                     let raw = self.slice();
                     let cleaned: String = raw.chars().filter(|c| *c != '_').collect();
@@ -539,12 +622,14 @@ impl<'a> JsLexer<'a> {
             self.take_while(|c| c.is_ascii_digit());
         }
 
-        let is_bigint = self.peek() == Some('n') && !self.slice().contains('.')
-            && !self.slice().contains('e') && !self.slice().contains('E');
+        let is_bigint = self.peek() == Some('n')
+            && !self.slice().contains('.')
+            && !self.slice().contains('e')
+            && !self.slice().contains('E');
         if is_bigint {
             self.advance();
             let raw = self.slice();
-            let cleaned: String = raw[..raw.len()-1].chars().filter(|c| *c != '_').collect();
+            let cleaned: String = raw[..raw.len() - 1].chars().filter(|c| *c != '_').collect();
             let value = cleaned.parse::<u128>().unwrap_or(0);
             return self.make_token_value(JsTokenKind::BigInt, TokenValue::BigInt(value));
         }
@@ -571,7 +656,9 @@ impl<'a> JsLexer<'a> {
         let raw = self.slice();
         match keyword_from_str(&raw) {
             Some(kind) => self.make_token(kind),
-            None => self.make_token_value(JsTokenKind::Identifier, TokenValue::Ident(raw.to_string())),
+            None => {
+                self.make_token_value(JsTokenKind::Identifier, TokenValue::Ident(raw.to_string()))
+            }
         }
     }
 
@@ -606,13 +693,23 @@ impl<'a> JsLexer<'a> {
                     loop {
                         match self.peek() {
                             None | Some('\n') | Some('\r') => break,
-                            Some(']') => { self.advance(); break; }
-                            Some('\\') => { self.advance(); self.advance(); }
-                            Some(_) => { self.advance(); }
+                            Some(']') => {
+                                self.advance();
+                                break;
+                            }
+                            Some('\\') => {
+                                self.advance();
+                                self.advance();
+                            }
+                            Some(_) => {
+                                self.advance();
+                            }
                         }
                     }
                 }
-                Some(_) => { self.advance(); }
+                Some(_) => {
+                    self.advance();
+                }
             }
         }
         self.make_token(JsTokenKind::Slash)
