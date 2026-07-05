@@ -17,6 +17,7 @@ fn main() {
                 computed_style: ComputedStyle::default(),
                 children: smallvec::smallvec![NodeId(1)],
                 parent: None,
+                text: None,
             },
             IrNode {
                 id: NodeId(1),
@@ -32,6 +33,7 @@ fn main() {
                 computed_style: ComputedStyle::default(),
                 children: smallvec::smallvec![],
                 parent: Some(NodeId(0)),
+                text: None,
             },
         ],
         root_id: NodeId(0),

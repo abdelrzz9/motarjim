@@ -16,18 +16,39 @@ export function generateCompose(
     buf.push(indent.repeat(depth) + line);
   }
 
+  const styleCache = new Map<string, CSSDeclaration[]>();
+
+  function getMatchingStyles(tagName: string, classNames: string[], id?: string): CSSDeclaration[] {
+    const key = `${tagName}|${classNames.join(',')}|${id || ''}`;
+    const cached = styleCache.get(key);
+    if (cached) return cached;
+
+    const all: CSSDeclaration[] = [];
+    for (const [selector, decls] of cssDeclarations) {
+      if (selector === tagName || classNames.some(c => selector === `.${c}` || selector === `${tagName}.${c}`)) {
+        all.push(...decls);
+      }
+      if (id && (selector === `#${id}` || selector === `${tagName}#${id}`)) {
+        all.push(...decls);
+      }
+    }
+    styleCache.set(key, all);
+    return all;
+  }
+
   buf.push('package com.motarjim.generated');
   buf.push('');
   buf.push('import android.os.Bundle');
   buf.push('import androidx.activity.ComponentActivity');
   buf.push('import androidx.activity.compose.setContent');
-  buf.push('import androidx.compose.foundation.*');
+  buf.push('import androidx.compose.foundation.background');
   buf.push('import androidx.compose.foundation.layout.*');
   buf.push('import androidx.compose.foundation.shape.RoundedCornerShape');
   buf.push('import androidx.compose.material3.*');
   buf.push('import androidx.compose.runtime.Composable');
   buf.push('import androidx.compose.ui.Alignment');
   buf.push('import androidx.compose.ui.Modifier');
+  buf.push('import androidx.compose.ui.draw.clip');
   buf.push('import androidx.compose.ui.graphics.Color');
   buf.push('import androidx.compose.ui.text.font.FontWeight');
   buf.push('import androidx.compose.ui.text.style.TextAlign');
@@ -79,26 +100,6 @@ export function generateCompose(
   depth = 1;
   emit(') { content() }');
   emit('}');
-
-  const styleCache = new Map<string, CSSDeclaration[]>();
-
-  function getMatchingStyles(tagName: string, classNames: string[], id?: string): CSSDeclaration[] {
-    const key = `${tagName}|${classNames.join(',')}|${id || ''}`;
-    const cached = styleCache.get(key);
-    if (cached) return cached;
-
-    const all: CSSDeclaration[] = [];
-    for (const [selector, decls] of cssDeclarations) {
-      if (selector === tagName || classNames.some(c => selector === `.${c}` || selector === `${tagName}.${c}`)) {
-        all.push(...decls);
-      }
-      if (id && (selector === `#${id}` || selector === `${tagName}#${id}`)) {
-        all.push(...decls);
-      }
-    }
-    styleCache.set(key, all);
-    return all;
-  }
 
   function generateNode(node: ASTNode) {
     if (node.type === 'text') {
@@ -161,7 +162,7 @@ export function generateCompose(
         break;
       case 'hr':
         depth++;
-        emit('Divider()');
+        emit('HorizontalDivider()');
         depth--;
         break;
       case 'strong': case 'b':
@@ -181,42 +182,103 @@ export function generateCompose(
   }
 
   function generateContainer(node: ASTNode, style: CSSDeclaration[]) {
+    const hasChildren = node.children && node.children.some(c =>
+      (c.type === 'element') || (c.type === 'text' && c.value && c.value.trim())
+    );
+    const isFlex = style.some(d => d.property === 'display' && (d.value === 'flex' || d.value === 'inline-flex'));
+    const flexDir = style.find(d => d.property === 'flex-direction');
+    const isColumn = flexDir ? flexDir.value === 'column' : false;
     const padding = style.find(d => d.property === 'padding');
-    const bgColor = style.find(d => d.property === 'background-color');
+    const bgColor = style.find(d => d.property === 'background-color' || d.property === 'background');
     const width = style.find(d => d.property === 'width');
     const height = style.find(d => d.property === 'height');
+    const align = style.find(d => d.property === 'align-items');
+    const gap = style.find(d => d.property === 'gap');
     const margin = style.find(d => d.property === 'margin');
     const borderRadius = style.find(d => d.property === 'border-radius');
-    const isFlex = style.some(d => d.property === 'display' && (d.value === 'flex' || d.value === 'inline-flex'));
 
-    const hasDecor = bgColor || borderRadius || padding || width || height || margin;
+    const hasDecor = bgColor != null || borderRadius != null || padding != null || width != null || height != null || margin != null;
 
-    depth++;
-    if (hasDecor || isFlex) {
+    if (!hasDecor && !isFlex && !hasChildren) return;
+
+    if (isFlex && hasChildren) {
+      depth++;
+      const direction = isColumn ? 'Column' : 'Row';
+      emit(`${direction}(`);
+      depth++;
+
       let modifier = 'Modifier';
-
-      if (padding) {
-        const dp = toDpValue(padding.value);
-        if (dp !== null) modifier += `.padding(${dp})`;
+      if (align) {
+        if (isColumn) {
+          modifier += `.align(${composeAlignmentHorizontal(align.value)})`;
+        } else {
+          modifier += `.align(${composeAlignmentVertical(align.value)})`;
+        }
       }
-      if (margin) {
-        const dp = toDpValue(margin.value);
-        if (dp !== null) modifier += `.padding(${dp})`;  // Workaround
-      }
-      if (width) modifier += `.width(${toDpValue(width.value) ? toDpValue(width.value) + '.dp' : '100%'})`;
-      if (height) modifier += `.height(${toDpValue(height.value) ? toDpValue(height.value) + '.dp' : '100%'})`;
+      if (gap) modifier += `.spacedBy(${toDpValue(gap.value)}.dp)`;
+      if (padding) modifier += `.padding(${toDpValue(padding.value)}.dp)`;
+      if (margin) modifier += `.padding(${toDpValue(margin.value)}.dp)`;
+      if (width) modifier += `.width(${toDpValue(width.value)}.dp)`;
+      if (height) modifier += `.height(${toDpValue(height.value)}.dp)`;
       if (bgColor) modifier += `.background(${toComposeColor(bgColor.value)})`;
-      if (borderRadius) modifier += `.clip(RoundedCornerShape(${toDpValue(borderRadius.value) ? toDpValue(borderRadius.value) + '.dp' : '8.dp'}))`;
+      if (borderRadius) modifier += `.clip(RoundedCornerShape(${toDpValue(borderRadius.value)}.dp))`;
 
-      emit('Column(modifier = ' + modifier + ') {');
+      if (modifier !== 'Modifier') {
+        emit(`modifier = ${modifier},`);
+      }
+
+      emit('children: [');
       depth++;
       generateChildren(node);
       depth--;
-      emit('}');
-    } else {
-      generateChildren(node);
+      emit('],');
+      depth--;
+      emit(')');
+      depth--;
+      return;
     }
-    depth--;
+
+    if (hasDecor) {
+      depth++;
+      emit('Box(');
+      depth++;
+
+      let modifier = 'Modifier';
+      if (width) modifier += `.width(${toDpValue(width.value)}.dp)`;
+      if (height) modifier += `.height(${toDpValue(height.value)}.dp)`;
+      if (padding) modifier += `.padding(${toDpValue(padding.value)}.dp)`;
+      if (margin) modifier += `.padding(${toDpValue(margin.value)}.dp)`;
+      if (bgColor) modifier += `.background(${toComposeColor(bgColor.value)})`;
+      if (borderRadius) modifier += `.clip(RoundedCornerShape(${toDpValue(borderRadius.value)}.dp))`;
+
+      if (modifier !== 'Modifier') {
+        emit(`modifier = ${modifier},`);
+      }
+
+      if (hasChildren) {
+        emit('contentAlignment = Alignment.TopStart,');
+        emit('children: [');
+        depth++;
+        generateChildren(node);
+        depth--;
+        emit('],');
+      }
+
+      depth--;
+      emit(')');
+      depth--;
+    } else {
+      depth++;
+      generateChildren(node);
+      depth--;
+    }
+  }
+
+  function generateChildren(node: ASTNode) {
+    if (!node.children) return;
+    for (const child of node.children) {
+      generateNode(child);
+    }
   }
 
   function generateHeading(node: ASTNode, tag: string, style: CSSDeclaration[]) {
@@ -292,9 +354,12 @@ export function generateCompose(
     depth++;
     emit(`model = "${escapeKotlin(attrs.src || '')}",`);
     emit('contentDescription = null,');
-    emit('modifier = Modifier');
-    if (width) emit(`.width(${toDpValue(width.value) ? toDpValue(width.value) + '.dp' : '100%'})`);
-    if (height) emit(`.height(${toDpValue(height.value) ? toDpValue(height.value) + '.dp' : '100%'})`);
+    if (width != null || height != null) {
+      let modifier = 'Modifier';
+      if (width) modifier += `.width(${toDpValue(width.value)}.dp)`;
+      if (height) modifier += `.height(${toDpValue(height.value)}.dp)`;
+      emit(`modifier = ${modifier},`);
+    }
     depth--;
     emit(')');
     depth--;
@@ -309,7 +374,7 @@ export function generateCompose(
     emit('Button(');
     depth++;
     emit('onClick = { /* Button: ' + escapeKotlin(getNodeText(node)) + ' */ },');
-    if (bgColor || borderRadius) {
+    if (bgColor != null || borderRadius != null) {
       emit('colors = ButtonDefaults.buttonColors(');
       depth++;
       if (bgColor) emit(`containerColor = ${toComposeColor(bgColor.value)},`);
@@ -358,13 +423,13 @@ export function generateCompose(
     depth--;
   }
 
-  function generateList(node: ASTNode, _style: CSSDeclaration[]) {
+  function generateList(node: ASTNode, style: CSSDeclaration[]) {
     depth++;
     emit('Column(modifier = Modifier.fillMaxWidth()) {');
     depth++;
     for (const child of node.children || []) {
       if (child.type === 'element' && child.tagName === 'li') {
-        generateListItem(child, []);
+        generateListItem(child, style);
       }
     }
     depth--;
@@ -391,8 +456,7 @@ export function generateCompose(
 
   function generateItalic(node: ASTNode) {
     depth++;
-    // Compose doesn't have italic directly on Text, use fontStyle = FontStyle.Italic
-    emit(`Text(text = "${escapeKotlin(getNodeText(node))}", fontSize = 14.sp)`);
+    emit(`Text(text = "${escapeKotlin(getNodeText(node))}", fontStyle = FontStyle.Italic)`);
     depth--;
   }
 
@@ -409,13 +473,6 @@ export function generateCompose(
     depth--;
     emit('}');
     depth--;
-  }
-
-  function generateChildren(node: ASTNode) {
-    if (!node.children) return;
-    for (const child of node.children) {
-      generateNode(child);
-    }
   }
 
   logger.info('ComposeGenerator', `Generated Compose code (${buf.length} lines)`);
@@ -446,6 +503,24 @@ function toDpValue(value: string): number | null {
   const num = parseFloat(value);
   if (isNaN(num)) return null;
   return num;
+}
+
+function composeAlignmentHorizontal(value: string): string {
+  const v = value.toLowerCase();
+  if (v === 'center') return 'Alignment.CenterHorizontally';
+  if (v === 'flex-start' || v === 'start') return 'Alignment.Start';
+  if (v === 'flex-end' || v === 'end') return 'Alignment.End';
+  if (v === 'stretch') return 'Alignment.CenterHorizontally';
+  return 'Alignment.Start';
+}
+
+function composeAlignmentVertical(value: string): string {
+  const v = value.toLowerCase();
+  if (v === 'center') return 'Alignment.CenterVertically';
+  if (v === 'flex-start' || v === 'start') return 'Alignment.Top';
+  if (v === 'flex-end' || v === 'end') return 'Alignment.Bottom';
+  if (v === 'stretch') return 'Alignment.CenterVertically';
+  return 'Alignment.Top';
 }
 
 function toComposeColor(value: string): string {

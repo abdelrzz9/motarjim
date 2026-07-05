@@ -15,6 +15,7 @@ fn make_text_node(id: u32, text: &str) -> IrNode {
         computed_style: ComputedStyle::default(),
         children: smallvec::smallvec![],
         parent: None,
+        text: None,
     }
 }
 
@@ -34,6 +35,7 @@ fn make_container(
         computed_style: ComputedStyle::default(),
         children,
         parent,
+        text: None,
     }
 }
 

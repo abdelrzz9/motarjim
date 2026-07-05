@@ -6,7 +6,7 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, CompilerCacheEntry>();
 
 function cacheKey(request: CompileRequest): string {
-  return `${request.platform}:${request.minify ?? false}:${request.html.length}:${request.html}:${request.css ?? ''}`;
+  return `${request.platform}:${request.minify ?? false}:${request.html.length}:${request.html}:${request.css ?? ''}:${request.js ?? ''}`;
 }
 
 function isExpired(entry: CompilerCacheEntry): boolean {

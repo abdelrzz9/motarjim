@@ -222,12 +222,13 @@ impl SwiftUIGenerator {
     }
 
     /// Emits a Text view.
-    fn emit_text(&self, _tree: &IrTree, _node: &IrNode, w: &mut CodeWriter) {
-        w.write_line("Text(\"Text content\")");
+    fn emit_text(&self, tree: &IrTree, node: &IrNode, w: &mut CodeWriter) {
+        let text = self.collect_text(tree, node);
+        w.write_line(&format!("Text(\"{text}\")"));
     }
 
     /// Emits a heading as styled Text.
-    fn emit_heading(&self, _tree: &IrTree, _node: &IrNode, level: u32, w: &mut CodeWriter) {
+    fn emit_heading(&self, tree: &IrTree, node: &IrNode, level: u32, w: &mut CodeWriter) {
         let font = match level {
             1 => "largeTitle",
             2 => "title",
@@ -236,7 +237,29 @@ impl SwiftUIGenerator {
             5 => "headline",
             _ => "body",
         };
-        w.write_line(&format!("Text(\"Heading {level}\").font(.{font}).bold()"));
+        let text = self.collect_text(tree, node);
+        w.write_line(&format!("Text(\"{text}\").font(.{font}).bold()"));
+    }
+
+    /// Collects text content from a node and its text children.
+    fn collect_text(&self, tree: &IrTree, node: &IrNode) -> String {
+        if let Some(ref t) = node.text {
+            let trimmed = t.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+        for child_id in &node.children {
+            if let Some(child) = tree.nodes.iter().find(|n| n.id == *child_id) {
+                if let Some(ref t) = child.text {
+                    let trimmed = t.trim();
+                    if !trimmed.is_empty() {
+                        return trimmed.to_string();
+                    }
+                }
+            }
+        }
+        "text".to_string()
     }
 
     /// Emits an Image view.

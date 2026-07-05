@@ -23,6 +23,7 @@ fn make_node(
         computed_style: ComputedStyle::default(),
         children: children.into_iter().map(NodeId).collect(),
         parent: parent.map(NodeId),
+        text: None,
     }
 }
 

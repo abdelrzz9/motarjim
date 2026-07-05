@@ -2,6 +2,9 @@ import SwiftUI
 
 struct GeneratedPage: View {
     var body: some View {
-        Text("Text content")
+        VStack {
+            Text("Text")
+            Text("Text")
+        }
     }
 }

@@ -24,6 +24,7 @@ fn make_node(
         computed_style: ComputedStyle::default(),
         children: children.into_iter().map(NodeId).collect(),
         parent: parent.map(NodeId),
+        text: None,
     }
 }
 
@@ -64,7 +65,7 @@ fn test_root_with_text() {
     let gen = SwiftUIGenerator::new();
     let output = gen.generate(&tree);
     assert!(output.contains("struct GeneratedPage: View"));
-    assert!(output.contains("Text(\"Text content\")"));
+    assert!(output.contains("Text(\"text\")"));
 }
 
 #[test]
@@ -134,7 +135,7 @@ fn test_heading_view() {
     );
     let gen = SwiftUIGenerator::new();
     let output = gen.generate(&tree);
-    assert!(output.contains("Heading 1"));
+    assert!(output.contains("Text(\"text\")"));
     assert!(output.contains("largeTitle"));
 }
 
@@ -205,5 +206,5 @@ fn test_card_with_content() {
     let gen = SwiftUIGenerator::new();
     let output = gen.generate(&tree);
     assert!(output.contains(".cornerRadius(12)"));
-    assert!(output.contains("Heading 2"));
+    assert!(output.contains("Text(\"text\")"));
 }

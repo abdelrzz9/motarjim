@@ -4,13 +4,20 @@ use crate::*;
 
 /// Returns the text content of an IR node that has [`SemanticIr::Text`] role.
 ///
-/// Looks for `"text"`, `"data"`, or `"content"` properties in Flutter, Compose,
-/// and `SwiftUI` target variants. For `Generic` targets the node name is returned
-/// when it is not `"Text"`.
+/// Checks the node's `text` field first, then falls back to looking for
+/// `"text"`, `"data"`, or `"content"` properties in Flutter, Compose,
+/// and `SwiftUI` target variants. For `Generic` targets the node name is
+/// returned when it is not `"Text"`.
 #[must_use]
 pub(crate) fn get_text_content(node: &IrNode) -> Option<String> {
     if !matches!(node.semantic, SemanticIr::Text) {
         return None;
+    }
+    if let Some(ref t) = node.text {
+        let trimmed = t.trim();
+        if !trimmed.is_empty() {
+            return Some(trimmed.to_string());
+        }
     }
     match &node.target {
         TargetIr::Flutter { properties, .. }
@@ -29,8 +36,9 @@ pub(crate) fn get_text_content(node: &IrNode) -> Option<String> {
     }
 }
 
-/// Sets the text content of an IR node by updating its target properties.
+/// Sets the text content of an IR node by updating its `text` field and target properties.
 pub(crate) fn set_text_content(node: &mut IrNode, text: String) {
+    node.text = Some(text.clone());
     match &mut node.target {
         TargetIr::Flutter { properties, .. }
         | TargetIr::Compose { properties, .. }

@@ -38,6 +38,7 @@ export interface Diagnostic {
 export interface CompileRequest {
   html: string;
   css?: string;
+  js?: string;
   platform: Platform;
   minify?: boolean;
 }
