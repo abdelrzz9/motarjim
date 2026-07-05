@@ -903,6 +903,7 @@ dependencies = [
  "motarjim-parser",
  "motarjim-profiling",
  "motarjim-selectors",
+ "motarjim-session",
  "motarjim-span",
  "rayon",
  "smol_str",
@@ -1149,6 +1150,19 @@ dependencies = [
  "serde_json",
  "smallvec",
  "smol_str",
+]
+
+[[package]]
+name = "motarjim-session"
+version = "0.1.0"
+dependencies = [
+ "motarjim-cache",
+ "motarjim-config",
+ "motarjim-diag",
+ "motarjim-fs",
+ "motarjim-incremental",
+ "motarjim-profiling",
+ "motarjim-span",
 ]
 
 [[package]]

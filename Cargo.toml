@@ -31,6 +31,7 @@ members = [
     "crates/motarjim-ffi",
     "crates/motarjim-test-utils",
     "crates/motarjim-wasm",
+    "crates/motarjim-session",
     "xtask",
 ]
 
@@ -69,6 +70,7 @@ motarjim-ast-html = { path = "crates/motarjim-ast-html", version = "0.1.0" }
 motarjim-ast-css = { path = "crates/motarjim-ast-css", version = "0.1.0" }
 motarjim-ast-ir = { path = "crates/motarjim-ast-ir", version = "0.1.0" }
 motarjim-errors = { path = "crates/motarjim-errors", version = "0.1.0" }
+motarjim-session = { path = "crates/motarjim-session", version = "0.1.0" }
 motarjim-span = { path = "crates/motarjim-span", version = "0.1.0" }
 wasm-bindgen = "0.2"
 js-sys = "0.3"
