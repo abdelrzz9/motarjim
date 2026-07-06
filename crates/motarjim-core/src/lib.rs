@@ -49,7 +49,9 @@ use motarjim_gen_swiftui::SwiftUIGenerator;
 use motarjim_incremental::IncrementalEngine;
 use motarjim_ir::IrBuilder;
 use motarjim_optimizer::{register_default_passes, PassManager};
-use motarjim_parser::{CssParser, HtmlParser};
+use motarjim_html::ast as html_ast;
+use motarjim_html::HtmlParser as NewHtmlParser;
+use motarjim_parser::CssParser;
 use motarjim_profiling::ProfilingSession;
 
 #[cfg(feature = "plugin-system")]
@@ -243,16 +245,14 @@ impl Compiler {
             source: input.to_string(),
         });
         let mut html_timer = profiling.start_phase("parse_html");
-        let mut html_parser = HtmlParser::new(input);
-        let ast = match html_parser.parse() {
-            Ok(doc) => {
-                #[cfg(feature = "events")]
-                self.emit_event(event::CompilerEvent::AfterParse {
-                    result: Ok(doc.clone()),
-                });
-                doc
-            }
-            Err(diags) => {
+        let tree_doc = match NewHtmlParser::parse(input) {
+            Ok(doc) => doc,
+            Err(e) => {
+                let diags = vec![Diagnostic::new(
+                    Severity::Error,
+                    motarjim_diag::codes::PARSER_UNEXPECTED_TOKEN,
+                    e.message,
+                )];
                 #[cfg(feature = "events")]
                 self.emit_event(event::CompilerEvent::AfterParse {
                     result: Err(diags.clone()),
@@ -260,6 +260,11 @@ impl Compiler {
                 return Err(diags);
             }
         };
+        let ast = tree_doc_to_arena(&tree_doc);
+        #[cfg(feature = "events")]
+        self.emit_event(event::CompilerEvent::AfterParse {
+            result: Ok(ast.clone()),
+        });
         profiling.record_phase("parse_html", html_timer.stop());
 
         #[cfg(feature = "cancellation")]
@@ -606,6 +611,115 @@ fn generate_for_platform(ir: &IrTree, platform: OutputFormat, _minify: bool) -> 
     }
 }
 
+/// Convert a tree-based AST from motarjim-html into an arena-based Document for the pipeline.
+fn tree_doc_to_arena(tree_doc: &html_ast::Document) -> Document {
+    let mut raw_nodes: Vec<(motarjim_ast::NodeId, motarjim_ast::HtmlNode)> = Vec::new();
+    let root_id = NodeId(0);
+    let mut unsorted_root = motarjim_ast::HtmlNode {
+        id: root_id,
+        node_type: motarjim_ast::NodeType::Document,
+        element: None,
+        value: None,
+        children: Default::default(),
+        parent: None,
+        depth: 0,
+        document_type: None,
+    };
+    let mut next_id: u32 = 1;
+    let mut child_ids: Vec<motarjim_ast::NodeId> = Vec::new();
+    for child in &tree_doc.children {
+        child_ids.push(convert_node(child, root_id, 1, &mut raw_nodes, &mut next_id));
+    }
+    unsorted_root.children.extend(child_ids);
+    raw_nodes.push((root_id, unsorted_root));
+    raw_nodes.sort_by_key(|(id, _)| id.0);
+    let nodes: Vec<motarjim_ast::HtmlNode> = raw_nodes.into_iter().map(|(_, node)| node).collect();
+    Document { nodes, root_id }
+}
+
+fn convert_node(
+    tree_node: &html_ast::Node,
+    parent_id: motarjim_ast::NodeId,
+    depth: u32,
+    nodes: &mut Vec<(motarjim_ast::NodeId, motarjim_ast::HtmlNode)>,
+    next_id: &mut u32,
+) -> motarjim_ast::NodeId {
+    let id = NodeId(*next_id);
+    *next_id += 1;
+
+    let mut child_ids: Vec<motarjim_ast::NodeId> = Vec::new();
+    for child in &tree_node.children {
+        child_ids.push(convert_node(child, id, depth + 1, nodes, next_id));
+    }
+
+    let (node_type, element, value, document_type) = match &tree_node.kind {
+        html_ast::NodeKind::Element(data) => {
+            let element = convert_element(data);
+            (motarjim_ast::NodeType::Element, Some(element), None, None)
+        }
+        html_ast::NodeKind::Text(data) => {
+            (motarjim_ast::NodeType::Text, None, Some(data.value.clone()), None)
+        }
+        html_ast::NodeKind::Comment(data) => {
+            (motarjim_ast::NodeType::Comment, None, Some(data.value.clone()), None)
+        }
+        html_ast::NodeKind::Doctype(data) => {
+            let doctype = motarjim_ast::DocumentTypeNode {
+                name: data.name.clone(),
+                public_id: data.public_id.clone(),
+                system_id: data.system_id.clone(),
+            };
+            (motarjim_ast::NodeType::DocumentType, None, None, Some(doctype))
+        }
+        html_ast::NodeKind::ProcessingInstruction(data) => {
+            // Represent as a Comment node for pipeline compatibility
+            let value = format!("<?{} {}>", data.target, data.data);
+            (motarjim_ast::NodeType::Comment, None, Some(value), None)
+        }
+    };
+
+    let html_node = motarjim_ast::HtmlNode {
+        id,
+        node_type,
+        element,
+        value,
+        children: child_ids.into(),
+        parent: Some(parent_id),
+        depth,
+        document_type,
+    };
+    nodes.push((id, html_node));
+    id
+}
+
+fn convert_element(data: &html_ast::ElementData) -> motarjim_ast::Element {
+    let mut attrs: Vec<motarjim_ast::Attribute> = Vec::new();
+    let mut id: Option<smol_str::SmolStr> = None;
+    let mut classes: Vec<smol_str::SmolStr> = Vec::new();
+
+    for attr in &data.attributes {
+        let name = attr.name.clone();
+        let value = attr.value.clone();
+        attrs.push(motarjim_ast::Attribute { name: name.clone(), value: value.clone() });
+        if name == "id" {
+            id = Some(value.clone());
+        }
+        if name == "class" {
+            classes.extend(value.split_whitespace().map(smol_str::SmolStr::new));
+        }
+    }
+
+    let namespace = data.namespace.clone();
+
+    motarjim_ast::Element {
+        tag_name: data.tag_name.clone(),
+        attributes: attrs.into(),
+        id,
+        classes: classes.into(),
+        namespace,
+    }
+}
+
 /// A pipeline that exposes individual compilation phases for advanced usage.
 #[derive(Debug)]
 pub struct Pipeline<'a> {
@@ -625,8 +739,14 @@ impl<'a> Pipeline<'a> {
     /// # Errors
     /// Returns diagnostics if parsing fails.
     pub fn parse_html(&self, input: &str) -> Result<Document, Vec<Diagnostic>> {
-        let mut parser = HtmlParser::new(input);
-        parser.parse()
+        let tree_doc = NewHtmlParser::parse(input).map_err(|e| {
+            vec![Diagnostic::new(
+                Severity::Error,
+                motarjim_diag::codes::PARSER_UNEXPECTED_TOKEN,
+                e.message,
+            )]
+        })?;
+        Ok(tree_doc_to_arena(&tree_doc))
     }
 
     /// Parse CSS input into a stylesheet.
