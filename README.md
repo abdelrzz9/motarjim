@@ -21,7 +21,7 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/motarjim/motarjim.git
+git clone https://github.com/abdelrzz9/motarjim.git
 cd motarjim
 cargo build --release -p motarjim-cli
 
