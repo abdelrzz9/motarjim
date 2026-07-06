@@ -1,0 +1,17 @@
+[package]
+name = "motarjim-html"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "HTML5 parser for Motarjim compiler — wraps Servo's html5ever"
+
+[lints]
+workspace = true
+
+[dependencies]
+html5ever = "0.39"
+markup5ever_rcdom = "0.39"
+smol_str.workspace = true
+
+[dev-dependencies]
+insta.workspace = true

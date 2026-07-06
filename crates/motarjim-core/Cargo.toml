@@ -11,6 +11,7 @@ motarjim-ast-html = { workspace = true }
 motarjim-diag = { workspace = true }
 motarjim-span = { workspace = true }
 motarjim-lexer = { workspace = true }
+motarjim-html = { workspace = true }
 motarjim-parser = { workspace = true }
 motarjim-css = { workspace = true }
 motarjim-selectors = { workspace = true }
@@ -29,6 +30,7 @@ motarjim-session = { workspace = true }
 dashmap = { version = "5", optional = true }
 rayon = { workspace = true, optional = true }
 wasm-bindgen = { workspace = true, optional = true }
+smallvec = { workspace = true }
 smol_str = { workspace = true }
 uuid = { workspace = true }
 tracing = { workspace = true }

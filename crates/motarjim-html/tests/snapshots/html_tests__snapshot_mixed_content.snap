@@ -1,0 +1,20 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<p>Hello <b>world</b> and <i>everyone</i></p>\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <p >
+      Hello
+      <b >
+        world
+      </b>
+      and
+      <i >
+        everyone
+      </i>
+    </p>
+  </body>
+</html>

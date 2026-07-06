@@ -1,0 +1,13 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<style>body { color: red; }</style>\")"
+---
+<html >
+  <head >
+    <style >
+      body { color: red; }
+    </style>
+  </head>
+  <body >
+  </body>
+</html>

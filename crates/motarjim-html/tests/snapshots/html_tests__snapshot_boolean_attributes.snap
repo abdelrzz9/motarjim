@@ -1,0 +1,12 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<input disabled readonly>\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <input disabled="" readonly="">
+    </input>
+  </body>
+</html>

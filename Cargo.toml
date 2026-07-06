@@ -10,6 +10,7 @@ members = [
     "crates/motarjim-errors",
     "crates/motarjim-span",
     "crates/motarjim-lexer",
+    "crates/motarjim-html",
     "crates/motarjim-parser",
     "crates/motarjim-css",
     "crates/motarjim-selectors",
@@ -66,6 +67,7 @@ motarjim-ffi = { path = "crates/motarjim-ffi", version = "0.1.0" }
 motarjim-cli = { path = "crates/motarjim-cli", version = "0.1.0" }
 motarjim-lsp = { path = "crates/motarjim-lsp", version = "0.1.0" }
 motarjim-wasm = { path = "crates/motarjim-wasm", version = "0.1.0" }
+motarjim-html = { path = "crates/motarjim-html", version = "0.1.0" }
 motarjim-ast-html = { path = "crates/motarjim-ast-html", version = "0.1.0" }
 motarjim-ast-css = { path = "crates/motarjim-ast-css", version = "0.1.0" }
 motarjim-ast-ir = { path = "crates/motarjim-ast-ir", version = "0.1.0" }

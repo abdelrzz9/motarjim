@@ -1,0 +1,23 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<div><div><div><ul><li><span>deep</span></li></ul></div></div></div>\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <div >
+      <div >
+        <div >
+          <ul >
+            <li >
+              <span >
+                deep
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
