@@ -1,0 +1,16 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<br><hr><img src='test.png'>\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <br >
+    </br>
+    <hr >
+    </hr>
+    <img src="test.png">
+    </img>
+  </body>
+</html>

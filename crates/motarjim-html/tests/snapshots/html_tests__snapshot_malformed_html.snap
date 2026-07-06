@@ -1,0 +1,15 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<div><span>missing end tags\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <div >
+      <span >
+        missing end tags
+      </span>
+    </div>
+  </body>
+</html>

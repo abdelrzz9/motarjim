@@ -1,0 +1,13 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<script>alert('hello');</script>\")"
+---
+<html >
+  <head >
+    <script >
+      alert('hello');
+    </script>
+  </head>
+  <body >
+  </body>
+</html>

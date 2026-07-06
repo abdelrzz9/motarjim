@@ -1,0 +1,13 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<div class='container' id='main' data-test='value'>Content</div>\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <div class="container" id="main" data-test="value">
+      Content
+    </div>
+  </body>
+</html>

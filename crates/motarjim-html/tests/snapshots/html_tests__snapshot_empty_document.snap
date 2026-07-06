@@ -1,0 +1,10 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+  </body>
+</html>

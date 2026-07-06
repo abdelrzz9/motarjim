@@ -1,0 +1,14 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<!-- comment --><p>text</p>\")"
+---
+<!--  comment  -->
+<html >
+  <head >
+  </head>
+  <body >
+    <p >
+      text
+    </p>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+---
+source: crates/motarjim-html/tests/html_tests.rs
+expression: "debug_html(\"<div class='a' id='b' data-x='1' data-y='2' data-z='3' aria-label='test' role='button' tabindex='0'>content</div>\")"
+---
+<html >
+  <head >
+  </head>
+  <body >
+    <div class="a" id="b" data-x="1" data-y="2" data-z="3" aria-label="test" role="button" tabindex="0">
+      content
+    </div>
+  </body>
+</html>
