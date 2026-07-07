@@ -5,17 +5,70 @@
 
 use smol_str::SmolStr;
 
+/// A wrapper around `f64` that implements `Eq`, `Hash`, and `Ord` by treating
+/// all NaN values as equal and using total ordering.
+///
+/// This is a simplified version of `ordered_float::OrderedFloat` without the
+/// external dependency.
+#[derive(Debug, Clone, Copy)]
+pub struct CssNumber(pub f64);
+
+impl PartialEq for CssNumber {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_bits() == other.0.to_bits()
+    }
+}
+
+impl Eq for CssNumber {}
+
+impl std::hash::Hash for CssNumber {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+    }
+}
+
+impl PartialOrd for CssNumber {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for CssNumber {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.to_bits().cmp(&other.0.to_bits())
+    }
+}
+
+impl From<f64> for CssNumber {
+    fn from(v: f64) -> Self {
+        Self(v)
+    }
+}
+
+impl From<CssNumber> for f64 {
+    fn from(v: CssNumber) -> Self {
+        v.0
+    }
+}
+
+impl std::fmt::Display for CssNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// A parsed CSS property value.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub enum CssValue {
     /// A keyword value (e.g. `red`, `block`, `flex`).
     Keyword(SmolStr),
     /// A numeric value (e.g. `1`, `0.5`).
-    Number(f64),
+    Number(CssNumber),
     /// A length value with a unit (e.g. `16px`, `2em`).
-    Length(f64, CssUnit),
+    Length(CssNumber, CssUnit),
     /// A percentage value (e.g. `50%`).
-    Percentage(f64),
+    Percentage(CssNumber),
     /// A color value.
     Color {
         /// Red channel (0–255).
@@ -25,7 +78,7 @@ pub enum CssValue {
         /// Blue channel (0–255).
         b: u8,
         /// Alpha channel (0.0–1.0).
-        a: f64,
+        a: CssNumber,
         /// The color space (e.g. `"srgb"`, `"display-p3"`).
         color_space: SmolStr,
     },
@@ -56,7 +109,8 @@ pub enum CssValue {
 }
 
 /// A CSS function call with name and arguments.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub struct CssFunction {
     /// The function name (e.g. `"calc"`, `"var"`, `"linear-gradient"`).
     pub name: SmolStr,
@@ -223,17 +277,17 @@ mod tests {
         let kw = CssValue::Keyword(SmolStr::new_inline("red"));
         assert_eq!(kw, CssValue::Keyword(SmolStr::new_inline("red")));
 
-        let num = CssValue::Number(42.0);
-        assert_eq!(num, CssValue::Number(42.0));
+        let num = CssValue::Number(CssNumber(42.0));
+        assert_eq!(num, CssValue::Number(CssNumber(42.0)));
 
-        let len = CssValue::Length(16.0, CssUnit::Px);
-        assert_eq!(len, CssValue::Length(16.0, CssUnit::Px));
+        let len = CssValue::Length(CssNumber(16.0), CssUnit::Px);
+        assert_eq!(len, CssValue::Length(CssNumber(16.0), CssUnit::Px));
 
         let color = CssValue::Color {
             r: 255,
             g: 0,
             b: 0,
-            a: 1.0,
+            a: CssNumber(1.0),
             color_space: SmolStr::new_inline("srgb"),
         };
         assert!(matches!(color, CssValue::Color { r: 255, .. }));
@@ -241,11 +295,18 @@ mod tests {
         let func = CssFunction {
             name: SmolStr::new_inline("calc"),
             arguments: vec![
-                CssValue::Percentage(100.0),
+                CssValue::Percentage(CssNumber(100.0)),
                 CssValue::Keyword(SmolStr::new_inline("-")),
-                CssValue::Length(20.0, CssUnit::Px),
+                CssValue::Length(CssNumber(20.0), CssUnit::Px),
             ],
         };
         assert!(matches!(func.name.as_str(), "calc"));
+    }
+
+    #[test]
+    fn test_css_number_eq() {
+        assert_eq!(CssNumber(1.0), CssNumber(1.0));
+        assert_eq!(CssNumber(f64::NAN), CssNumber(f64::NAN));
+        assert_ne!(CssNumber(1.0), CssNumber(2.0));
     }
 }

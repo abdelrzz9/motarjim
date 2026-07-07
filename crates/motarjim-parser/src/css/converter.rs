@@ -11,10 +11,10 @@ use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use motarjim_ast_css::{
-    AtRule, AttributeOperator, CharsetRule, Combinator, CssRule, CssStylesheet, Declaration,
-    FontFaceRule, ImportRule, Keyframe, KeyframesRule, MediaCondition, MediaQuery, MediaRule,
-    NamespaceRule, PageRule, PseudoClass, PseudoElement, Selector, SimpleSelector, StyleRule,
-    SupportsRule,
+    AtRule, AttributeOperator, CharsetRule, Combinator, CssFunction, CssNumber, CssRule,
+    CssStylesheet, CssUnit, CssValue, Declaration, FontFaceRule, ImportRule, Keyframe, KeyframesRule,
+    MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, PseudoClass, PseudoElement,
+    Selector, SimpleSelector, StyleRule, SupportsRule,
 };
 use motarjim_span::{SourceLocation, SourceSpan};
 use crate::css::error::CssError;
@@ -138,7 +138,7 @@ fn convert_style_rule(
     span: Option<SourceSpan>,
 ) -> Result<CssRule, CssError> {
     let selectors = convert_selectors(&rule.selectors)?;
-    let declarations = convert_declaration_block(&rule.declarations);
+    let declarations = convert_declaration_block(&rule.declarations, span);
 
     Ok(CssRule::Style(StyleRule {
         selectors,
@@ -589,42 +589,274 @@ fn parse_attribute_selector(frag: &str) -> Option<SimpleSelector> {
 }
 
 /// Converts a Lightning CSS `DeclarationBlock` into Motarjim declarations.
+///
+/// When `parent_span` is provided, it is used as the source location for
+/// each individual declaration. Lightning CSS does not expose per-declaration
+/// source locations through its public API, so the parent rule's span is used.
 fn convert_declaration_block(
     block: &lightningcss::declaration::DeclarationBlock<'_>,
+    parent_span: Option<SourceSpan>,
 ) -> SmallVec<[Declaration; 4]> {
     let mut result = SmallVec::new();
 
-    // Normal declarations
     for prop in &block.declarations {
         let property_name = prop.property_id().name().to_string();
         let value = prop
             .value_to_css_string(lightningcss::stylesheet::PrinterOptions::default())
             .unwrap_or_default();
+        let parsed = parse_css_value_str(&value);
 
         result.push(Declaration {
             property: SmolStr::from(property_name),
             value,
             important: false,
-            span: None,
+            parsed,
+            span: parent_span,
         });
     }
 
-    // Important declarations
     for prop in &block.important_declarations {
         let property_name = prop.property_id().name().to_string();
         let value = prop
             .value_to_css_string(lightningcss::stylesheet::PrinterOptions::default())
             .unwrap_or_default();
+        let parsed = parse_css_value_str(&value);
 
         result.push(Declaration {
             property: SmolStr::from(property_name),
             value,
             important: true,
-            span: None,
+            parsed,
+            span: parent_span,
         });
     }
 
     result
+}
+
+/// Attempts to parse a CSS value string into a structured `CssValue`.
+///
+/// This handles common patterns like keywords, numbers, lengths,
+/// percentages, colors, URLs, and function calls. Complex or unknown
+/// values return `None`, and the caller should fall back to the raw
+/// string representation.
+fn parse_css_value_str(s: &str) -> Option<CssValue> {
+    let s = s.trim();
+
+    if s.is_empty() {
+        return None;
+    }
+
+    // Preserve --custom-properties as-is (variable references)
+    if s.starts_with("--") {
+        return Some(CssValue::Keyword(SmolStr::from(s)));
+    }
+
+    // var(--x) as Variable
+    if let Some(inner) = s.strip_prefix("var(") {
+        if let Some(var_name) = inner.strip_suffix(')') {
+            return Some(CssValue::Variable(SmolStr::from(var_name.trim())));
+        }
+    }
+
+    // url(...)
+    if s.starts_with("url(") && s.ends_with(')') {
+        let inner = s[4..s.len() - 1].trim();
+        let inner = inner
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .or_else(|| inner.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')))
+            .unwrap_or(inner);
+        return Some(CssValue::Url(SmolStr::from(inner)));
+    }
+
+    // Quoted strings
+    if (s.starts_with('"') && s.ends_with('"'))
+        || (s.starts_with('\'') && s.ends_with('\''))
+    {
+        let inner = &s[1..s.len() - 1];
+        return Some(CssValue::CssString(SmolStr::from(inner)));
+    }
+
+    // Keywords
+    match s {
+        "none" => return Some(CssValue::None),
+        "auto" => return Some(CssValue::Auto),
+        "inherit" => return Some(CssValue::Inherit),
+        "initial" => return Some(CssValue::Initial),
+        "unset" => return Some(CssValue::Unset),
+        _ => {}
+    }
+
+    // Functions: calc(), min(), max(), clamp(), etc.
+    if let Some(paren_pos) = s.find('(') {
+        if s.ends_with(')') {
+            let name = &s[..paren_pos];
+            let args_str = &s[paren_pos + 1..s.len() - 1];
+            let args = args_str
+                .split(',')
+                .filter_map(|a| parse_css_value_str(a.trim()))
+                .collect::<Vec<_>>();
+
+            if !args.is_empty() || args_str.trim().is_empty() {
+                return Some(CssValue::Function(CssFunction {
+                    name: SmolStr::from(name),
+                    arguments: args,
+                }));
+            }
+        }
+    }
+
+    // Hex colors
+    if s.starts_with('#') {
+        let hex = &s[1..];
+        match hex.len() {
+            3 | 4 => {
+                let r = u8::from_str_radix(&hex[0..1], 16).unwrap_or(0) * 17;
+                let g = u8::from_str_radix(&hex[1..2], 16).unwrap_or(0) * 17;
+                let b = u8::from_str_radix(&hex[2..3], 16).unwrap_or(0) * 17;
+                let a = if hex.len() == 4 {
+                    u8::from_str_radix(&hex[3..4], 16).unwrap_or(15) as f64 / 15.0
+                } else {
+                    1.0
+                };
+                return Some(CssValue::Color {
+                    r, g, b,
+                    a: CssNumber(a),
+                    color_space: SmolStr::new_inline("srgb"),
+                });
+            }
+            6 | 8 => {
+                let r = u8::from_str_radix(&hex[0..2], 16).unwrap_or(0);
+                let g = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
+                let b = u8::from_str_radix(&hex[4..6], 16).unwrap_or(0);
+                let a = if hex.len() == 8 {
+                    u8::from_str_radix(&hex[6..8], 16).unwrap_or(255) as f64 / 255.0
+                } else {
+                    1.0
+                };
+                return Some(CssValue::Color {
+                    r, g, b,
+                    a: CssNumber(a),
+                    color_space: SmolStr::new_inline("srgb"),
+                });
+            }
+            _ => {}
+        }
+    }
+
+    // rgba(), rgb(), hsl(), hsla(), lab(), lch(), oklab(), oklch()
+    if s.starts_with("rgb") || s.starts_with("hsl") || s.starts_with("lab")
+        || s.starts_with("lch") || s.starts_with("oklab") || s.starts_with("oklch")
+    {
+        // Return as a function call
+        if let Some(paren) = s.find('(') {
+            if s.ends_with(')') {
+                let name = &s[..paren];
+                let args_str = &s[paren + 1..s.len() - 1];
+                let args = args_str
+                    .split(',')
+                    .filter_map(|a| parse_css_value_str(a.trim()))
+                    .collect::<Vec<_>>();
+                return Some(CssValue::Function(CssFunction {
+                    name: SmolStr::from(name),
+                    arguments: args,
+                }));
+            }
+        }
+    }
+
+    // Percentages
+    if let Some(rest) = s.strip_suffix('%') {
+        if let Ok(n) = rest.trim().parse::<f64>() {
+            return Some(CssValue::Percentage(CssNumber(n)));
+        }
+    }
+
+    // Lengths and numbers with units
+    if let Some(unit) = try_parse_unit(s) {
+        return Some(unit);
+    }
+
+    // Plain numbers (including negatives and decimals)
+    if let Ok(n) = s.parse::<f64>() {
+        return Some(CssValue::Number(CssNumber(n)));
+    }
+
+    // Named colors
+    if let Some(color) = named_color(s) {
+        return Some(color);
+    }
+
+    // Fallback: generic keyword/identifier
+    if s.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+        return Some(CssValue::Keyword(SmolStr::from(s)));
+    }
+
+    None
+}
+
+/// Attempts to parse a length or number-with-unit value.
+fn try_parse_unit(s: &str) -> Option<CssValue> {
+    const UNITS: &[&str] = &[
+        "px", "em", "rem", "vw", "vh", "vmin", "vmax", "deg", "rad",
+        "grad", "turn", "s", "ms", "fr", "ch", "ex", "cm", "mm", "in",
+        "pt", "pc", "lvw", "lvh", "svw", "svh", "dvw", "dvh",
+    ];
+
+    for unit_str in UNITS {
+        if let Some(num_str) = s.strip_suffix(unit_str) {
+            if !num_str.is_empty() {
+                if let Ok(n) = num_str.trim().parse::<f64>() {
+                    if let Ok(unit) = unit_str.parse::<CssUnit>() {
+                        return Some(CssValue::Length(CssNumber(n), unit));
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// Returns a `CssValue::Color` for the given named CSS color, if recognized.
+fn named_color(name: &str) -> Option<CssValue> {
+    let color = match name.to_ascii_lowercase().as_str() {
+        "black" => (0, 0, 0),
+        "silver" => (192, 192, 192),
+        "gray" => (128, 128, 128),
+        "white" => (255, 255, 255),
+        "maroon" => (128, 0, 0),
+        "red" => (255, 0, 0),
+        "purple" => (128, 0, 128),
+        "fuchsia" => (255, 0, 255),
+        "green" => (0, 128, 0),
+        "lime" => (0, 255, 0),
+        "olive" => (128, 128, 0),
+        "yellow" => (255, 255, 0),
+        "navy" => (0, 0, 128),
+        "blue" => (0, 0, 255),
+        "teal" => (0, 128, 128),
+        "aqua" => (0, 255, 255),
+        "orange" => (255, 165, 0),
+        "pink" => (255, 192, 203),
+        "coral" => (255, 127, 80),
+        "crimson" => (220, 20, 60),
+        "tomato" => (255, 99, 71),
+        "transparent" => (0, 0, 0),
+        _ => return None,
+    };
+    Some(CssValue::Color {
+        r: color.0,
+        g: color.1,
+        b: color.2,
+        a: if name.eq_ignore_ascii_case("transparent") {
+            CssNumber(0.0)
+        } else {
+            CssNumber(1.0)
+        },
+        color_space: SmolStr::new_inline("srgb"),
+    })
 }
 
 /// Converts a Lightning CSS media rule.
@@ -852,12 +1084,12 @@ fn convert_keyframes_rule(
             selectors.push(SmolStr::from(sel_str));
         }
 
-        let declarations = convert_declaration_block(&kf.declarations);
+        let declarations = convert_declaration_block(&kf.declarations, span);
 
         keyframes.push(Keyframe {
             selectors,
             declarations,
-            span: None,
+            span,
         });
     }
 
@@ -913,6 +1145,7 @@ fn parse_font_face_declaration(css_text: &str) -> Option<Declaration> {
             property: SmolStr::from(property),
             value,
             important,
+            parsed: None,
             span: None,
         })
     } else {
@@ -956,7 +1189,7 @@ fn convert_page_rule(
             SmolStr::from(format!("{:?}", pc).to_ascii_lowercase())
         })
     });
-    let declarations = convert_declaration_block(&rule.declarations);
+    let declarations = convert_declaration_block(&rule.declarations, span);
 
     Ok(CssRule::Page(PageRule {
         pseudo,

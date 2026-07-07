@@ -20,4 +20,4 @@ pub use stylesheet::{
     KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
     SupportsRule,
 };
-pub use value::{CssFunction, CssUnit, CssValue};
+pub use value::{CssFunction, CssNumber, CssUnit, CssValue};

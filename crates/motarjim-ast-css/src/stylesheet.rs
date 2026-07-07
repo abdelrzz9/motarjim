@@ -59,10 +59,13 @@ pub struct StyleRule {
 pub struct Declaration {
     /// The CSS property name.
     pub property: SmolStr,
-    /// The raw CSS value string.
+    /// The raw CSS value string (always present — fallback representation).
     pub value: String,
     /// Whether this declaration is marked `!important`.
     pub important: bool,
+    /// The parsed, structured value, if it could be resolved.
+    /// When `None`, the raw `value` string should be used.
+    pub parsed: Option<crate::value::CssValue>,
     /// The source location of this declaration.
     pub span: Option<SourceSpan>,
 }
@@ -244,6 +247,7 @@ mod tests {
             property: SmolStr::new_inline("color"),
             value: "red".to_string(),
             important: false,
+            parsed: None,
             span: None,
         };
         assert_eq!(decl.property.as_str(), "color");
@@ -254,6 +258,7 @@ mod tests {
             property: SmolStr::new_inline("color"),
             value: "blue".to_string(),
             important: true,
+            parsed: None,
             span: None,
         };
         assert!(imp.important);
@@ -316,6 +321,7 @@ mod tests {
                     property: SmolStr::new_inline("opacity"),
                     value: "0".to_string(),
                     important: false,
+                    parsed: None,
                     span: None,
                 }],
                 span: None,
