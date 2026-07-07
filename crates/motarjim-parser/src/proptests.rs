@@ -11,7 +11,7 @@ proptest! {
 
     #[test]
     fn css_parser_never_panics(s in "\\PC*") {
-        let mut parser = CssParser::new(&s);
+        let parser = CssParser::new(&s);
         let _ = parser.parse();
     }
 

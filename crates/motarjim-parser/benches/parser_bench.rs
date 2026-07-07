@@ -58,7 +58,7 @@ fn bench_parse_large_html(c: &mut Criterion) {
 fn bench_parse_css_small(c: &mut Criterion) {
     c.bench_function("parse_css_small", |b| {
         b.iter(|| {
-            let mut parser = CssParser::new(black_box(CSS_SMALL));
+            let parser = CssParser::new(black_box(CSS_SMALL));
             parser.parse()
         });
     });
@@ -67,7 +67,7 @@ fn bench_parse_css_small(c: &mut Criterion) {
 fn bench_parse_css_large(c: &mut Criterion) {
     c.bench_function("parse_css_large", |b| {
         b.iter(|| {
-            let mut parser = CssParser::new(black_box(CSS_LARGE));
+            let parser = CssParser::new(black_box(CSS_LARGE));
             parser.parse()
         });
     });

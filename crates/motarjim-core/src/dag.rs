@@ -553,7 +553,7 @@ impl CompilationDag {
         // ParseCss
         dag.add_node(CompilationNode::new(Phase::ParseCss, vec![], |ctx| {
             if let Some(ref css_source) = ctx.css_source {
-                let mut parser = motarjim_parser::CssParser::new(css_source);
+                let parser = motarjim_parser::CssParser::new(css_source);
                 let sheet = parser.parse()?;
                 Ok(PhaseOutput::Stylesheet(sheet))
             } else {

@@ -4,7 +4,7 @@ use motarjim_parser::CssParser;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
-        let mut parser = CssParser::new(s);
+        let parser = CssParser::new(s);
         let _ = parser.parse();
     }
 });

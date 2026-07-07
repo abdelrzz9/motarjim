@@ -17,9 +17,9 @@ pub use motarjim_ast_ir as ir;
 
 // Re-export all public types from sub-crates for convenience.
 pub use motarjim_ast_css::{
-    AtRule, CharsetRule, CssRule, CssStylesheet, Declaration, FontFaceRule, ImportRule, Keyframe,
-    KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
-    SupportsRule,
+    AtRule, CharsetRule, CssFunction, CssNumber, CssRule, CssStylesheet, CssUnit, CssValue, Declaration,
+    FontFaceRule, ImportRule, Keyframe, KeyframesRule, MediaCondition, MediaQuery, MediaRule,
+    NamespaceRule, PageRule, StyleRule, SupportsRule,
 };
 pub use motarjim_ast_css::{
     AttributeOperator, Combinator, PseudoClass, PseudoElement, Selector, SimpleSelector,

@@ -20,8 +20,10 @@ fn make_style_rule(selector_str: &str, decls: Vec<Declaration>) -> StyleRule {
         selectors: vec![Selector {
             simple_selectors: vec![simple],
             combinators: vec![],
+            span: None,
         }],
         declarations: decls.into(),
+        span: None,
     }
 }
 
@@ -34,6 +36,7 @@ fn decl(prop: &str, value: &str) -> Declaration {
         property: SmolStr::new(prop),
         value: value.to_string(),
         important: false,
+        span: None,
     }
 }
 
@@ -42,6 +45,7 @@ fn important_decl(prop: &str, value: &str) -> Declaration {
         property: SmolStr::new(prop),
         value: value.to_string(),
         important: true,
+        span: None,
     }
 }
 
@@ -93,16 +97,20 @@ fn test_specificity_id_wins_over_class() {
         selectors: vec![Selector {
             simple_selectors: vec![SimpleSelector::Id(SmolStr::new("main"))],
             combinators: vec![],
+            span: None,
         }],
         declarations: smallvec::smallvec![decl("color", "green")],
+        span: None,
     };
     // Class selector: .highlight
     let class_rule = StyleRule {
         selectors: vec![Selector {
             simple_selectors: vec![SimpleSelector::Class(SmolStr::new("highlight"))],
             combinators: vec![],
+            span: None,
         }],
         declarations: smallvec::smallvec![decl("color", "yellow")],
+        span: None,
     };
     // Note: style rule with class comes second (later source order),
     // but ID should still win due to higher specificity.
@@ -130,16 +138,20 @@ fn test_specificity_multiple_classes_vs_id() {
                 SimpleSelector::Class(SmolStr::new("b")),
             ],
             combinators: vec![],
+            span: None,
         }],
         declarations: smallvec::smallvec![decl("color", "purple")],
+        span: None,
     };
     // #id has specificity (1,0,0)
     let id_rule = StyleRule {
         selectors: vec![Selector {
             simple_selectors: vec![SimpleSelector::Id(SmolStr::new("id"))],
             combinators: vec![],
+            span: None,
         }],
         declarations: smallvec::smallvec![decl("color", "orange")],
+        span: None,
     };
     resolver.add_stylesheet(sheet(vec![
         CssRule::Style(class_rule),

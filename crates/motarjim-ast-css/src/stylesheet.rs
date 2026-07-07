@@ -3,6 +3,8 @@
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
+use motarjim_span::SourceSpan;
+
 /// A parsed CSS stylesheet.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
@@ -47,6 +49,8 @@ pub struct StyleRule {
     pub selectors: Vec<crate::selector::Selector>,
     /// The declarations in this rule.
     pub declarations: SmallVec<[Declaration; 4]>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A CSS declaration (a property-value pair).
@@ -55,10 +59,15 @@ pub struct StyleRule {
 pub struct Declaration {
     /// The CSS property name.
     pub property: SmolStr,
-    /// The raw CSS value string.
+    /// The raw CSS value string (always present — fallback representation).
     pub value: String,
     /// Whether this declaration is marked `!important`.
     pub important: bool,
+    /// The parsed, structured value, if it could be resolved.
+    /// When `None`, the raw `value` string should be used.
+    pub parsed: Option<crate::value::CssValue>,
+    /// The source location of this declaration.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@media` rule containing a media query and nested rules.
@@ -69,6 +78,8 @@ pub struct MediaRule {
     pub query: MediaQuery,
     /// The rules nested inside the `@media` block.
     pub rules: Vec<CssRule>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@font-face` rule defining a custom font.
@@ -77,6 +88,8 @@ pub struct MediaRule {
 pub struct FontFaceRule {
     /// The declarations inside the `@font-face` block.
     pub declarations: SmallVec<[Declaration; 4]>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@keyframes` rule defining an animation sequence.
@@ -87,6 +100,8 @@ pub struct KeyframesRule {
     pub name: SmolStr,
     /// The keyframe blocks in the animation.
     pub keyframes: Vec<Keyframe>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A single keyframe block within a `@keyframes` rule.
@@ -97,6 +112,8 @@ pub struct Keyframe {
     pub selectors: SmallVec<[SmolStr; 2]>,
     /// The declarations for this keyframe.
     pub declarations: SmallVec<[Declaration; 4]>,
+    /// The source location of this keyframe block.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@import` rule for importing an external stylesheet.
@@ -107,6 +124,8 @@ pub struct ImportRule {
     pub url: SmolStr,
     /// An optional media query restricting the import.
     pub media: Option<MediaQuery>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@charset` rule specifying the stylesheet character encoding.
@@ -115,6 +134,8 @@ pub struct ImportRule {
 pub struct CharsetRule {
     /// The character encoding name.
     pub encoding: SmolStr,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@namespace` rule declaring an XML namespace prefix.
@@ -125,6 +146,8 @@ pub struct NamespaceRule {
     pub prefix: Option<SmolStr>,
     /// The namespace URL.
     pub url: SmolStr,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@supports` rule for feature-conditional CSS.
@@ -135,6 +158,8 @@ pub struct SupportsRule {
     pub condition: String,
     /// The rules nested inside the `@supports` block.
     pub rules: Vec<CssRule>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A `@page` rule for paged media styling.
@@ -145,6 +170,8 @@ pub struct PageRule {
     pub pseudo: Option<SmolStr>,
     /// The declarations inside the `@page` block.
     pub declarations: SmallVec<[Declaration; 4]>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A generic at-rule that doesn't match a known type.
@@ -157,6 +184,8 @@ pub struct AtRule {
     pub prelude: String,
     /// The block content, if present.
     pub block: Option<String>,
+    /// The source location of this rule.
+    pub span: Option<SourceSpan>,
 }
 
 /// A parsed media query consisting of one or more conditions.
@@ -218,6 +247,8 @@ mod tests {
             property: SmolStr::new_inline("color"),
             value: "red".to_string(),
             important: false,
+            parsed: None,
+            span: None,
         };
         assert_eq!(decl.property.as_str(), "color");
         assert_eq!(decl.value, "red");
@@ -227,6 +258,8 @@ mod tests {
             property: SmolStr::new_inline("color"),
             value: "blue".to_string(),
             important: true,
+            parsed: None,
+            span: None,
         };
         assert!(imp.important);
     }
@@ -236,6 +269,7 @@ mod tests {
         let rule = StyleRule {
             selectors: Vec::new(),
             declarations: SmallVec::new(),
+            span: None,
         };
         assert!(rule.selectors.is_empty() && rule.declarations.is_empty());
     }
@@ -253,7 +287,8 @@ mod tests {
         assert!(matches!(
             CssRule::Style(StyleRule {
                 selectors: Vec::new(),
-                declarations: SmallVec::new()
+                declarations: SmallVec::new(),
+                span: None,
             }),
             CssRule::Style(_)
         ));
@@ -262,13 +297,15 @@ mod tests {
                 query: MediaQuery {
                     conditions: vec![MediaCondition::Screen]
                 },
-                rules: Vec::new()
+                rules: Vec::new(),
+                span: None,
             }),
             CssRule::Media(_)
         ));
         assert!(matches!(
             CssRule::FontFace(FontFaceRule {
-                declarations: SmallVec::new()
+                declarations: SmallVec::new(),
+                span: None,
             }),
             CssRule::FontFace(_)
         ));
@@ -284,8 +321,12 @@ mod tests {
                     property: SmolStr::new_inline("opacity"),
                     value: "0".to_string(),
                     important: false,
+                    parsed: None,
+                    span: None,
                 }],
+                span: None,
             }],
+            span: None,
         };
         assert_eq!(rule.name.as_str(), "fade-in");
         assert_eq!(rule.keyframes.len(), 1);
@@ -296,6 +337,7 @@ mod tests {
         let import = ImportRule {
             url: SmolStr::from("https://fonts.googleapis.com/css"),
             media: None,
+            span: None,
         };
         assert_eq!(import.url.as_str(), "https://fonts.googleapis.com/css");
         assert!(import.media.is_none());
@@ -307,6 +349,7 @@ mod tests {
             name: SmolStr::new_inline("viewport"),
             prelude: String::new(),
             block: Some("width=device-width".to_string()),
+            span: None,
         };
         assert_eq!(at.name.as_str(), "viewport");
         assert!(at.block.is_some());

@@ -26,13 +26,13 @@ fn main() {
     }
 
     let css = r".intro { color: blue; font-weight: bold; }";
-    let mut css_parser = CssParser::new(css);
+    let css_parser = CssParser::new(css);
     match css_parser.parse() {
         Ok(sheet) => {
             println!("\nCSS parsed successfully — {} rule(s)", sheet.rules.len());
         }
-        Err(diags) => {
-            for d in &diags {
+        Err(err) => {
+            for d in err.diagnostics() {
                 eprintln!("CSS error: {:?} — {}", d.code(), d.message());
             }
         }

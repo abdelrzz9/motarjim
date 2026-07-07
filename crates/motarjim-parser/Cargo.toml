@@ -3,7 +3,7 @@ name = "motarjim-parser"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Recursive descent HTML parser for Motarjim compiler"
+description = "HTML and CSS parser for Motarjim compiler"
 
 [dependencies]
 motarjim-diag = { workspace = true }
@@ -13,6 +13,7 @@ motarjim-lexer = { workspace = true }
 motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 smol_str = { workspace = true }
+lightningcss = "1.0.0-alpha.71"
 
 [dev-dependencies]
 criterion = { workspace = true }
