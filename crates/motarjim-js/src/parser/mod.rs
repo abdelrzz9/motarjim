@@ -3,15 +3,11 @@
 use motarjim_span::SourceSpan;
 
 use crate::ast::program::{Program, SourceType};
-use crate::ast::stmt::Statement;
 use crate::lexer::JsLexer;
 use crate::token::{JsToken, JsTokenKind};
 
 mod expr;
 mod stmt;
-
-pub use expr::*;
-pub use stmt::*;
 
 use crate::diagnostics::{JsDiagnostic, JsDiagnosticCode};
 
@@ -119,6 +115,7 @@ impl JsParser {
         }
     }
 
+    #[allow(dead_code)]
     fn expect_any(&mut self, kinds: &[JsTokenKind], what: &str) -> JsToken {
         if self.at_any(kinds) {
             self.advance()
@@ -154,6 +151,7 @@ impl JsParser {
         }
     }
 
+    #[allow(dead_code)]
     fn error(&mut self, message: impl Into<String>) {
         let msg = message.into();
         self.errors
@@ -181,11 +179,13 @@ impl JsParser {
         );
     }
 
+    #[allow(dead_code)]
     fn error_at(&mut self, span: SourceSpan, message: impl Into<String>) {
         let msg = message.into();
         self.errors.push(JsDiagnostic::parse_error(msg, span));
     }
 
+    #[allow(dead_code)]
     fn advance_if_semicolon(&mut self) {
         if self.at(JsTokenKind::Semicolon) {
             self.advance();

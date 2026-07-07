@@ -2,6 +2,7 @@
 
 use motarjim_span::SourceSpan;
 
+#[allow(dead_code)]
 pub trait Node {
     fn span(&self) -> SourceSpan;
 }

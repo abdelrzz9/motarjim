@@ -3,7 +3,6 @@
 use motarjim_span::SourceSpan;
 
 use crate::ast::expr::*;
-use crate::ast::lit::*;
 use crate::ast::pat::*;
 use crate::ast::stmt::*;
 use crate::diagnostics::JsDiagnosticCode;

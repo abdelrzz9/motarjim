@@ -77,8 +77,6 @@ pub enum MemberPatProp {
     Computed(Box<Expression>),
 }
 
-use crate::ast::expr::MemberProp;
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct DefaultPat {
     pub left: Pattern,

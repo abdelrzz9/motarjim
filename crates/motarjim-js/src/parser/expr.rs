@@ -857,7 +857,7 @@ impl JsParser {
         let mut props = Vec::new();
         while !self.at(JsTokenKind::RBrace) && !self.at(JsTokenKind::Eof) {
             let prop_start = self.cur().span;
-            let mut key = self.parse_prop_key();
+            let key = self.parse_prop_key();
             let shorthand;
             let computed = matches!(key, PropKey::Computed(_));
             if self.eat(JsTokenKind::Colon) {
@@ -1195,6 +1195,7 @@ fn skip_nested_template(inner: &str, mut i: usize) -> usize {
     i
 }
 
+#[allow(dead_code)]
 pub(crate) trait ShiftSpans {
     fn shift_spans(&mut self, delta: usize);
 }

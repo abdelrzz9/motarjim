@@ -1,7 +1,6 @@
 //! Visitor, VisitorMut, and Fold traits for AST traversal and transformation.
 
 use crate::ast::expr::*;
-use crate::ast::lit::*;
 use crate::ast::pat::*;
 use crate::ast::program::Program;
 use crate::ast::stmt::*;
@@ -749,7 +748,7 @@ pub fn walk_pattern_mut<V: VisitorMut + ?Sized>(visitor: &mut V, pat: &mut Patte
     }
 }
 
-pub fn walk_fold_program<F: Fold>(mut folder: &mut F, program: Program) -> Program {
+pub fn walk_fold_program<F: Fold>(folder: &mut F, program: Program) -> Program {
     Program {
         body: program
             .body
@@ -794,11 +793,11 @@ pub fn walk_fold_statement<F: Fold>(folder: &mut F, stmt: Statement) -> Statemen
     }
 }
 
-pub fn walk_fold_expression<F: Fold>(folder: &mut F, expr: Expression) -> Expression {
+pub fn walk_fold_expression<F: Fold>(_folder: &mut F, expr: Expression) -> Expression {
     expr
 }
 
-pub fn walk_fold_pattern<F: Fold>(folder: &mut F, pat: Pattern) -> Pattern {
+pub fn walk_fold_pattern<F: Fold>(_folder: &mut F, pat: Pattern) -> Pattern {
     pat
 }
 
