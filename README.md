@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>HTML/CSS/js → Native UI Code compiler</strong><br>
+  <strong>HTML/CSS → Native UI Code compiler</strong><br>
   Write once in HTML/CSS/js. Ship native code for every platform.
 </p>
 <p align="center">
