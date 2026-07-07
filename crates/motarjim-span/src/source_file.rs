@@ -3,7 +3,7 @@
 #![warn(clippy::all)]
 
 use crate::{SourceLocation, SourceSpan};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Represents a source file with path and content.
 #[derive(Debug, Clone, PartialEq, Eq)]

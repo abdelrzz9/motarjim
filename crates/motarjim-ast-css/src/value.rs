@@ -57,6 +57,88 @@ impl std::fmt::Display for CssNumber {
     }
 }
 
+#[cfg(feature = "serialize")]
+impl serde::Serialize for CssNumber {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serialize")]
+impl<'de> serde::Deserialize<'de> for CssNumber {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        f64::deserialize(deserializer).map(Self)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// CSS Units (defined before CssValue to satisfy derive macro ordering)
+// ---------------------------------------------------------------------------
+
+/// A CSS length unit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
+pub enum CssUnit {
+    /// Pixels.
+    Px,
+    /// Ems (relative to parent font size).
+    Em,
+    /// Rems (relative to root font size).
+    Rem,
+    /// Viewport width units.
+    Vw,
+    /// Viewport height units.
+    Vh,
+    /// Viewport minimum units.
+    Vmin,
+    /// Viewport maximum units.
+    Vmax,
+    /// Degrees (for angles).
+    Deg,
+    /// Radians (for angles).
+    Rad,
+    /// Gradians (for angles).
+    Grad,
+    /// Turns (for angles).
+    Turn,
+    /// Seconds (for time).
+    S,
+    /// Milliseconds (for time).
+    Ms,
+    /// Fractional units (CSS Grid).
+    Fr,
+    /// `ch` unit (advance measure of "0").
+    Ch,
+    /// `ex` unit (x-height of font).
+    Ex,
+    /// Centimeters.
+    Cm,
+    /// Millimeters.
+    Mm,
+    /// Inches.
+    In,
+    /// Points.
+    Pt,
+    /// Picas.
+    Pc,
+    /// Viewport width (large).
+    VwLarge,
+    /// Viewport height (large).
+    VhLarge,
+    /// Viewport width (small).
+    VwSmall,
+    /// Viewport height (small).
+    VhSmall,
+    /// Viewport width (dynamic).
+    VwDynamic,
+    /// Viewport height (dynamic).
+    VhDynamic,
+}
+
+// ---------------------------------------------------------------------------
+// CssValue — structured CSS property value
+// ---------------------------------------------------------------------------
+
 /// A parsed CSS property value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
@@ -116,65 +198,6 @@ pub struct CssFunction {
     pub name: SmolStr,
     /// The function arguments.
     pub arguments: Vec<CssValue>,
-}
-
-/// A CSS length unit.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum CssUnit {
-    /// Pixels.
-    Px,
-    /// Ems (relative to parent font size).
-    Em,
-    /// Rems (relative to root font size).
-    Rem,
-    /// Viewport width units.
-    Vw,
-    /// Viewport height units.
-    Vh,
-    /// Viewport minimum units.
-    Vmin,
-    /// Viewport maximum units.
-    Vmax,
-    /// Degrees (for angles).
-    Deg,
-    /// Radians (for angles).
-    Rad,
-    /// Gradians (for angles).
-    Grad,
-    /// Turns (for angles).
-    Turn,
-    /// Seconds (for time).
-    S,
-    /// Milliseconds (for time).
-    Ms,
-    /// Fractional units (CSS Grid).
-    Fr,
-    /// `ch` unit (advance measure of "0").
-    Ch,
-    /// `ex` unit (x-height of font).
-    Ex,
-    /// Centimeters.
-    Cm,
-    /// Millimeters.
-    Mm,
-    /// Inches.
-    In,
-    /// Points.
-    Pt,
-    /// Picas.
-    Pc,
-    /// Viewport width (large).
-    VwLarge,
-    /// Viewport height (large).
-    VhLarge,
-    /// Viewport width (small).
-    VwSmall,
-    /// Viewport height (small).
-    VhSmall,
-    /// Viewport width (dynamic).
-    VwDynamic,
-    /// Viewport height (dynamic).
-    VhDynamic,
 }
 
 impl std::fmt::Display for CssUnit {

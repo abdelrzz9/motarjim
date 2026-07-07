@@ -4,6 +4,8 @@
 //! that aren't caught by Lightning CSS (e.g. declaration ordering, duplicate
 //! selectors, or missing required properties in at-rules).
 
+#![allow(dead_code)]
+
 use motarjim_ast::css::{
     AtRule, CharsetRule, CssRule, CssStylesheet, FontFaceRule, ImportRule, KeyframesRule,
     NamespaceRule, PageRule, StyleRule,
