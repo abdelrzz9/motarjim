@@ -688,22 +688,48 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
         _ => {}
     }
 
-    // Functions: calc(), min(), max(), clamp(), etc.
+    // Functions: calc(), min(), max(), clamp(), var(), etc.
     if let Some(paren_pos) = s.find('(') {
         if s.ends_with(')') {
             let name = &s[..paren_pos];
-            let args_str = &s[paren_pos + 1..s.len() - 1];
+            let args_str = &s[paren_pos + 1..s.len() - 1].trim();
+
+            if args_str.is_empty() {
+                return Some(CssValue::Function(CssFunction {
+                    name: SmolStr::from(name),
+                    arguments: Vec::new(),
+                }));
+            }
+
+            // Try comma-separated arguments first
             let args = args_str
                 .split(',')
-                .filter_map(|a| parse_css_value_str(a.trim()))
+                .filter_map(|a| {
+                    let trimmed = a.trim();
+                    if trimmed.is_empty() {
+                        None
+                    } else {
+                        parse_css_value_str(trimmed)
+                    }
+                })
                 .collect::<Vec<_>>();
 
-            if !args.is_empty() || args_str.trim().is_empty() {
+            // If comma parsing produced results, use those; otherwise keep
+            // the raw expression as a single string argument for complex
+            // expressions like calc(100% - 20px) or translateX(10px).
+            if !args.is_empty() {
                 return Some(CssValue::Function(CssFunction {
                     name: SmolStr::from(name),
                     arguments: args,
                 }));
             }
+
+            // For complex expressions without commas, keep the whole
+            // argument string as a single function argument.
+            return Some(CssValue::Function(CssFunction {
+                name: SmolStr::from(name),
+                arguments: vec![CssValue::CssString(SmolStr::from(&args_str[..]))],
+            }));
         }
     }
 
@@ -1415,7 +1441,7 @@ mod converter_tests {
 
     #[test]
     fn test_parse_selector_descendant() {
-        let (sels, combs) = parse_selector_string("div span");
+        let (sels, _combs) = parse_selector_string("div span");
         assert_eq!(sels.len(), 2);
     }
 
@@ -1440,5 +1466,95 @@ mod converter_tests {
         let d = parse_font_face_declaration("src: url('font.woff2') !important").unwrap();
         assert_eq!(d.property.as_str(), "src");
         assert!(d.important);
+    }
+
+    #[test]
+    fn test_parse_css_value_keyword() {
+        let v = parse_css_value_str("block").unwrap();
+        assert!(matches!(v, CssValue::Keyword(k) if k.as_str() == "block"));
+    }
+
+    #[test]
+    fn test_parse_css_value_number() {
+        let v = parse_css_value_str("42").unwrap();
+        assert!(matches!(v, CssValue::Number(n) if n == CssNumber(42.0)));
+    }
+
+    #[test]
+    fn test_parse_css_value_length() {
+        let v = parse_css_value_str("16px").unwrap();
+        assert!(matches!(v, CssValue::Length(n, CssUnit::Px) if n == CssNumber(16.0)));
+    }
+
+    #[test]
+    fn test_parse_css_value_percentage() {
+        let v = parse_css_value_str("50%").unwrap();
+        assert!(matches!(v, CssValue::Percentage(n) if n == CssNumber(50.0)));
+    }
+
+    #[test]
+    fn test_parse_css_value_hex_color_6() {
+        let v = parse_css_value_str("#ff0000").unwrap();
+        assert!(matches!(v, CssValue::Color { r: 255, g: 0, b: 0, .. }));
+    }
+
+    #[test]
+    fn test_parse_css_value_hex_color_3() {
+        let v = parse_css_value_str("#f00").unwrap();
+        assert!(matches!(v, CssValue::Color { r: 255, g: 0, b: 0, .. }));
+    }
+
+    #[test]
+    fn test_parse_css_value_rgb_function() {
+        let v = parse_css_value_str("rgb(255, 0, 0)").unwrap();
+        assert!(matches!(v, CssValue::Function(f) if f.name.as_str() == "rgb"));
+    }
+
+    #[test]
+    fn test_parse_css_value_url() {
+        let v = parse_css_value_str("url('test.png')").unwrap();
+        assert!(matches!(v, CssValue::Url(u) if u.as_str() == "test.png"));
+    }
+
+    #[test]
+    fn test_parse_css_value_var() {
+        let v = parse_css_value_str("var(--primary-color)").unwrap();
+        assert!(matches!(v, CssValue::Variable(name) if name.as_str() == "--primary-color"));
+    }
+
+    #[test]
+    fn test_parse_css_value_none() {
+        let v = parse_css_value_str("none").unwrap();
+        assert_eq!(v, CssValue::None);
+    }
+
+    #[test]
+    fn test_parse_css_value_auto() {
+        let v = parse_css_value_str("auto").unwrap();
+        assert_eq!(v, CssValue::Auto);
+    }
+
+    #[test]
+    fn test_parse_css_value_calc() {
+        let v = parse_css_value_str("calc(100% - 20px)").unwrap();
+        assert!(matches!(v, CssValue::Function(f) if f.name.as_str() == "calc"));
+    }
+
+    #[test]
+    fn test_parse_css_value_named_color() {
+        let v = parse_css_value_str("blue").unwrap();
+        assert!(matches!(v, CssValue::Color { b: 255, .. }));
+    }
+
+    #[test]
+    fn test_parse_css_value_quoted_string() {
+        let v = parse_css_value_str("\"Helvetica Neue\"").unwrap();
+        assert!(matches!(v, CssValue::CssString(s) if s.as_str() == "Helvetica Neue"));
+    }
+
+    #[test]
+    fn test_parse_css_value_empty_returns_none() {
+        assert!(parse_css_value_str("").is_none());
+        assert!(parse_css_value_str("  ").is_none());
     }
 }
