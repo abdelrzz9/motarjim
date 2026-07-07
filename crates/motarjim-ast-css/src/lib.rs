@@ -10,6 +10,7 @@
 
 pub mod selector;
 pub mod stylesheet;
+pub mod value;
 
 pub use selector::{
     AttributeOperator, Combinator, PseudoClass, PseudoElement, Selector, SimpleSelector,
@@ -19,3 +20,4 @@ pub use stylesheet::{
     KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, StyleRule,
     SupportsRule,
 };
+pub use value::{CssFunction, CssUnit, CssValue};
