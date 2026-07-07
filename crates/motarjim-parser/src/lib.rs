@@ -3,10 +3,15 @@
 #![warn(clippy::all)]
 #![allow(clippy::pedantic, clippy::nursery)]
 
-//! Recursive descent HTML parser for the Motarjim compiler.
+//! HTML and CSS parsers for the Motarjim compiler.
 //!
-//! This crate provides an [`HtmlParser`] and a [`CssParser`] that consume
-//! tokens from `motarjim_lexer` and build AST nodes from `motarjim_ast`.
+//! This crate provides:
+//!
+//! - **HTML parser** — Recursive descent parser that consumes tokens from
+//!   `motarjim_lexer` and builds AST nodes from `motarjim_ast`.
+//! - **CSS parser** — Powered by Lightning CSS internally, produces
+//!   Motarjim's own CSS AST types. Lightning CSS is an internal dependency;
+//!   no Lightning CSS types are exposed in the public API.
 //!
 //! # HTML Parsing
 //!
@@ -21,18 +26,20 @@
 //!
 //! # CSS Parsing
 //!
-//! The CSS parser handles:
+//! The CSS parser (available via the [`css`] module) handles:
 //! - Style rules with selectors and declarations
-//! - Simple selectors (type, class, id, attribute selectors)
-//! - Compound and grouped selectors
-//! - At-rules (`@media`, `@import`, etc.)
-//! - Error recovery with diagnostics
+//! - Simple selectors (type, class, id, attribute, pseudo-class, pseudo-element)
+//! - Compound and grouped selectors with combinators
+//! - At-rules (`@media`, `@import`, `@keyframes`, `@font-face`, `@supports`, etc.)
+//! - CSS variables, gradients, calc(), transforms, animations
+//! - Comprehensive error diagnostics
+//! - Source span preservation
 
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::similar_names)]
 
-/// CSS parser implementation.
-mod css;
+/// CSS parser implementation (powered by Lightning CSS).
+pub mod css;
 /// HTML parser implementation.
 mod html;
 /// Shared utility functions.

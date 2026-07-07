@@ -242,7 +242,7 @@ impl Compiler {
         let mut css_timer = profiling.start_phase("parse_css");
         let css_source = extract_css_from_html(input);
         let stylesheet = css_source.as_ref().and_then(|css_text| {
-            let mut css_parser = CssParser::new(css_text);
+            let css_parser = CssParser::new(css_text);
             css_parser.parse().ok()
         });
         profiling.record_phase("parse_css", css_timer.stop());
@@ -725,8 +725,8 @@ impl<'a> Pipeline<'a> {
         &self,
         input: &str,
     ) -> Result<motarjim_ast::css::CssStylesheet, Vec<Diagnostic>> {
-        let mut parser = CssParser::new(input);
-        parser.parse()
+        let parser = CssParser::new(input);
+        parser.parse().map_err(Into::into)
     }
 
     /// Build an IR tree from a document and computed styles.

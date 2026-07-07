@@ -2,6 +2,8 @@
 
 use smol_str::SmolStr;
 
+use motarjim_span::SourceSpan;
+
 /// A parsed CSS selector, consisting of a sequence of simple selectors separated
 /// by combinators.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -11,6 +13,8 @@ pub struct Selector {
     pub simple_selectors: Vec<SimpleSelector>,
     /// The combinators between simple selector groups.
     pub combinators: Vec<Combinator>,
+    /// The source location of this selector.
+    pub span: Option<SourceSpan>,
 }
 
 impl Selector {
@@ -62,6 +66,8 @@ pub enum SimpleSelector {
         value: Option<SmolStr>,
         /// Whether the comparison is case-sensitive.
         case_sensitive: bool,
+        /// The source location of this attribute selector.
+        span: Option<SourceSpan>,
     },
     /// A pseudo-class selector.
     PseudoClass(PseudoClass),
@@ -86,6 +92,7 @@ impl SimpleSelector {
                 operator,
                 value,
                 case_sensitive: _,
+                span: _,
             } => {
                 let attr_val = match element.get_attribute(name.as_str()) {
                     Some(v) => v,
@@ -251,6 +258,7 @@ mod tests {
             operator: Some(AttributeOperator::Equals),
             value: Some(SmolStr::new_inline("https://example.com")),
             case_sensitive: true,
+            span: None,
         };
         assert!(eq.matches(&el));
 
@@ -259,6 +267,7 @@ mod tests {
             operator: None,
             value: None,
             case_sensitive: true,
+            span: None,
         };
         assert!(!exists.matches(&el));
 
@@ -268,6 +277,7 @@ mod tests {
             operator: Some(AttributeOperator::Includes),
             value: Some(SmolStr::new_inline("featured")),
             case_sensitive: true,
+            span: None,
         };
         assert!(includes.matches(&el));
     }
@@ -280,6 +290,7 @@ mod tests {
                 SimpleSelector::Class(SmolStr::new_inline("container")),
             ],
             combinators: vec![],
+            span: None,
         };
         let mut el = Element::new("div");
         el.classes.push(SmolStr::new_inline("container"));
@@ -290,6 +301,7 @@ mod tests {
             Selector {
                 simple_selectors: vec![SimpleSelector::Id(SmolStr::new_inline("main"))],
                 combinators: vec![],
+                span: None,
             }
             .specificity(),
             (1, 0, 0)
@@ -298,6 +310,7 @@ mod tests {
             Selector {
                 simple_selectors: vec![SimpleSelector::Type(SmolStr::new_inline("div"))],
                 combinators: vec![],
+                span: None,
             }
             .specificity(),
             (0, 0, 1)

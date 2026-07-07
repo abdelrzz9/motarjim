@@ -42,6 +42,7 @@ fn simple_selector_matches(sel: &SimpleSelector, element: &Element) -> bool {
             operator,
             value,
             case_sensitive: _,
+            span: _,
         } => {
             let attr_val = match element.get_attribute(name.as_str()) {
                 Some(v) => v,

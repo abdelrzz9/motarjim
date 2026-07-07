@@ -11,30 +11,37 @@ fn make_stylesheet() -> CssStylesheet {
                 selectors: vec![Selector {
                     simple_selectors: vec![SimpleSelector::Type(SmolStr::new_inline("div"))],
                     combinators: vec![],
+                    span: None,
                 }],
                 declarations: smallvec::smallvec![
                     Declaration {
                         property: SmolStr::new_inline("color"),
                         value: "red".into(),
                         important: false,
+                        span: None,
                     },
                     Declaration {
                         property: SmolStr::new_inline("font-size"),
                         value: "16px".into(),
                         important: false,
+                        span: None,
                     },
                 ],
+                span: None,
             }),
             CssRule::Style(StyleRule {
                 selectors: vec![Selector {
                     simple_selectors: vec![SimpleSelector::Class(SmolStr::new_inline("highlight"))],
                     combinators: vec![],
+                    span: None,
                 }],
                 declarations: smallvec::smallvec![Declaration {
                     property: SmolStr::new_inline("background"),
                     value: "yellow".into(),
                     important: false,
+                    span: None,
                 }],
+                span: None,
             }),
         ],
         source_path: None,

@@ -9,10 +9,11 @@ workspace = true
 
 [dependencies]
 motarjim-ast-html = { workspace = true }
+motarjim-span = { workspace = true }
 serde = { workspace = true, optional = true }
 smallvec.workspace = true
 smol_str.workspace = true
 
 [features]
-serialize = ["serde"]
+serialize = ["serde", "motarjim-span/serialize"]
 default = []
