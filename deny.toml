@@ -1,9 +1,6 @@
 [advisories]
-vulnerability = "deny"
-unmaintained = "warn"
-notice = "warn"
-unsound = "deny"
-yanked = "warn"
+unmaintained = "all"
+yanked = "deny"
 
 [licenses]
 allow = [
@@ -12,15 +9,12 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSL-1.0",
     "ISC",
+    "MPL-2.0",
     "Unicode-3.0",
     "Unlicense",
     "0BSD",
     "Zlib",
 ]
-deny = []
-copyleft = "warn"
-allow-osi-fsf-free = "permissive"
-default = "deny"
 confidence-threshold = 0.8
 
 [bans]

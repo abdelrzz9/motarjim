@@ -121,6 +121,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Generate diagrams
-        run: cargo xtask diagrams
+        run: cargo run --package xtask -- diagrams
       - name: Verify diagrams are up to date
-        run: cargo xtask check
+        run: cargo run --package xtask -- check
