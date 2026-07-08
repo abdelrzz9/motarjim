@@ -1,12 +1,13 @@
 # Stage 1: Build WASM
-FROM rust:1.85-slim-bookworm AS wasm-builder
+FROM rust:1.91-slim-bookworm AS wasm-builder
 RUN rustup target add wasm32-unknown-unknown
-ENV RUSTFLAGS="--cfg getrandom_backend=\"wasm_js\""
 RUN cargo install wasm-pack
 WORKDIR /build
 # Copy only what's needed for wasm-pack
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ ./crates/
+COPY xtask/ ./xtask/
+ENV RUSTFLAGS="--cfg getrandom_backend=\"wasm_js\""
 RUN wasm-pack build crates/motarjim-wasm --target web --out-dir /wasm-pkg
 
 # Stage 2: Build web app
