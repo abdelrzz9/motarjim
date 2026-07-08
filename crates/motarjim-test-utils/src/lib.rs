@@ -447,9 +447,7 @@ mod tests {
             OutputFormat::Dart,
         );
         let path = test.expected_output_path(Path::new("tests/golden"));
-        assert!(path
-            .to_str()
-            .is_some_and(|s| s.contains("output/flutter/simple-div.dart")));
+        assert!(path.ends_with("output/flutter/simple-div.dart"), "got: {}", path.display());
     }
 
     #[test]
@@ -461,9 +459,7 @@ mod tests {
             OutputFormat::Kotlin,
         );
         let path = test.expected_output_path(Path::new("tests/golden"));
-        assert!(path
-            .to_str()
-            .is_some_and(|s| s.contains("output/compose/simple-div.kt")));
+        assert!(path.ends_with("output/compose/simple-div.kt"), "got: {}", path.display());
     }
 
     #[test]
@@ -475,9 +471,7 @@ mod tests {
             OutputFormat::Swift,
         );
         let path = test.expected_output_path(Path::new("tests/golden"));
-        assert!(path
-            .to_str()
-            .is_some_and(|s| s.contains("output/swiftui/simple-div.swift")));
+        assert!(path.ends_with("output/swiftui/simple-div.swift"), "got: {}", path.display());
     }
 
     #[test]
