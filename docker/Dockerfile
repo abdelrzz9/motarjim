@@ -1,6 +1,7 @@
 # Stage 1: Build WASM
 FROM rust:1.85-slim-bookworm AS wasm-builder
 RUN rustup target add wasm32-unknown-unknown
+ENV RUSTFLAGS="--cfg getrandom_backend=\"wasm_js\""
 RUN cargo install wasm-pack
 WORKDIR /build
 # Copy only what's needed for wasm-pack

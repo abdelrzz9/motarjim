@@ -32,7 +32,6 @@ rayon = { workspace = true, optional = true }
 wasm-bindgen = { workspace = true, optional = true }
 smallvec = { workspace = true }
 smol_str = { workspace = true }
-uuid = { workspace = true }
 tracing = { workspace = true }
 
 [features]

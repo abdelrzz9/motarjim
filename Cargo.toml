@@ -83,7 +83,6 @@ smallvec = { version = "1", features = ["serde"] }
 smol_str = { version = "0.2", features = ["serde"] }
 rayon = "1"
 tracing = "0.1"
-uuid = { version = "1", features = ["v4"] }
 criterion = { version = "0.5", features = ["html_reports"] }
 proptest = "1"
 insta = "1"

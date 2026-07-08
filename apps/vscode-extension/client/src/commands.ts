@@ -33,7 +33,6 @@ export async function selectPlatform(): Promise<string | undefined> {
     matchOnDescription: true,
     matchOnDetail: true,
     title: 'Motarjim: Select Target Platform',
-    value: defaultPlatform,
   });
 
   if (preselected >= 0) {
