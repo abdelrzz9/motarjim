@@ -299,10 +299,16 @@ impl GoldenTestRunner {
 
 /// Compare actual output with expected, returning `Ok(())` if they match.
 ///
+/// Line endings are normalized before comparison so tests pass on
+/// Windows where golden files may be checked out with CRLF.
+///
 /// # Errors
 /// Returns a diff as a string if they differ.
 pub fn compare_output(actual: &str, expected: &str) -> Result<(), String> {
-    if actual == expected {
+    fn normalize(s: &str) -> String {
+        s.replace("\r\n", "\n")
+    }
+    if normalize(actual) == normalize(expected) {
         return Ok(());
     }
 
