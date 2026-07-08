@@ -317,13 +317,8 @@ mod tests {
 
     #[test]
     fn test_cli_compile_command() {
-        let args = CliArgs::try_parse_from(&[
-            "motarjim",
-            "compile",
-            "input.html",
-            "--platform",
-            "flutter",
-        ]);
+        let args =
+            CliArgs::try_parse_from(["motarjim", "compile", "input.html", "--platform", "flutter"]);
         assert!(args.is_ok());
         let args = args.unwrap();
         match &args.command {
@@ -339,14 +334,14 @@ mod tests {
 
     #[test]
     fn test_cli_init_command() {
-        let args = CliArgs::try_parse_from(&["motarjim", "init"]);
+        let args = CliArgs::try_parse_from(["motarjim", "init"]);
         assert!(args.is_ok());
         assert!(matches!(args.unwrap().command, Command::Init));
     }
 
     #[test]
     fn test_cli_check_command() {
-        let args = CliArgs::try_parse_from(&["motarjim", "check", "input.html"]);
+        let args = CliArgs::try_parse_from(["motarjim", "check", "input.html"]);
         assert!(args.is_ok());
         match &args.unwrap().command {
             Command::Check { input } => {
@@ -381,7 +376,7 @@ mod tests {
     #[test]
     fn test_cli_watch_command() {
         let args =
-            CliArgs::try_parse_from(&["motarjim", "watch", "input.html", "--platform", "swiftui"]);
+            CliArgs::try_parse_from(["motarjim", "watch", "input.html", "--platform", "swiftui"]);
         assert!(args.is_ok());
         match &args.unwrap().command {
             Command::Watch { input, platform } => {
@@ -394,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_cli_compile_with_flags() {
-        let args = CliArgs::try_parse_from(&[
+        let args = CliArgs::try_parse_from([
             "motarjim",
             "compile",
             "in.html",

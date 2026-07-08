@@ -1,7 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use motarjim_js::{
-    transform::{run_transforms, TemplateLiteralToConcat},
-    JsLexer, JsParser, SemanticAnalyzer,
+    run_transforms, JsLexer, JsParser, SemanticAnalyzer, TemplateLiteralToConcat, Transform,
 };
 
 const JS_SMALL: &str = "let x = 1;";
@@ -150,7 +149,7 @@ fn bench_semantic_medium(c: &mut Criterion) {
     let mut group = c.benchmark_group("js_semantic");
     group.bench_function("medium", |b| {
         b.iter(|| {
-            let analyzer = SemanticAnalyzer::new();
+            let mut analyzer = SemanticAnalyzer::new();
             analyzer.analyze(black_box(&program))
         });
     });
@@ -160,26 +159,27 @@ fn bench_semantic_medium(c: &mut Criterion) {
 fn bench_transform_medium(c: &mut Criterion) {
     let mut parser = JsParser::new(JS_MEDIUM);
     let program = parser.parse().unwrap();
+    let transforms: Vec<Box<dyn Transform>> = vec![Box::new(TemplateLiteralToConcat)];
     let mut group = c.benchmark_group("js_transform");
     group.bench_function("template_to_concat", |b| {
         b.iter(|| {
-            run_transforms(
-                black_box(program.clone()),
-                &mut [&mut TemplateLiteralToConcat],
-            )
+            let mut cloned = program.clone();
+            run_transforms(&mut cloned, &transforms)
         });
     });
     group.finish();
 }
 
 fn bench_pipeline_medium(c: &mut Criterion) {
+    let transforms: Vec<Box<dyn Transform>> = vec![Box::new(TemplateLiteralToConcat)];
     let mut group = c.benchmark_group("js_pipeline");
     group.bench_function("full_pipeline", |b| {
         b.iter(|| {
             let mut parser = JsParser::new(black_box(JS_MEDIUM));
-            let program = parser.parse().unwrap();
-            let diags = SemanticAnalyzer::new().analyze(&program);
-            let _transformed = run_transforms(program, &mut [&mut TemplateLiteralToConcat]);
+            let mut program = parser.parse().unwrap();
+            let mut analyzer = SemanticAnalyzer::new();
+            let diags = analyzer.analyze(&program);
+            run_transforms(&mut program, &transforms);
             (program, diags)
         });
     });

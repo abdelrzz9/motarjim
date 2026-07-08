@@ -1,4 +1,4 @@
-use motarjim_profiling::{PhaseTimer, ProfilingSession};
+use motarjim_profiling::ProfilingSession;
 
 fn main() {
     let mut session = ProfilingSession::new("example");

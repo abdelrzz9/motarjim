@@ -101,11 +101,7 @@ pub struct ParseError {
 
 impl ParseError {
     /// Creates a new parse error with `Error` severity.
-    pub fn new(
-        kind: ParseErrorKind,
-        message: impl Into<String>,
-        span: Option<SourceSpan>,
-    ) -> Self {
+    pub fn new(kind: ParseErrorKind, message: impl Into<String>, span: Option<SourceSpan>) -> Self {
         Self {
             kind,
             message: message.into(),
@@ -165,10 +161,7 @@ impl fmt::Display for ParseError {
             write!(
                 f,
                 "[{}] at {}..{}: {}",
-                self.severity,
-                span.start.0,
-                span.end.0,
-                self.message
+                self.severity, span.start.0, span.end.0, self.message
             )
         } else {
             write!(f, "[{}] {}", self.severity, self.message)
@@ -255,7 +248,9 @@ impl DiagnosticBag {
 
     /// Returns an iterator over all warnings only.
     pub fn warnings_only(&self) -> impl Iterator<Item = &ParseError> {
-        self.errors.iter().filter(|e| e.severity == Severity::Warning)
+        self.errors
+            .iter()
+            .filter(|e| e.severity == Severity::Warning)
     }
 
     /// Consumes the bag and returns the first error, if any.
@@ -331,7 +326,11 @@ mod tests {
     fn test_diagnostic_bag() {
         let mut bag = DiagnosticBag::new();
         bag.push(ParseError::new(ParseErrorKind::Syntax, "error 1", None));
-        bag.push(ParseError::warning(ParseErrorKind::MalformedHtml, "warn 1", None));
+        bag.push(ParseError::warning(
+            ParseErrorKind::MalformedHtml,
+            "warn 1",
+            None,
+        ));
         assert!(bag.has_errors());
         assert!(bag.has_warnings_or_errors());
         assert_eq!(bag.len(), 2);
@@ -349,7 +348,11 @@ mod tests {
     fn test_diagnostic_bag_errors_only() {
         let mut bag = DiagnosticBag::new();
         bag.push(ParseError::new(ParseErrorKind::Syntax, "error", None));
-        bag.push(ParseError::warning(ParseErrorKind::MalformedHtml, "warn", None));
+        bag.push(ParseError::warning(
+            ParseErrorKind::MalformedHtml,
+            "warn",
+            None,
+        ));
         assert_eq!(bag.errors_only().count(), 1);
         assert_eq!(bag.warnings_only().count(), 1);
     }
@@ -367,8 +370,16 @@ mod tests {
     #[test]
     fn test_diagnostic_bag_into_first_error() {
         let mut bag = DiagnosticBag::new();
-        bag.push(ParseError::warning(ParseErrorKind::MalformedHtml, "warn", None));
-        bag.push(ParseError::new(ParseErrorKind::Syntax, "actual error", None));
+        bag.push(ParseError::warning(
+            ParseErrorKind::MalformedHtml,
+            "warn",
+            None,
+        ));
+        bag.push(ParseError::new(
+            ParseErrorKind::Syntax,
+            "actual error",
+            None,
+        ));
         let first = bag.into_first_error();
         assert!(first.is_some());
         assert_eq!(first.unwrap().message, "actual error");

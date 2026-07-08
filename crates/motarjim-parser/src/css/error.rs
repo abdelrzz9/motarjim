@@ -30,10 +30,7 @@ impl CssError {
 
     /// Creates a CSS error with a specific code and message.
     #[must_use]
-    pub fn with_code(
-        code: motarjim_diag::DiagnosticCode,
-        message: impl Into<String>,
-    ) -> Self {
+    pub fn with_code(code: motarjim_diag::DiagnosticCode, message: impl Into<String>) -> Self {
         let mut bag = DiagnosticBag::new();
         bag.push_error(code, message);
         Self { diagnostics: bag }
@@ -43,9 +40,7 @@ impl CssError {
     #[must_use]
     pub fn with_span(message: impl Into<String>, span: SourceSpan) -> Self {
         let mut bag = DiagnosticBag::new();
-        bag.push(
-            Diagnostic::new(Severity::Error, codes::CSS_PARSE_ERROR, message).with_span(span),
-        );
+        bag.push(Diagnostic::new(Severity::Error, codes::CSS_PARSE_ERROR, message).with_span(span));
         Self { diagnostics: bag }
     }
 
@@ -59,9 +54,11 @@ impl CssError {
         let message = error.to_string();
 
         if let Some(loc) = &error.loc {
-            let span = SourceSpan::from_location(
-                motarjim_span::SourceLocation::new(loc.line + 1, loc.column, 0),
-            );
+            let span = SourceSpan::from_location(motarjim_span::SourceLocation::new(
+                loc.line + 1,
+                loc.column,
+                0,
+            ));
             bag.push(
                 Diagnostic::new(Severity::Error, codes::CSS_PARSE_ERROR, message)
                     .with_span(span)

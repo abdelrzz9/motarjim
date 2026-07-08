@@ -1372,10 +1372,8 @@ impl Pattern {
             }
             Pattern::Array(p) => {
                 p.span.shift(delta);
-                for el in &mut p.elements {
-                    if let Some(pat) = el {
-                        pat.shift_spans(delta);
-                    }
+                for pat in p.elements.iter_mut().flatten() {
+                    pat.shift_spans(delta);
                 }
             }
             Pattern::Assign(p) => {

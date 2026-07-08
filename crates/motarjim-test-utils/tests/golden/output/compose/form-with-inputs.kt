@@ -9,15 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun GeneratedPage() {
     Column(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            OutlinedTextField(
-                value = "",
-                onValueChange = { },
-                label = { Text("Input") }
-            )
-            Button(onClick = { }) {
-                Text("Submit")
-            }
+        Box() {
         }
     }
 }

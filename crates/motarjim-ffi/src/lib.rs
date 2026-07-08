@@ -237,7 +237,7 @@ mod tests {
 
             let value: serde_json::Value = serde_json::from_str(&json_str).expect("valid JSON");
             assert_eq!(value["ok"], serde_json::Value::Bool(true));
-            assert!(value["output"].as_str().map_or(false, |o| !o.is_empty()));
+            assert!(value["output"].as_str().is_some_and(|o| !o.is_empty()));
             assert!(value["stats"]["nodes_parsed"].as_u64().unwrap_or(0) > 0);
 
             motarjim_compiler_free(compiler);
@@ -293,7 +293,7 @@ mod tests {
             assert_eq!(value["ok"], serde_json::Value::Bool(false));
             assert!(value["error"]
                 .as_str()
-                .map_or(false, |e| e.contains("null compiler")));
+                .is_some_and(|e| e.contains("null compiler")));
         }
     }
 
@@ -313,7 +313,7 @@ mod tests {
             assert_eq!(value["ok"], serde_json::Value::Bool(false));
             assert!(value["error"]
                 .as_str()
-                .map_or(false, |e| e.contains("null input")));
+                .is_some_and(|e| e.contains("null input")));
 
             motarjim_compiler_free(compiler);
         }
@@ -333,7 +333,7 @@ mod tests {
             assert_eq!(value["ok"], serde_json::Value::Bool(false));
             assert!(value["error"]
                 .as_str()
-                .map_or(false, |e| e.contains("unsupported platform")));
+                .is_some_and(|e| e.contains("unsupported platform")));
 
             motarjim_compiler_free(compiler);
         }

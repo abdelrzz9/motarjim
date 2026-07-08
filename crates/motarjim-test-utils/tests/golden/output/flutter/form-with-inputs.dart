@@ -7,21 +7,7 @@ class GeneratedPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: 
-        Form(
-          child: Column(
-            children: [
-              const TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {},
-                child: 
-                  Text('Submit'),
-              ),
-            ],
-          ),
+        Container(
         ),
     );
   }

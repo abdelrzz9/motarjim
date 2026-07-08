@@ -7,7 +7,8 @@ class GeneratedPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: 
-        Text('Card 1'),
+        Container(
+        ),
     );
   }
 }

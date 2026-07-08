@@ -165,12 +165,10 @@ fn convert_node(
 
             Some(Node {
                 id: node_id,
-                kind: NodeKind::ProcessingInstruction(
-                    crate::ast::ProcessingInstructionData {
-                        target: pi_target,
-                        data: pi_data,
-                    },
-                ),
+                kind: NodeKind::ProcessingInstruction(crate::ast::ProcessingInstructionData {
+                    target: pi_target,
+                    data: pi_data,
+                }),
                 children: Vec::new(),
                 span: None,
             })
@@ -241,7 +239,9 @@ mod tests {
         let doc = parse_and_convert("<!-- test --><div></div>");
         let has_comment = doc.children.iter().any(|n| {
             matches!(n.kind, NodeKind::Comment(_))
-                || n.children.iter().any(|c| matches!(c.kind, NodeKind::Comment(_)))
+                || n.children
+                    .iter()
+                    .any(|c| matches!(c.kind, NodeKind::Comment(_)))
         });
         assert!(has_comment);
     }
@@ -249,7 +249,10 @@ mod tests {
     #[test]
     fn test_doctype_preservation() {
         let doc = parse_and_convert("<!DOCTYPE html>");
-        let has_doctype = doc.children.iter().any(|n| matches!(n.kind, NodeKind::Doctype(_)));
+        let has_doctype = doc
+            .children
+            .iter()
+            .any(|n| matches!(n.kind, NodeKind::Doctype(_)));
         assert!(has_doctype);
     }
 
@@ -257,16 +260,26 @@ mod tests {
     fn test_text_preservation() {
         let doc = parse_and_convert("<p>Hello world</p>");
         let p = find_tag(&doc.children, "p").unwrap();
-        let text_node = p.children.iter().find(|c| matches!(c.kind, NodeKind::Text(_)));
+        let text_node = p
+            .children
+            .iter()
+            .find(|c| matches!(c.kind, NodeKind::Text(_)));
         assert!(text_node.is_some());
-        assert!(text_node.unwrap().as_text().unwrap().contains("Hello world"));
+        assert!(text_node
+            .unwrap()
+            .as_text()
+            .unwrap()
+            .contains("Hello world"));
     }
 
     #[test]
     fn test_whitespace_text_preserved() {
         let doc = parse_and_convert("<div>   </div>");
         let div = find_tag(&doc.children, "div").unwrap();
-        let text_node = div.children.iter().find(|c| matches!(c.kind, NodeKind::Text(_)));
+        let text_node = div
+            .children
+            .iter()
+            .find(|c| matches!(c.kind, NodeKind::Text(_)));
         assert!(
             text_node.is_some(),
             "whitespace-only text nodes should be preserved"

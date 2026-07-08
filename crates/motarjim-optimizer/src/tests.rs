@@ -83,7 +83,7 @@ fn test_remove_empty_text_node() {
     let stats = pass.statistics().snapshot();
     assert_eq!(stats.nodes_removed, 1);
 
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert!(root.children.is_empty());
     }
 }
@@ -106,7 +106,7 @@ fn test_remove_whitespace_only_text_node() {
     pass.run(&mut tree, &ctx).unwrap();
     let stats = pass.statistics().snapshot();
     assert_eq!(stats.nodes_removed, 1);
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert!(root.children.is_empty());
     }
 }
@@ -135,7 +135,7 @@ fn test_remove_empty_container() {
     pass.run(&mut tree, &ctx).unwrap();
     let stats = pass.statistics().snapshot();
     assert_eq!(stats.nodes_removed, 1);
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert!(root.children.is_empty());
     }
 }
@@ -167,7 +167,7 @@ fn test_remove_display_none_node() {
     pass.run(&mut tree, &ctx).unwrap();
     let stats = pass.statistics().snapshot();
     assert_eq!(stats.nodes_removed, 1);
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert!(root.children.is_empty());
     }
 }
@@ -220,7 +220,7 @@ fn test_merge_two_adjacent_text_nodes() {
     let stats = pass.statistics().snapshot();
     assert!(stats.nodes_removed >= 1);
 
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert_eq!(root.children.len(), 1);
         if let Some(remaining) = root
             .children
@@ -253,7 +253,7 @@ fn test_merge_three_adjacent_text_nodes() {
     let stats = pass.statistics().snapshot();
     assert!(stats.nodes_removed >= 1);
 
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert_eq!(root.children.len(), 1);
         if let Some(remaining) = root
             .children
@@ -291,7 +291,7 @@ fn test_merge_does_not_merge_non_text_siblings() {
     let stats = pass.statistics().snapshot();
     assert_eq!(stats.nodes_removed, 0);
 
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert_eq!(root.children.len(), 2);
     }
 }
@@ -570,7 +570,7 @@ fn test_inline_constant_container() {
     let stats = pass.statistics().snapshot();
     assert!(stats.nodes_removed >= 1);
 
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         assert!(root.children.contains(&NodeId(2)));
     }
 }
@@ -759,11 +759,11 @@ fn test_full_pipeline_on_complex_tree() {
         "Expected at least 3 removals, got {total_removed}"
     );
 
-    if let Some(root) = tree.nodes.get(0) {
+    if let Some(root) = tree.nodes.first() {
         let has_text_child = root.children.iter().any(|&cid| {
             tree.nodes
                 .get(cid.0 as usize)
-                .map_or(false, |n| matches!(n.semantic, SemanticIr::Text))
+                .is_some_and(|n| matches!(n.semantic, SemanticIr::Text))
         });
         assert!(
             has_text_child,

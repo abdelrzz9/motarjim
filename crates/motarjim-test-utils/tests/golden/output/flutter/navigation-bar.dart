@@ -7,10 +7,7 @@ class GeneratedPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: 
-        Scaffold(
-          body: 
-            // Custom widget: link
-            // Custom widget: link
+        Container(
         ),
     );
   }

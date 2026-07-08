@@ -128,7 +128,7 @@ fn test_nested_elements() {
     let mut texts = Vec::new();
     collect_text(&doc.children, &mut texts);
     assert!(
-        texts.iter().any(|t| *t == "text"),
+        texts.contains(&"text"),
         "should find 'text' node, found: {texts:?}"
     );
 }
@@ -170,17 +170,18 @@ fn test_text_nodes() {
     let doc = parse("<p>Hello, world!</p>");
     let p = find_tag(&doc.children, "p").expect("should find p");
     assert_eq!(p.children.len(), 1);
-    if let NodeKind::Text(t) = &p.children[0].kind {
-        assert!(t.value.contains("Hello, world!"));
-    } else {
-        panic!("expected text child");
-    }
+    let t = match &p.children[0].kind {
+        NodeKind::Text(t) => t,
+        _ => unreachable!("expected text child"),
+    };
+    assert!(t.value.contains("Hello, world!"));
 }
 
 #[test]
 fn test_comments() {
     let doc = parse("<!-- a comment --><div>visible</div>");
-    let comments: Vec<&Node> = find_nodes(&doc.children, &|n| matches!(n.kind, NodeKind::Comment(_)));
+    let comments: Vec<&Node> =
+        find_nodes(&doc.children, &|n| matches!(n.kind, NodeKind::Comment(_)));
     assert!(!comments.is_empty(), "should have a comment node");
     if let NodeKind::Comment(c) = &comments[0].kind {
         assert!(c.value.contains("a comment"));
@@ -231,10 +232,7 @@ fn test_nested_deeply() {
     let doc = parse("<div><div><div><p>deep</p></div></div></div>");
     let mut texts = Vec::new();
     collect_text(&doc.children, &mut texts);
-    assert!(
-        texts.iter().any(|t| *t == "deep"),
-        "should find deep text"
-    );
+    assert!(texts.contains(&"deep"), "should find deep text");
 }
 
 #[test]

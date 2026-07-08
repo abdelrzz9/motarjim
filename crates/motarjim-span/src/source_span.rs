@@ -7,7 +7,7 @@ use std::fmt;
 use std::ops::Range;
 
 /// A range between two [`SourceLocation`]s in a source file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub struct SourceSpan {
     /// The start position (inclusive).
@@ -71,15 +71,6 @@ impl fmt::Display for SourceSpan {
             )
         } else {
             write!(f, "{}-{}", self.start, self.end)
-        }
-    }
-}
-
-impl Default for SourceSpan {
-    fn default() -> Self {
-        Self {
-            start: SourceLocation::default(),
-            end: SourceLocation::default(),
         }
     }
 }

@@ -203,7 +203,7 @@ impl QueryCache {
     /// * [`InvalidationPattern::AlwaysExecute`] — clears all cached results.
     /// * [`InvalidationPattern::OnDependencyChange`] — removes entries whose
     ///   dependencies overlap with `changed_files`.
-    /// * [`InvalidationPattern::OnFileSetChange(files)`] — removes entries
+    /// * [`InvalidationPattern::OnFileSetChange`]`(files)` — removes entries
     ///   whose dependencies overlap with the specified file set.
     pub fn invalidate(&self, pattern: &InvalidationPattern, changed_files: &[String]) {
         match pattern {
@@ -260,6 +260,7 @@ impl Default for QueryCache {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::arc_with_non_send_sync)]
     use super::*;
 
     struct LenQuery;

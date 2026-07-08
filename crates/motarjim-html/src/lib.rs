@@ -15,7 +15,7 @@
 //! - [`ast`] — Motarjim-owned HTML AST types (independent of html5ever)
 //! - [`span`] — Source location span types
 //! - [`diagnostics`] — Structured parse errors and diagnostics
-//! - [`converter`] — RcDom → Motarjim AST conversion (the only module
+//! - `converter` — RcDom → Motarjim AST conversion (the only module
 //!   that directly uses html5ever types)
 //! - [`parser`] — The public parser API using html5ever internally
 //!
@@ -63,7 +63,7 @@
 //!
 //! # Future compatibility
 //!
-//! Only the [`converter`] module depends on html5ever. If the parser
+//! Only the `converter` module depends on html5ever. If the parser
 //! backend were to be replaced (e.g., with a streaming parser, a
 //! handwritten tokenizer, or an LALRPOP-based parser), only this module
 //! would need to change. The rest of the crate and all downstream crates

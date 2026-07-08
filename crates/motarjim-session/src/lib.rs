@@ -91,7 +91,8 @@ impl CancelToken {
     /// [`is_cancelled`](Self::is_cancelled) as `true` and
     /// [`check`](Self::check) will return `Err`.
     pub fn cancel(&self) {
-        self.cancelled.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.cancelled
+            .store(true, std::sync::atomic::Ordering::SeqCst);
     }
 
     /// Returns `Ok(())` if not cancelled, or `Err(Cancelled)` if cancelled.
@@ -148,14 +149,8 @@ pub struct Session {
 
 impl std::fmt::Debug for Session {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let diag_len = self
-            .diagnostics
-            .lock()
-            .map_or(0, |b| b.len());
-        let sm_len = self
-            .source_map
-            .lock()
-            .map_or(0, |m| m.len());
+        let diag_len = self.diagnostics.lock().map_or(0, |b| b.len());
+        let sm_len = self.source_map.lock().map_or(0, |m| m.len());
         let profiling_label = self
             .profiling
             .lock()
@@ -163,11 +158,17 @@ impl std::fmt::Debug for Session {
 
         let mut d = f.debug_struct("Session");
         d.field("config", &self.config)
-            .field("diagnostics", &format_args!("Mutex<DiagnosticBag({diag_len})>"))
+            .field(
+                "diagnostics",
+                &format_args!("Mutex<DiagnosticBag({diag_len})>"),
+            )
             .field("source_map", &format_args!("Mutex<SourceMap({sm_len})>"))
             .field("cache", &self.cache)
             .field("incremental", &self.incremental)
-            .field("profiling", &format_args!("Mutex<ProfilingSession({profiling_label})>"));
+            .field(
+                "profiling",
+                &format_args!("Mutex<ProfilingSession({profiling_label})>"),
+            );
         #[cfg(feature = "cancellation")]
         {
             d.field("cancel_token", &self.cancel_token.is_cancelled());
@@ -317,15 +318,14 @@ impl Session {
     pub fn has_errors(&self) -> bool {
         self.diagnostics
             .lock()
-            .map_or(false, |bag| bag.has_errors())
+            .ok()
+            .is_some_and(|bag| bag.has_errors())
     }
 
     /// Returns the number of error-severity diagnostics.
     #[must_use]
     pub fn error_count(&self) -> usize {
-        self.diagnostics
-            .lock()
-            .map_or(0, |bag| bag.error_count())
+        self.diagnostics.lock().map_or(0, |bag| bag.error_count())
     }
 
     // ------------------------------------------------------------------
@@ -538,7 +538,10 @@ mod tests {
         let mut sm = SourceMap::new();
         sm.add(SourceFile::new("a.html", "a".to_string()));
         sm.add(SourceFile::new("b.html", "b".to_string()));
-        let paths: Vec<_> = sm.iter().map(|sf| sf.path.as_os_str().to_os_string()).collect();
+        let paths: Vec<_> = sm
+            .iter()
+            .map(|sf| sf.path.as_os_str().to_os_string())
+            .collect();
         assert_eq!(paths.len(), 2);
     }
 
@@ -552,8 +555,16 @@ mod tests {
     fn test_emit_many() {
         let session = test_session();
         let diags = vec![
-            Diagnostic::new(Severity::Error, motarjim_diag::DiagnosticCode::new(1, "E"), "err1"),
-            Diagnostic::new(Severity::Warning, motarjim_diag::DiagnosticCode::new(2, "W"), "warn1"),
+            Diagnostic::new(
+                Severity::Error,
+                motarjim_diag::DiagnosticCode::new(1, "E"),
+                "err1",
+            ),
+            Diagnostic::new(
+                Severity::Warning,
+                motarjim_diag::DiagnosticCode::new(2, "W"),
+                "warn1",
+            ),
         ];
         session.emit_many(diags);
         assert!(session.has_errors());

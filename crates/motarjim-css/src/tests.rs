@@ -36,6 +36,7 @@ fn decl(prop: &str, value: &str) -> Declaration {
         property: SmolStr::new(prop),
         value: value.to_string(),
         important: false,
+        parsed: None,
         span: None,
     }
 }
@@ -45,6 +46,7 @@ fn important_decl(prop: &str, value: &str) -> Declaration {
         property: SmolStr::new(prop),
         value: value.to_string(),
         important: true,
+        parsed: None,
         span: None,
     }
 }

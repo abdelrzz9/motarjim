@@ -168,8 +168,8 @@ impl<'a> HtmlParser<'a> {
                         None => break,
                     };
                     // Raw is empty for markup declarations; check source text via span
-                    let start = decl_token.span.start.offset as usize;
-                    let end = decl_token.span.end.offset as usize;
+                    let start = decl_token.span.start.offset;
+                    let end = decl_token.span.end.offset;
                     let source_snippet = if end > start && end <= self.source.len() {
                         self.source[start..end].to_uppercase()
                     } else {
@@ -218,7 +218,7 @@ impl<'a> HtmlParser<'a> {
             return;
         }
 
-        let tag_name_end = open_tag.span.end.offset as usize;
+        let tag_name_end = open_tag.span.end.offset;
 
         // Fast path: if next token is TagEnd (no attributes, TagEnd is separate)
         let has_immediate_tag_end = self
@@ -237,7 +237,7 @@ impl<'a> HtmlParser<'a> {
             // The Text token that contained attributes and potentially content
             // starts before gt_offset; consume it to avoid duplicate text emission.
             if let Some(t) = self.peek_token() {
-                if t.kind == HtmlTokenKind::Text && (t.span.start.offset as usize) < gt_offset {
+                if t.kind == HtmlTokenKind::Text && t.span.start.offset < gt_offset {
                     self.consume_token();
                 }
             }
@@ -374,7 +374,7 @@ impl<'a> HtmlParser<'a> {
     /// Advances the token position past all tokens that end before or at `offset`.
     fn skip_tokens_past(&mut self, offset: usize) {
         while let Some(token) = self.tokens.get(self.pos) {
-            if (token.span.end.offset as usize) > offset {
+            if token.span.end.offset > offset {
                 break;
             }
             self.pos += 1;

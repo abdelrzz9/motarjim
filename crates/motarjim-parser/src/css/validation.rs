@@ -140,11 +140,8 @@ fn validate_page_rule(rule: &PageRule, diagnostics: &mut Vec<Diagnostic>) {
 fn validate_import_rule(rule: &ImportRule, diagnostics: &mut Vec<Diagnostic>) {
     if rule.url.is_empty() {
         diagnostics.push(
-            error(
-                code(7, "import-empty-url"),
-                "@import rule has an empty URL",
-            )
-            .with_note("import rule url cannot be empty"),
+            error(code(7, "import-empty-url"), "@import rule has an empty URL")
+                .with_note("import rule url cannot be empty"),
         );
     }
 }

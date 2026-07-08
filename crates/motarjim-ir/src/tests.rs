@@ -1,6 +1,5 @@
 use super::*;
 
-use super::*;
 use motarjim_ast::Attribute;
 use smallvec::SmallVec;
 
@@ -274,9 +273,11 @@ fn test_layout_flex() {
         (Some(FlexDirection::Column), LayoutIr::FlexColumn),
     ];
     for (dir, expected) in &cases {
-        let mut style = ComputedStyle::default();
-        style.display = DisplayType::Flex;
-        style.flex_direction = *dir;
+        let style = ComputedStyle {
+            display: DisplayType::Flex,
+            flex_direction: *dir,
+            ..Default::default()
+        };
         assert_eq!(
             inferrer.infer(&style),
             *expected,
@@ -288,12 +289,16 @@ fn test_layout_flex() {
 #[test]
 fn test_layout_grid_none() {
     let inferrer = LayoutInferrer::new();
-    let mut style = ComputedStyle::default();
-    style.display = DisplayType::Grid;
+    let style = ComputedStyle {
+        display: DisplayType::Grid,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style), LayoutIr::Grid);
 
-    let mut style2 = ComputedStyle::default();
-    style2.display = DisplayType::None;
+    let style2 = ComputedStyle {
+        display: DisplayType::None,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style2), LayoutIr::None);
 }
 
@@ -306,8 +311,10 @@ fn test_layout_position() {
         (PositionType::Sticky, LayoutIr::Sticky),
     ];
     for (pos, expected) in &cases {
-        let mut style = ComputedStyle::default();
-        style.position = *pos;
+        let style = ComputedStyle {
+            position: *pos,
+            ..Default::default()
+        };
         assert_eq!(
             inferrer.infer(&style),
             *expected,
@@ -319,12 +326,16 @@ fn test_layout_position() {
 #[test]
 fn test_layout_inline_types() {
     let inferrer = LayoutInferrer::new();
-    let mut style = ComputedStyle::default();
-    style.display = DisplayType::Inline;
+    let style = ComputedStyle {
+        display: DisplayType::Inline,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style), LayoutIr::Inline);
 
-    let mut style2 = ComputedStyle::default();
-    style2.display = DisplayType::InlineBlock;
+    let style2 = ComputedStyle {
+        display: DisplayType::InlineBlock,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style2), LayoutIr::InlineBlock);
 }
 
@@ -332,13 +343,17 @@ fn test_layout_inline_types() {
 fn test_layout_overflow() {
     let inferrer = LayoutInferrer::new();
     for overflow in [Overflow::Scroll, Overflow::Auto] {
-        let mut style = ComputedStyle::default();
-        style.overflow = Some(overflow);
+        let style = ComputedStyle {
+            overflow: Some(overflow),
+            ..Default::default()
+        };
         assert_eq!(inferrer.infer(&style), LayoutIr::Scroll);
     }
     for overflow in [Overflow::Visible, Overflow::Hidden] {
-        let mut style = ComputedStyle::default();
-        style.overflow = Some(overflow);
+        let style = ComputedStyle {
+            overflow: Some(overflow),
+            ..Default::default()
+        };
         assert_eq!(inferrer.infer(&style), LayoutIr::Stack);
     }
 }
@@ -346,24 +361,32 @@ fn test_layout_overflow() {
 #[test]
 fn test_layout_flow_types() {
     let inferrer = LayoutInferrer::new();
-    let mut style = ComputedStyle::default();
-    style.display = DisplayType::Flow;
+    let style = ComputedStyle {
+        display: DisplayType::Flow,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style), LayoutIr::Flow);
 
-    let mut style2 = ComputedStyle::default();
-    style2.display = DisplayType::FlowRoot;
+    let style2 = ComputedStyle {
+        display: DisplayType::FlowRoot,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style2), LayoutIr::Stack);
 }
 
 #[test]
 fn test_layout_table_contents() {
     let inferrer = LayoutInferrer::new();
-    let mut style = ComputedStyle::default();
-    style.display = DisplayType::Table;
+    let style = ComputedStyle {
+        display: DisplayType::Table,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style), LayoutIr::Table);
 
-    let mut style2 = ComputedStyle::default();
-    style2.display = DisplayType::Contents;
+    let style2 = ComputedStyle {
+        display: DisplayType::Contents,
+        ..Default::default()
+    };
     assert_eq!(inferrer.infer(&style2), LayoutIr::None);
 }
 
@@ -584,9 +607,11 @@ fn test_builder_inference_integration() {
 #[test]
 fn test_builder_layout_integration() {
     let doc = make_element_doc(0, "div", &[]);
-    let mut style = ComputedStyle::default();
-    style.display = DisplayType::Flex;
-    style.flex_direction = Some(FlexDirection::Row);
+    let style = ComputedStyle {
+        display: DisplayType::Flex,
+        flex_direction: Some(FlexDirection::Row),
+        ..Default::default()
+    };
     let styles = single_style(0, style);
     let builder = IrBuilder::new();
     let diagnostics = DiagnosticBag::new();
@@ -674,9 +699,11 @@ fn test_builder_default() {
 #[test]
 fn test_builder_flex_column_target() {
     let doc = make_element_doc(0, "div", &[]);
-    let mut style = ComputedStyle::default();
-    style.display = DisplayType::Flex;
-    style.flex_direction = Some(FlexDirection::Column);
+    let style = ComputedStyle {
+        display: DisplayType::Flex,
+        flex_direction: Some(FlexDirection::Column),
+        ..Default::default()
+    };
     let tree = IrBuilder::new().build(&doc, &single_style(0, style), &DiagnosticBag::new());
     assert_eq!(tree.nodes[0].layout, LayoutIr::FlexColumn);
     assert_eq!(

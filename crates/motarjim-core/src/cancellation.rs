@@ -1,6 +1,6 @@
 //! Cancellation token support for long-running operations.
 //!
-//! Provides [`CancelToken`] and [`Cancelled`] for cooperative cancellation
+//! Provides `CancelToken` and `Cancelled` for cooperative cancellation
 //! throughout the compilation pipeline.
 //!
 //! This module re-exports from [`motarjim_session`] so that consumers using

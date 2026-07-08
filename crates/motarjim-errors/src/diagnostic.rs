@@ -108,6 +108,7 @@ impl Diagnostic {
 /// A collection of diagnostics accumulated during compilation.
 #[derive(Debug, Clone, Default)]
 pub struct DiagnosticBag {
+    /// The underlying diagnostic entries.
     diagnostics: Vec<Diagnostic>,
 }
 

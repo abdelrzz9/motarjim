@@ -378,10 +378,8 @@ pub fn walk_pattern<V: Visitor + ?Sized>(visitor: &mut V, pat: &Pattern) {
             }
         }
         Pattern::Array(arr) => {
-            for el in &arr.elements {
-                if let Some(pat) = el {
-                    visitor.visit_pattern(pat);
-                }
+            for pat in arr.elements.iter().flatten() {
+                visitor.visit_pattern(pat);
             }
         }
         Pattern::Assign(assign) => {
@@ -727,10 +725,8 @@ pub fn walk_pattern_mut<V: VisitorMut + ?Sized>(visitor: &mut V, pat: &mut Patte
             }
         }
         Pattern::Array(arr) => {
-            for el in &mut arr.elements {
-                if let Some(pat) = el {
-                    visitor.visit_pattern_mut(pat);
-                }
+            for pat in arr.elements.iter_mut().flatten() {
+                visitor.visit_pattern_mut(pat);
             }
         }
         Pattern::Assign(assign) => {

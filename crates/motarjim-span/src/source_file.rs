@@ -103,6 +103,7 @@ impl SourceFile {
     }
 }
 
+/// Computes the byte offsets of each line start in `content`.
 fn compute_line_starts(content: &str) -> Vec<usize> {
     let mut starts = vec![0];
     for (i, c) in content.char_indices() {

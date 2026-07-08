@@ -5,8 +5,8 @@
 
 //! Jetpack Compose/Kotlin code generator for the Motarjim compiler.
 //!
-//! Maps [`IrTree`](motarjim_ast::ir::IrTree) nodes to Compose composable functions
-//! using the [`CodeWriter`](motarjim_formatter::CodeWriter) for indented Kotlin output.
+//! Maps [`IrTree`] nodes to Compose composable functions
+//! using the [`CodeWriter`] for indented Kotlin output.
 
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr};
 use motarjim_ast::NodeId;

@@ -932,7 +932,7 @@ mod tests {
     // ------------------------------------------------------------------
 
     fn make_ok_node(phase: Phase, deps: Vec<Phase>) -> CompilationNode {
-        CompilationNode::new(phase.clone(), deps, move |ctx| {
+        CompilationNode::new(phase, deps, move |ctx| {
             ctx.cancel_token.check().map_err(|_| {
                 vec![Diagnostic::new(
                     Severity::Error,
@@ -945,7 +945,7 @@ mod tests {
     }
 
     fn make_failing_node(phase: Phase, deps: Vec<Phase>) -> CompilationNode {
-        CompilationNode::new(phase.clone(), deps, move |_| {
+        CompilationNode::new(phase, deps, move |_| {
             Err(vec![Diagnostic::new(
                 Severity::Error,
                 motarjim_diag::DiagnosticCode::new(1, "Test error"),
@@ -1140,7 +1140,7 @@ mod tests {
         let mut ctx = empty_context();
         assert!(dag.execute(&mut ctx).is_err());
         // BuildIr should NOT execute because ParseHtml failed
-        assert!(ctx.inputs.get(&Phase::BuildIr).is_none());
+        assert!(!ctx.inputs.contains_key(&Phase::BuildIr));
     }
 
     // ------------------------------------------------------------------

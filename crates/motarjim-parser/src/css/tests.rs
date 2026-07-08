@@ -233,7 +233,10 @@ fn test_import_rule() {
 fn test_keyframes_rule() {
     let css = "@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }";
     let sheet = parse_css(css).unwrap();
-    let has_kf = sheet.rules.iter().any(|r| matches!(r, CssRule::Keyframes(_)));
+    let has_kf = sheet
+        .rules
+        .iter()
+        .any(|r| matches!(r, CssRule::Keyframes(_)));
     assert!(has_kf);
 
     if let CssRule::Keyframes(kf) = &sheet.rules[0] {
@@ -254,7 +257,10 @@ fn test_keyframes_with_percentages() {
 fn test_font_face_rule() {
     let css = "@font-face { font-family: 'MyFont'; src: url('font.woff2'); }";
     let sheet = parse_css(css).unwrap();
-    let has_font = sheet.rules.iter().any(|r| matches!(r, CssRule::FontFace(_)));
+    let has_font = sheet
+        .rules
+        .iter()
+        .any(|r| matches!(r, CssRule::FontFace(_)));
     assert!(has_font);
 }
 
@@ -262,7 +268,10 @@ fn test_font_face_rule() {
 fn test_supports_rule() {
     let css = "@supports (display: flex) { div { display: flex; } }";
     let sheet = parse_css(css).unwrap();
-    let has_supports = sheet.rules.iter().any(|r| matches!(r, CssRule::Supports(_)));
+    let has_supports = sheet
+        .rules
+        .iter()
+        .any(|r| matches!(r, CssRule::Supports(_)));
     assert!(has_supports);
 }
 
@@ -286,7 +295,10 @@ fn test_charset_rule() {
 fn test_namespace_rule() {
     let css = "@namespace svg url('http://www.w3.org/2000/svg');";
     let sheet = parse_css(css).unwrap();
-    let has_ns = sheet.rules.iter().any(|r| matches!(r, CssRule::Namespace(_)));
+    let has_ns = sheet
+        .rules
+        .iter()
+        .any(|r| matches!(r, CssRule::Namespace(_)));
     assert!(has_ns);
 }
 
@@ -410,7 +422,8 @@ fn test_media_prefers_color_scheme() {
 
 #[test]
 fn test_media_multiple_conditions() {
-    let css = "@media screen and (min-width: 768px) and (max-width: 1024px) { div { width: 50%; } }";
+    let css =
+        "@media screen and (min-width: 768px) and (max-width: 1024px) { div { width: 50%; } }";
     let sheet = parse_css(css).unwrap();
     assert!(sheet.rules.iter().any(|r| matches!(r, CssRule::Media(_))));
 }
@@ -470,7 +483,13 @@ fn test_counter_style() {
 fn test_large_stylesheet() {
     let mut css = String::new();
     for i in 0..100 {
-        css.push_str(&format!(".class-{} {{ color: rgb({}, {}, {}); }}\n", i, i % 255, (i * 2) % 255, (i * 3) % 255));
+        css.push_str(&format!(
+            ".class-{} {{ color: rgb({}, {}, {}); }}\n",
+            i,
+            i % 255,
+            (i * 2) % 255,
+            (i * 3) % 255
+        ));
     }
     let sheet = parse_css(&css).unwrap();
     assert_eq!(sheet.rules.len(), 100);

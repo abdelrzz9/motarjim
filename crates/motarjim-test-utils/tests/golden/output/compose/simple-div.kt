@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun GeneratedPage() {
     Column(modifier = Modifier.fillMaxSize()) {
-        Text("Hello World")
+        Box() {
+        }
     }
 }

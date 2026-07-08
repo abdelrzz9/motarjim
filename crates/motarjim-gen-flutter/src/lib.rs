@@ -5,8 +5,8 @@
 
 //! Flutter/Dart code generator for the Motarjim compiler.
 //!
-//! Maps [`IrTree`](motarjim_ast::ir::IrTree) nodes to Flutter widget code
-//! using the [`CodeWriter`](motarjim_formatter::CodeWriter) for indented Dart output.
+//! Maps [`IrTree`] nodes to Flutter widget code
+//! using the [`CodeWriter`] for indented Dart output.
 
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr};
 use motarjim_ast::NodeId;

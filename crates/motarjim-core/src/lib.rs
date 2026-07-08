@@ -45,10 +45,10 @@ use motarjim_gen_compose::ComposeGenerator;
 use motarjim_gen_flutter::FlutterGenerator;
 #[cfg(not(feature = "plugin-system"))]
 use motarjim_gen_swiftui::SwiftUIGenerator;
-use motarjim_ir::IrBuilder;
-use motarjim_optimizer::{register_default_passes, PassManager};
 use motarjim_html::ast as html_ast;
 use motarjim_html::HtmlParser as NewHtmlParser;
+use motarjim_ir::IrBuilder;
+use motarjim_optimizer::{register_default_passes, PassManager};
 use motarjim_parser::CssParser;
 use motarjim_profiling::ProfilingSession;
 use motarjim_session::Session;
@@ -145,11 +145,10 @@ pub struct Compiler {
 impl std::fmt::Debug for Compiler {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut d = f.debug_struct("Compiler");
-        d.field("session", &self.session)
-            .field(
-                "pass_manager",
-                &format_args!("PassManager({})", self.pass_manager.len()),
-            );
+        d.field("session", &self.session).field(
+            "pass_manager",
+            &format_args!("PassManager({})", self.pass_manager.len()),
+        );
         #[cfg(feature = "events")]
         {
             d.field(
@@ -596,7 +595,13 @@ fn tree_doc_to_arena(tree_doc: &html_ast::Document) -> Document {
     let mut next_id: u32 = 1;
     let mut child_ids: Vec<motarjim_ast::NodeId> = Vec::new();
     for child in &tree_doc.children {
-        child_ids.push(convert_node(child, root_id, 1, &mut raw_nodes, &mut next_id));
+        child_ids.push(convert_node(
+            child,
+            root_id,
+            1,
+            &mut raw_nodes,
+            &mut next_id,
+        ));
     }
     unsorted_root.children.extend(child_ids);
     raw_nodes.push((root_id, unsorted_root));
@@ -625,19 +630,30 @@ fn convert_node(
             let element = convert_element(data);
             (motarjim_ast::NodeType::Element, Some(element), None, None)
         }
-        html_ast::NodeKind::Text(data) => {
-            (motarjim_ast::NodeType::Text, None, Some(data.value.clone()), None)
-        }
-        html_ast::NodeKind::Comment(data) => {
-            (motarjim_ast::NodeType::Comment, None, Some(data.value.clone()), None)
-        }
+        html_ast::NodeKind::Text(data) => (
+            motarjim_ast::NodeType::Text,
+            None,
+            Some(data.value.clone()),
+            None,
+        ),
+        html_ast::NodeKind::Comment(data) => (
+            motarjim_ast::NodeType::Comment,
+            None,
+            Some(data.value.clone()),
+            None,
+        ),
         html_ast::NodeKind::Doctype(data) => {
             let doctype = motarjim_ast::DocumentTypeNode {
                 name: data.name.clone(),
                 public_id: data.public_id.clone(),
                 system_id: data.system_id.clone(),
             };
-            (motarjim_ast::NodeType::DocumentType, None, None, Some(doctype))
+            (
+                motarjim_ast::NodeType::DocumentType,
+                None,
+                None,
+                Some(doctype),
+            )
         }
         html_ast::NodeKind::ProcessingInstruction(data) => {
             // Represent as a Comment node for pipeline compatibility
@@ -668,7 +684,10 @@ fn convert_element(data: &html_ast::ElementData) -> motarjim_ast::Element {
     for attr in &data.attributes {
         let name = attr.name.clone();
         let value = attr.value.clone();
-        attrs.push(motarjim_ast::Attribute { name: name.clone(), value: value.clone() });
+        attrs.push(motarjim_ast::Attribute {
+            name: name.clone(),
+            value: value.clone(),
+        });
         if name == "id" {
             id = Some(value.clone());
         }

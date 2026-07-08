@@ -58,10 +58,7 @@ impl SemanticAnalyzer {
 
     pub fn analyze(&mut self, program: &Program) -> Vec<JsDiagnostic> {
         self.strict_mode = program.source_type == SourceType::Module
-            || program
-                .body
-                .first()
-                .map_or(false, |s| is_use_strict_directive(s));
+            || program.body.first().is_some_and(is_use_strict_directive);
         self.visit_program(program);
         std::mem::take(&mut self.diagnostics)
     }

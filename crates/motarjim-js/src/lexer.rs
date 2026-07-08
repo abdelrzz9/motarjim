@@ -174,7 +174,7 @@ impl<'a> JsLexer<'a> {
                     self.make_token(JsTokenKind::Nullish)
                 }
             }
-            Some('.') if self.peek_at(1).map_or(true, |c| !c.is_ascii_digit()) => {
+            Some('.') if self.peek_at(1).is_none_or(|c| !c.is_ascii_digit()) => {
                 self.advance();
                 self.make_token(JsTokenKind::QuestionDot)
             }
@@ -189,7 +189,7 @@ impl<'a> JsLexer<'a> {
             self.advance();
             return self.make_token(JsTokenKind::Ellipsis);
         }
-        if self.peek().map_or(false, |c| c.is_ascii_digit()) {
+        if self.peek().is_some_and(|c| c.is_ascii_digit()) {
             self.read_number_after_dot();
             return self.make_token(JsTokenKind::Number);
         }
@@ -383,7 +383,7 @@ impl<'a> JsLexer<'a> {
     fn read_hash(&mut self) -> JsToken {
         self.advance();
         let start = self.pos;
-        while self.peek().map_or(false, is_ident_part) {
+        while self.peek().is_some_and(is_ident_part) {
             self.advance();
         }
         if self.pos > start {
@@ -458,7 +458,7 @@ impl<'a> JsLexer<'a> {
                 Some('\'' | '"') => {
                     let q = self.peek().unwrap();
                     self.advance();
-                    while self.peek().map_or(false, |c| c != q) {
+                    while self.peek().is_some_and(|c| c != q) {
                         if self.peek() == Some('\\') {
                             self.advance();
                         }
@@ -535,7 +535,7 @@ impl<'a> JsLexer<'a> {
                 self.advance();
                 let hi = self.read_hex_digit();
                 let lo = self.read_hex_digit();
-                ((hi << 4) | lo) as u8 as char
+                ((hi << 4) | lo) as char
             }
             Some('u') => {
                 self.advance();
@@ -611,7 +611,7 @@ impl<'a> JsLexer<'a> {
         }
 
         self.take_while(|c| c.is_ascii_digit() || c == '_');
-        if self.peek() == Some('.') && self.peek_at(1).map_or(false, |c| c.is_ascii_digit()) {
+        if self.peek() == Some('.') && self.peek_at(1).is_some_and(|c| c.is_ascii_digit()) {
             self.advance();
             self.take_while(|c| c.is_ascii_digit() || c == '_');
         }
@@ -655,7 +655,7 @@ impl<'a> JsLexer<'a> {
     fn read_ident_or_keyword(&mut self) -> JsToken {
         self.take_while(is_ident_part);
         let raw = self.slice();
-        match keyword_from_str(&raw) {
+        match keyword_from_str(raw) {
             Some(kind) => self.make_token(kind),
             None => {
                 self.make_token_value(JsTokenKind::Identifier, TokenValue::Ident(raw.to_string()))
@@ -680,7 +680,7 @@ impl<'a> JsLexer<'a> {
                 None | Some('\n') | Some('\r') => break,
                 Some('/') => {
                     self.advance();
-                    while self.peek().map_or(false, is_ident_part) {
+                    while self.peek().is_some_and(is_ident_part) {
                         self.advance();
                     }
                     return self.make_token(JsTokenKind::Regex);

@@ -64,10 +64,7 @@ impl ScopeStack {
     }
 
     pub fn declare(&mut self, name: &str, kind: VarKind, span: SourceSpan) -> Option<Binding> {
-        let scope = match self.scopes.last_mut() {
-            Some(s) => s,
-            None => return None,
-        };
+        let scope = self.scopes.last_mut()?;
         if let Some(existing) = scope.bindings.get(name) {
             if kind != VarKind::Var {
                 return Some(*existing);

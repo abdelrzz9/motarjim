@@ -14,7 +14,7 @@ pub struct DiagnosticCode {
 
 impl DiagnosticCode {
     /// Creates a new diagnostic code with the given number and static message.
-    /// The `prefix` defaults to an empty string; use [`with_prefix`] to set it.
+    /// The `prefix` defaults to an empty string; use [`Self::with_prefix`] to set it.
     #[must_use]
     pub const fn new(number: u32, message: &'static str) -> Self {
         Self {

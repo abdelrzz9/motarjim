@@ -337,13 +337,15 @@ mod tests {
 
     #[test]
     fn test_computed_style_with_values() {
-        let mut s = ComputedStyle::default();
-        s.display = DisplayType::Flex;
-        s.flex_direction = Some(FlexDirection::Row);
-        s.justify_content = Some(JustifyContent::Center);
-        s.align_items = Some(AlignItems::Center);
-        s.color = Some("#333".to_string());
-        s.opacity = 0.8;
+        let s = ComputedStyle {
+            display: DisplayType::Flex,
+            flex_direction: Some(FlexDirection::Row),
+            justify_content: Some(JustifyContent::Center),
+            align_items: Some(AlignItems::Center),
+            color: Some("#333".to_string()),
+            opacity: 0.8,
+            ..Default::default()
+        };
         assert_eq!(s.display, DisplayType::Flex);
         assert_eq!(s.flex_direction, Some(FlexDirection::Row));
         assert_eq!(s.justify_content, Some(JustifyContent::Center));

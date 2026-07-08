@@ -10,14 +10,14 @@
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
+use crate::css::error::CssError;
 use motarjim_ast_css::{
     AtRule, AttributeOperator, CharsetRule, Combinator, CssFunction, CssNumber, CssRule,
-    CssStylesheet, CssUnit, CssValue, Declaration, FontFaceRule, ImportRule, Keyframe, KeyframesRule,
-    MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, PseudoClass, PseudoElement,
-    Selector, SimpleSelector, StyleRule, SupportsRule,
+    CssStylesheet, CssUnit, CssValue, Declaration, FontFaceRule, ImportRule, Keyframe,
+    KeyframesRule, MediaCondition, MediaQuery, MediaRule, NamespaceRule, PageRule, PseudoClass,
+    PseudoElement, Selector, SimpleSelector, StyleRule, SupportsRule,
 };
 use motarjim_span::{SourceLocation, SourceSpan};
-use crate::css::error::CssError;
 
 use lightningcss::rules::Location;
 use lightningcss::traits::ToCss;
@@ -296,7 +296,9 @@ fn parse_compound_selector(text: &str, result: &mut Vec<SimpleSelector>) {
                 // ID selector
                 let start = i;
                 i += 1;
-                while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_') {
+                while i < chars.len()
+                    && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_')
+                {
                     i += 1;
                 }
                 let id: String = chars[(start + 1)..i].iter().collect();
@@ -306,7 +308,9 @@ fn parse_compound_selector(text: &str, result: &mut Vec<SimpleSelector>) {
                 // Class selector
                 let start = i;
                 i += 1;
-                while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_') {
+                while i < chars.len()
+                    && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_')
+                {
                     i += 1;
                 }
                 let class: String = chars[(start + 1)..i].iter().collect();
@@ -318,8 +322,12 @@ fn parse_compound_selector(text: &str, result: &mut Vec<SimpleSelector>) {
                 let mut depth = 1;
                 i += 1;
                 while i < chars.len() && depth > 0 {
-                    if chars[i] == '[' { depth += 1; }
-                    if chars[i] == ']' { depth -= 1; }
+                    if chars[i] == '[' {
+                        depth += 1;
+                    }
+                    if chars[i] == ']' {
+                        depth -= 1;
+                    }
                     i += 1;
                 }
                 let attr_str: String = chars[start..i].iter().collect();
@@ -332,7 +340,9 @@ fn parse_compound_selector(text: &str, result: &mut Vec<SimpleSelector>) {
                     // Pseudo-element ::
                     let start = i;
                     i += 2;
-                    while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_') {
+                    while i < chars.len()
+                        && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_')
+                    {
                         i += 1;
                     }
                     let name: String = chars[(start + 2)..i].iter().collect();
@@ -347,8 +357,12 @@ fn parse_compound_selector(text: &str, result: &mut Vec<SimpleSelector>) {
                             let mut depth = 1;
                             i += 1;
                             while i < chars.len() && depth > 0 {
-                                if chars[i] == '(' { depth += 1; }
-                                if chars[i] == ')' { depth -= 1; }
+                                if chars[i] == '(' {
+                                    depth += 1;
+                                }
+                                if chars[i] == ')' {
+                                    depth -= 1;
+                                }
                                 i += 1;
                             }
                             break;
@@ -407,14 +421,18 @@ fn type_selector_len(s: &str) -> usize {
         return '*'.len_utf8();
     }
     let mut i = 0;
-    while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_' || chars[i] == '\\') {
+    while i < chars.len()
+        && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_' || chars[i] == '\\')
+    {
         i += 1;
         if i < chars.len() && chars[i] == '|' {
             i += 1; // skip | for namespace prefix
             break;
         }
     }
-    while i < chars.len() && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_' || chars[i] == '\\') {
+    while i < chars.len()
+        && (chars[i].is_alphanumeric() || chars[i] == '-' || chars[i] == '_' || chars[i] == '\\')
+    {
         i += 1;
     }
     // Convert char index back to byte offset
@@ -468,7 +486,10 @@ fn parse_simple_selector(fragment: &str) -> Option<SimpleSelector> {
     }
 
     // Type/universal selectors
-    if frag.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '*') {
+    if frag
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '*')
+    {
         if frag == "*" {
             Some(SimpleSelector::Universal)
         } else {
@@ -671,9 +692,7 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
     }
 
     // Quoted strings
-    if (s.starts_with('"') && s.ends_with('"'))
-        || (s.starts_with('\'') && s.ends_with('\''))
-    {
+    if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
         let inner = &s[1..s.len() - 1];
         return Some(CssValue::CssString(SmolStr::from(inner)));
     }
@@ -734,8 +753,7 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
     }
 
     // Hex colors
-    if s.starts_with('#') {
-        let hex = &s[1..];
+    if let Some(hex) = s.strip_prefix('#') {
         match hex.len() {
             3 | 4 => {
                 let r = u8::from_str_radix(&hex[0..1], 16).unwrap_or(0) * 17;
@@ -747,7 +765,9 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
                     1.0
                 };
                 return Some(CssValue::Color {
-                    r, g, b,
+                    r,
+                    g,
+                    b,
                     a: CssNumber(a),
                     color_space: SmolStr::new_inline("srgb"),
                 });
@@ -762,7 +782,9 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
                     1.0
                 };
                 return Some(CssValue::Color {
-                    r, g, b,
+                    r,
+                    g,
+                    b,
                     a: CssNumber(a),
                     color_space: SmolStr::new_inline("srgb"),
                 });
@@ -772,8 +794,12 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
     }
 
     // rgba(), rgb(), hsl(), hsla(), lab(), lch(), oklab(), oklch()
-    if s.starts_with("rgb") || s.starts_with("hsl") || s.starts_with("lab")
-        || s.starts_with("lch") || s.starts_with("oklab") || s.starts_with("oklch")
+    if s.starts_with("rgb")
+        || s.starts_with("hsl")
+        || s.starts_with("lab")
+        || s.starts_with("lch")
+        || s.starts_with("oklab")
+        || s.starts_with("oklch")
     {
         // Return as a function call
         if let Some(paren) = s.find('(') {
@@ -815,7 +841,9 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
     }
 
     // Fallback: generic keyword/identifier
-    if s.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+    if s.chars()
+        .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+    {
         return Some(CssValue::Keyword(SmolStr::from(s)));
     }
 
@@ -825,9 +853,8 @@ fn parse_css_value_str(s: &str) -> Option<CssValue> {
 /// Attempts to parse a length or number-with-unit value.
 fn try_parse_unit(s: &str) -> Option<CssValue> {
     const UNITS: &[&str] = &[
-        "px", "em", "rem", "vw", "vh", "vmin", "vmax", "deg", "rad",
-        "grad", "turn", "s", "ms", "fr", "ch", "ex", "cm", "mm", "in",
-        "pt", "pc", "lvw", "lvh", "svw", "svh", "dvw", "dvh",
+        "px", "em", "rem", "vw", "vh", "vmin", "vmax", "deg", "rad", "grad", "turn", "s", "ms",
+        "fr", "ch", "ex", "cm", "mm", "in", "pt", "pc", "lvw", "lvh", "svw", "svh", "dvw", "dvh",
     ];
 
     for unit_str in UNITS {
@@ -900,11 +927,7 @@ fn convert_media_rule(
         }
     }
 
-    Ok(CssRule::Media(MediaRule {
-        query,
-        rules,
-        span,
-    }))
+    Ok(CssRule::Media(MediaRule { query, rules, span }))
 }
 
 /// Converts a Lightning CSS `MediaList` into Motarjim's `MediaQuery`.
@@ -948,7 +971,7 @@ fn convert_media_list(list: &lightningcss::media_query::MediaList<'_>) -> MediaQ
             // If we already have conditions, merge with AND
             if !conditions.is_empty() {
                 let mut all_conditions = Vec::new();
-                all_conditions.extend(conditions.drain(..));
+                all_conditions.append(&mut conditions);
                 all_conditions.push(cond);
                 conditions.push(MediaCondition::And(all_conditions));
             } else {
@@ -967,12 +990,15 @@ fn convert_media_condition(
     use lightningcss::media_query::{MediaCondition as LcCondition, Operator};
 
     match condition {
-        LcCondition::Not(inner) => {
-            MediaCondition::Not(Box::new(convert_media_condition(inner)))
-        }
-        LcCondition::Operation { operator, conditions } => {
-            let converted: Vec<MediaCondition> =
-                conditions.iter().map(|c| convert_media_condition(c)).collect();
+        LcCondition::Not(inner) => MediaCondition::Not(Box::new(convert_media_condition(inner))),
+        LcCondition::Operation {
+            operator,
+            conditions,
+        } => {
+            let converted: Vec<MediaCondition> = conditions
+                .iter()
+                .map(|c| convert_media_condition(c))
+                .collect();
             match operator {
                 Operator::And => MediaCondition::And(converted),
                 Operator::Or => MediaCondition::Or(converted),
@@ -984,9 +1010,7 @@ fn convert_media_condition(
 }
 
 /// Converts a Lightning CSS `MediaFeature` into Motarjim's `MediaCondition`.
-fn convert_media_feature(
-    feature: &lightningcss::media_query::MediaFeature<'_>,
-) -> MediaCondition {
+fn convert_media_feature(feature: &lightningcss::media_query::MediaFeature<'_>) -> MediaCondition {
     use lightningcss::media_query::MediaFeature as LcFeature;
 
     match feature {
@@ -1038,18 +1062,10 @@ fn convert_media_feature(
                 .ok();
 
             match name_lower.as_str() {
-                "min-width" => {
-                    MediaCondition::MinWidth(value_str.unwrap_or_default())
-                }
-                "max-width" => {
-                    MediaCondition::MaxWidth(value_str.unwrap_or_default())
-                }
-                "min-height" => {
-                    MediaCondition::MinHeight(value_str.unwrap_or_default())
-                }
-                "max-height" => {
-                    MediaCondition::MaxHeight(value_str.unwrap_or_default())
-                }
+                "min-width" => MediaCondition::MinWidth(value_str.unwrap_or_default()),
+                "max-width" => MediaCondition::MaxWidth(value_str.unwrap_or_default()),
+                "min-height" => MediaCondition::MinHeight(value_str.unwrap_or_default()),
+                "max-height" => MediaCondition::MaxHeight(value_str.unwrap_or_default()),
                 _ => MediaCondition::Feature {
                     name: SmolStr::from(name_lower),
                     value: value_str,
@@ -1142,10 +1158,7 @@ fn convert_font_face_rule(
         }
     }
 
-    Ok(CssRule::FontFace(FontFaceRule {
-        declarations,
-        span,
-    }))
+    Ok(CssRule::FontFace(FontFaceRule { declarations, span }))
 }
 
 /// Parses a font-face property CSS string into a Motarjim Declaration.
@@ -1211,9 +1224,9 @@ fn convert_page_rule(
 ) -> Result<CssRule, CssError> {
     // Extract a pseudo-class from the page selectors if any
     let pseudo = rule.selectors.first().and_then(|sel| {
-        sel.pseudo_classes.first().map(|pc| {
-            SmolStr::from(format!("{:?}", pc).to_ascii_lowercase())
-        })
+        sel.pseudo_classes
+            .first()
+            .map(|pc| SmolStr::from(format!("{:?}", pc).to_ascii_lowercase()))
     });
     let declarations = convert_declaration_block(&rule.declarations, span);
 
@@ -1232,11 +1245,7 @@ fn convert_namespace_rule(
     let prefix = rule.prefix.as_ref().map(|p| SmolStr::from(p.to_string()));
     let url = SmolStr::from(rule.url.to_string());
 
-    Ok(CssRule::Namespace(NamespaceRule {
-        prefix,
-        url,
-        span,
-    }))
+    Ok(CssRule::Namespace(NamespaceRule { prefix, url, span }))
 }
 
 /// Converts a Lightning CSS nesting rule.
@@ -1295,9 +1304,7 @@ fn extract_at_rule_parts(css: &str, name: &str) -> (String, Option<String>) {
 }
 
 /// Returns a static name for a CSS rule variant.
-fn variant_name(
-    rule: &lightningcss::rules::CssRule<'_>,
-) -> &'static str {
+fn variant_name(rule: &lightningcss::rules::CssRule<'_>) -> &'static str {
     match rule {
         lightningcss::rules::CssRule::Style(_) => "style",
         lightningcss::rules::CssRule::Media(_) => "media",
@@ -1364,13 +1371,19 @@ mod converter_tests {
     #[test]
     fn test_pseudo_class() {
         let r = parse_simple_selector(":hover");
-        assert!(matches!(r, Some(SimpleSelector::PseudoClass(PseudoClass::Hover))));
+        assert!(matches!(
+            r,
+            Some(SimpleSelector::PseudoClass(PseudoClass::Hover))
+        ));
     }
 
     #[test]
     fn test_pseudo_element() {
         let r = parse_simple_selector("::before");
-        assert!(matches!(r, Some(SimpleSelector::PseudoElement(PseudoElement::Before))));
+        assert!(matches!(
+            r,
+            Some(SimpleSelector::PseudoElement(PseudoElement::Before))
+        ));
     }
 
     #[test]
@@ -1405,7 +1418,7 @@ mod converter_tests {
     fn test_nth_child() {
         match parse_pseudo_class("nth-child(2n+1)") {
             PseudoClass::NthChild(s) => assert_eq!(s, "2n+1"),
-            _ => panic!("Expected NthChild"),
+            _ => unreachable!("Expected NthChild"),
         }
     }
 
@@ -1416,7 +1429,7 @@ mod converter_tests {
                 assert_eq!(selectors.len(), 1);
                 assert!(matches!(selectors[0], SimpleSelector::Class(_)));
             }
-            _ => panic!("Expected Not"),
+            _ => unreachable!("Expected Not"),
         }
     }
 
@@ -1495,13 +1508,29 @@ mod converter_tests {
     #[test]
     fn test_parse_css_value_hex_color_6() {
         let v = parse_css_value_str("#ff0000").unwrap();
-        assert!(matches!(v, CssValue::Color { r: 255, g: 0, b: 0, .. }));
+        assert!(matches!(
+            v,
+            CssValue::Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_parse_css_value_hex_color_3() {
         let v = parse_css_value_str("#f00").unwrap();
-        assert!(matches!(v, CssValue::Color { r: 255, g: 0, b: 0, .. }));
+        assert!(matches!(
+            v,
+            CssValue::Color {
+                r: 255,
+                g: 0,
+                b: 0,
+                ..
+            }
+        ));
     }
 
     #[test]

@@ -5,8 +5,8 @@
 
 //! `SwiftUI` code generator for the Motarjim compiler.
 //!
-//! Maps [`IrTree`](motarjim_ast::ir::IrTree) nodes to `SwiftUI` View code
-//! using the [`CodeWriter`](motarjim_formatter::CodeWriter) for indented Swift output.
+//! Maps [`IrTree`] nodes to `SwiftUI` View code
+//! using the [`CodeWriter`] for indented Swift output.
 
 use motarjim_ast::ir::{IrNode, IrTree, LayoutIr, SemanticIr};
 use motarjim_ast::NodeId;

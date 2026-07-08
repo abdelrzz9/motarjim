@@ -9,13 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun GeneratedPage() {
     Column(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            content = { paddingValues ->
-                Column(modifier = Modifier.padding(paddingValues)) {
-                    // Custom composable: link
-                    // Custom composable: link
-                }
-            },
+        Box() {
         }
     }
 }

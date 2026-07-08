@@ -75,7 +75,7 @@ pub enum NodeKind {
 pub struct ElementData {
     /// The tag name (e.g., "div", "span").
     pub tag_name: SmolStr,
-    /// The namespace URI (e.g., "http://www.w3.org/1999/xhtml").
+    /// The namespace URI (e.g., `http://www.w3.org/1999/xhtml`).
     pub namespace: SmolStr,
     /// The element's attributes.
     pub attributes: Vec<Attribute>,
@@ -173,7 +173,9 @@ impl Node {
     pub fn text(id: NodeId, value: impl Into<String>) -> Self {
         Self {
             id,
-            kind: NodeKind::Text(TextData { value: value.into() }),
+            kind: NodeKind::Text(TextData {
+                value: value.into(),
+            }),
             children: Vec::new(),
             span: None,
         }
@@ -183,7 +185,9 @@ impl Node {
     pub fn comment(id: NodeId, value: impl Into<String>) -> Self {
         Self {
             id,
-            kind: NodeKind::Comment(CommentData { value: value.into() }),
+            kind: NodeKind::Comment(CommentData {
+                value: value.into(),
+            }),
             children: Vec::new(),
             span: None,
         }
@@ -298,10 +302,10 @@ impl Node {
         result
     }
 
+    /// Collects text content into `result` recursively.
     fn collect_text(&self, result: &mut String) {
-        match &self.kind {
-            NodeKind::Text(t) => result.push_str(&t.value),
-            _ => {}
+        if let NodeKind::Text(t) = &self.kind {
+            result.push_str(&t.value);
         }
         for child in &self.children {
             child.collect_text(result);
@@ -317,7 +321,7 @@ impl Node {
 
 /// The root document, containing a tree of nodes.
 ///
-/// Unlike the arena-based [`motarjim_ast_html::Document`], this uses a
+/// Unlike the arena-based `motarjim_ast_html::Document`, this uses a
 /// recursive tree structure where each [`Node`] directly owns its children.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Document {
@@ -441,6 +445,7 @@ impl Default for Fragment {
 /// A node ID generator for building trees.
 #[derive(Debug, Clone, Default)]
 pub struct NodeIdGenerator {
+    /// The next ID to allocate.
     next: u32,
 }
 
@@ -451,6 +456,7 @@ impl NodeIdGenerator {
     }
 
     /// Allocates the next unique node ID.
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> NodeId {
         let id = NodeId(self.next);
         self.next += 1;
@@ -463,6 +469,7 @@ impl NodeIdGenerator {
     }
 }
 
+/// Searches for a node with the given tag name in the subtree.
 fn find_tag_recursive<'a>(nodes: &'a [Node], tag: &str) -> Option<&'a Node> {
     for node in nodes {
         if node.is_tag(tag) {
@@ -475,6 +482,7 @@ fn find_tag_recursive<'a>(nodes: &'a [Node], tag: &str) -> Option<&'a Node> {
     None
 }
 
+/// Collects all nodes with the given tag name from the subtree into `result`.
 fn collect_tags_recursive<'a>(nodes: &'a [Node], tag: &str, result: &mut Vec<&'a Node>) {
     for node in nodes {
         if node.is_tag(tag) {
@@ -506,10 +514,7 @@ mod tests {
 
     #[test]
     fn test_element_node() {
-        let attrs = vec![
-            Attribute::new("class", "foo"),
-            Attribute::new("id", "bar"),
-        ];
+        let attrs = vec![Attribute::new("class", "foo"), Attribute::new("id", "bar")];
         let node = Node::element(
             NodeId(1),
             "div",
@@ -585,10 +590,8 @@ mod tests {
     #[test]
     fn test_text_content() {
         let mut p = Node::element(NodeId(0), "p", "http://www.w3.org/1999/xhtml", vec![]);
-        p.children
-            .push(Node::text(NodeId(1), "Hello, "));
-        p.children
-            .push(Node::text(NodeId(2), "world!"));
+        p.children.push(Node::text(NodeId(1), "Hello, "));
+        p.children.push(Node::text(NodeId(2), "world!"));
         assert_eq!(p.text_content(), "Hello, world!");
     }
 
@@ -694,10 +697,18 @@ mod tests {
     fn test_document_root_element_head_body() {
         let mut doc = Document::new();
         let mut html = Node::element(NodeId(0), "html", "http://www.w3.org/1999/xhtml", vec![]);
-        html.children
-            .push(Node::element(NodeId(1), "head", "http://www.w3.org/1999/xhtml", vec![]));
-        html.children
-            .push(Node::element(NodeId(2), "body", "http://www.w3.org/1999/xhtml", vec![]));
+        html.children.push(Node::element(
+            NodeId(1),
+            "head",
+            "http://www.w3.org/1999/xhtml",
+            vec![],
+        ));
+        html.children.push(Node::element(
+            NodeId(2),
+            "body",
+            "http://www.w3.org/1999/xhtml",
+            vec![],
+        ));
         doc.children.push(html);
 
         assert!(doc.root_element().is_some());
@@ -718,10 +729,18 @@ mod tests {
     fn test_document_find_tags() {
         let mut doc = Document::new();
         let mut div = Node::element(NodeId(0), "div", "http://www.w3.org/1999/xhtml", vec![]);
-        div.children
-            .push(Node::element(NodeId(1), "span", "http://www.w3.org/1999/xhtml", vec![]));
-        div.children
-            .push(Node::element(NodeId(2), "span", "http://www.w3.org/1999/xhtml", vec![]));
+        div.children.push(Node::element(
+            NodeId(1),
+            "span",
+            "http://www.w3.org/1999/xhtml",
+            vec![],
+        ));
+        div.children.push(Node::element(
+            NodeId(2),
+            "span",
+            "http://www.w3.org/1999/xhtml",
+            vec![],
+        ));
         doc.children.push(div);
         assert_eq!(doc.find_tags("span").len(), 2);
     }

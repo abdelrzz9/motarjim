@@ -449,7 +449,7 @@ mod tests {
         let path = test.expected_output_path(Path::new("tests/golden"));
         assert!(path
             .to_str()
-            .map_or(false, |s| s.contains("output/flutter/simple-div.dart")));
+            .is_some_and(|s| s.contains("output/flutter/simple-div.dart")));
     }
 
     #[test]
@@ -463,7 +463,7 @@ mod tests {
         let path = test.expected_output_path(Path::new("tests/golden"));
         assert!(path
             .to_str()
-            .map_or(false, |s| s.contains("output/compose/simple-div.kt")));
+            .is_some_and(|s| s.contains("output/compose/simple-div.kt")));
     }
 
     #[test]
@@ -477,7 +477,7 @@ mod tests {
         let path = test.expected_output_path(Path::new("tests/golden"));
         assert!(path
             .to_str()
-            .map_or(false, |s| s.contains("output/swiftui/simple-div.swift")));
+            .is_some_and(|s| s.contains("output/swiftui/simple-div.swift")));
     }
 
     #[test]

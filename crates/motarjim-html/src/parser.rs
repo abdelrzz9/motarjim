@@ -2,7 +2,7 @@
 //!
 //! This module provides the public parsing API. Internally it uses
 //! html5ever's spec-compliant parser to produce an RcDom, then converts
-//! it into Motarjim's internal AST via [`crate::converter`].
+//! it into Motarjim's internal AST via `crate::converter`.
 //!
 //! # Parsing flow
 //!
@@ -115,9 +115,7 @@ impl HtmlParser {
     ///
     /// Returns the diagnostics even on success, so callers can inspect
     /// warnings and informational messages.
-    pub fn parse_with_diagnostics(
-        source: &str,
-    ) -> (Result<Document, ParseError>, Vec<ParseError>) {
+    pub fn parse_with_diagnostics(source: &str) -> (Result<Document, ParseError>, Vec<ParseError>) {
         let mut errors = DiagnosticBag::new();
 
         let rcdom = match parse_document(RcDom::default(), Default::default())
@@ -237,8 +235,7 @@ mod tests {
 
     #[test]
     fn test_parse_fragment() {
-        let frag = HtmlParser::parse_fragment("<div>hello</div>")
-            .expect("fragment should parse");
+        let frag = HtmlParser::parse_fragment("<div>hello</div>").expect("fragment should parse");
         assert!(!frag.is_empty());
     }
 

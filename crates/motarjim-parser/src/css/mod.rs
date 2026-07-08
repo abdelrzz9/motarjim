@@ -12,9 +12,9 @@
 mod converter;
 mod error;
 mod parser;
-mod validation;
 #[cfg(test)]
 mod tests;
+mod validation;
 
 pub use error::CssError;
 pub use parser::parse_css;
