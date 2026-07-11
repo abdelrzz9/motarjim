@@ -14,6 +14,9 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
+use motarjim_cache::CacheKey;
+use sha2::{Digest, Sha256};
+
 /// Cancellation token support for long-running operations.
 ///
 /// Provides [`CancelToken`](cancellation::CancelToken) and
@@ -200,6 +203,28 @@ impl Compiler {
     ) -> Result<CompileResult, Vec<Diagnostic>> {
         let mut profiling = ProfilingSession::new("compile");
         let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
+
+        // Check artifact cache for a previously compiled result.
+        if let Some(cache) = self.session.cache() {
+            let input_hash = sha256(input.as_bytes());
+            let config_hash = sha256(format!("{:?}", self.session.config()).as_bytes());
+            let key = CacheKey::new(
+                input_hash,
+                options.platform.to_string(),
+                config_hash,
+            );
+            if let Ok(Some(cached_bytes)) = cache.load(&key) {
+                if let Ok(cached_output) = String::from_utf8(cached_bytes) {
+                    return Ok(CompileResult {
+                        output: cached_output,
+                        ast: motarjim_ast_html::Document::new(),
+                        ir: IrTree { nodes: vec![], root_id: motarjim_ast::NodeId(0), target_hints: vec![] },
+                        diagnostics: vec![],
+                        stats: CompileStats::default(),
+                    });
+                }
+            }
+        }
 
         // Phase 1: Parse HTML
         #[cfg(feature = "events")]
@@ -454,6 +479,18 @@ impl Compiler {
             return Err(all_diagnostics);
         }
 
+        // Store the compiled output in the artifact cache.
+        if let Some(cache) = self.session.cache() {
+            let input_hash = sha256(input.as_bytes());
+            let config_hash = sha256(format!("{:?}", self.session.config()).as_bytes());
+            let key = CacheKey::new(
+                input_hash,
+                options.platform.to_string(),
+                config_hash,
+            );
+            let _ = cache.store(&key, output.as_bytes());
+        }
+
         Ok(CompileResult {
             output,
             ast,
@@ -464,6 +501,10 @@ impl Compiler {
     }
 
     /// Compile a file by reading it from the filesystem.
+    ///
+    /// When the incremental engine is enabled the file hash is checked
+    /// against the last recorded state. The compilation always runs;
+    /// full incremental skip is deferred to a future iteration.
     ///
     /// # Errors
     /// Returns a vector of [`Diagnostic`]s if compilation fails.
@@ -479,6 +520,23 @@ impl Compiler {
                 format!("Failed to read {}: {e}", path.display()),
             )]
         })?;
+
+        let file_hash = sha256(entry.content.as_bytes());
+        if let Some(incr) = self.session.incremental() {
+            use motarjim_incremental::CompilationStatus;
+            match incr.status(path, file_hash) {
+                CompilationStatus::UpToDate => {
+                    tracing::trace!("incremental: {} is up-to-date", path.display());
+                }
+                CompilationStatus::Stale => {
+                    tracing::debug!("incremental: {} is stale, recompiling", path.display());
+                }
+                CompilationStatus::New => {
+                    tracing::debug!("incremental: {} is new, compiling", path.display());
+                }
+            }
+        }
+
         self.compile(&entry.content, options)
     }
 
@@ -567,6 +625,16 @@ impl Compiler {
     pub fn event_bus_mut(&mut self) -> &mut event::EventBus {
         &mut self.event_bus
     }
+}
+
+/// Compute a SHA-256 hash of a byte slice.
+fn sha256(data: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    let result = hasher.finalize();
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&result);
+    out
 }
 
 /// Extract CSS source from the parsed HTML tree by finding `<style>` elements.
@@ -968,7 +1036,8 @@ mod tests {
     #[test]
     fn test_extract_css_from_html() {
         let html = r#"<html><style>div { color: red; }</style></html>"#;
-        let css = extract_css_from_html(html);
+        let tree_doc = NewHtmlParser::parse(html).unwrap();
+        let css = extract_css_from_tree(&tree_doc);
         assert!(css.is_some());
         assert!(css.unwrap().contains("color: red"));
     }

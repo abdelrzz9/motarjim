@@ -32,11 +32,14 @@ rayon = { workspace = true, optional = true }
 wasm-bindgen = { workspace = true, optional = true }
 smallvec = { workspace = true }
 smol_str = { workspace = true }
+sha2 = { workspace = true }
 tracing = { workspace = true }
 
 [features]
-default = ["dag"]
+default = ["dag", "incremental", "cache"]
 cancellation = ["motarjim-session/cancellation"]
+incremental = ["motarjim-session/incremental"]
+cache = ["motarjim-session/cache"]
 dag = ["rayon"]
 events = []
 query-system = ["dep:dashmap"]
