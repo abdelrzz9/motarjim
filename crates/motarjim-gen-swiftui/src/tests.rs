@@ -1,7 +1,7 @@
 use super::*;
 use motarjim_ast::ir::{LayoutIr, SemanticIr, TargetIr};
 use motarjim_ast::NodeId;
-use motarjim_ast_html::ComputedStyle;
+use motarjim_ast_html::{AlignItems, ComputedStyle};
 use smol_str::SmolStr;
 
 fn make_node(
@@ -31,6 +31,29 @@ fn make_tree(nodes: Vec<IrNode>, root_id: u32) -> IrTree {
         nodes,
         root_id: NodeId(root_id),
         target_hints: vec![],
+    }
+}
+
+fn make_node_with_style(
+    id: u32,
+    semantic: SemanticIr,
+    layout: LayoutIr,
+    children: Vec<u32>,
+    parent: Option<u32>,
+    style: ComputedStyle,
+) -> IrNode {
+    IrNode {
+        id: NodeId(id),
+        semantic,
+        layout,
+        target: TargetIr::Generic {
+            platform: SmolStr::new_inline("swiftui"),
+            node: SmolStr::new_inline("View"),
+        },
+        computed_style: style,
+        children: children.into_iter().map(NodeId).collect(),
+        parent: parent.map(NodeId),
+        text: None,
     }
 }
 
@@ -205,4 +228,144 @@ fn test_card_with_content() {
     let output = gen.generate(&tree);
     assert!(output.contains(".cornerRadius(12)"));
     assert!(output.contains("Text(\"text\")"));
+}
+
+#[test]
+fn test_hstack_alignment_top() {
+    let style = ComputedStyle {
+        align_items: Some(AlignItems::FlexStart),
+        ..Default::default()
+    };
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node_with_style(
+                1,
+                SemanticIr::Row,
+                LayoutIr::FlexRow,
+                vec![],
+                Some(0),
+                style,
+            ),
+        ],
+        0,
+    );
+    let gen = SwiftUIGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(
+        output.contains("HStack(alignment: .top)"),
+        "Expected HStack(alignment: .top), got:\n{output}"
+    );
+}
+
+#[test]
+fn test_hstack_alignment_bottom() {
+    let style = ComputedStyle {
+        align_items: Some(AlignItems::FlexEnd),
+        ..Default::default()
+    };
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node_with_style(
+                1,
+                SemanticIr::Row,
+                LayoutIr::FlexRow,
+                vec![],
+                Some(0),
+                style,
+            ),
+        ],
+        0,
+    );
+    let gen = SwiftUIGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(
+        output.contains("HStack(alignment: .bottom)"),
+        "Expected HStack(alignment: .bottom), got:\n{output}"
+    );
+}
+
+#[test]
+fn test_hstack_alignment_center() {
+    let style = ComputedStyle {
+        align_items: Some(AlignItems::Center),
+        ..Default::default()
+    };
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node_with_style(
+                1,
+                SemanticIr::Row,
+                LayoutIr::FlexRow,
+                vec![],
+                Some(0),
+                style,
+            ),
+        ],
+        0,
+    );
+    let gen = SwiftUIGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(
+        output.contains("HStack(alignment: .center)"),
+        "Expected HStack(alignment: .center), got:\n{output}"
+    );
+}
+
+#[test]
+fn test_vstack_alignment_leading() {
+    let style = ComputedStyle {
+        align_items: Some(AlignItems::FlexStart),
+        ..Default::default()
+    };
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node_with_style(
+                1,
+                SemanticIr::Column,
+                LayoutIr::FlexColumn,
+                vec![],
+                Some(0),
+                style,
+            ),
+        ],
+        0,
+    );
+    let gen = SwiftUIGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(
+        output.contains("VStack(alignment: .leading)"),
+        "Expected VStack(alignment: .leading), got:\n{output}"
+    );
+}
+
+#[test]
+fn test_vstack_alignment_trailing() {
+    let style = ComputedStyle {
+        align_items: Some(AlignItems::FlexEnd),
+        ..Default::default()
+    };
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node_with_style(
+                1,
+                SemanticIr::Column,
+                LayoutIr::FlexColumn,
+                vec![],
+                Some(0),
+                style,
+            ),
+        ],
+        0,
+    );
+    let gen = SwiftUIGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(
+        output.contains("VStack(alignment: .trailing)"),
+        "Expected VStack(alignment: .trailing), got:\n{output}"
+    );
 }
