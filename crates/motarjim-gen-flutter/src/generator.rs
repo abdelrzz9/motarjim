@@ -464,7 +464,7 @@ impl FlutterGenerator {
 
     /// Emits a `TableCell` widget.
     fn emit_table_cell(&self, tree: &IrTree, node: &IrNode, w: &mut CodeWriter) {
-        w.write_line("TableRow(");
+        w.write_line("TableCell(");
         w.indent();
         w.write_line("child: ");
         w.indent();
