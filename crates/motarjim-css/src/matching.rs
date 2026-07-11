@@ -515,4 +515,251 @@ mod tests {
         // div.wrapper IS a div, div.container HAS class "container" -> match
         assert!(rule_matches_element(&rule, &nodes[4], &nodes));
     }
+
+    #[test]
+    fn test_descendant_not_child() {
+        // .container p should match all p descendants, not just direct children
+        let nodes = build_dom();
+        let selector = Selector {
+            simple_selectors: vec![
+                SimpleSelector::Class(SmolStr::new("container")),
+                SimpleSelector::Type(SmolStr::new("p")),
+            ],
+            combinators: vec![Combinator::Descendant],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("margin"),
+                value: "10px".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        // p#intro (id=2) is direct child of div.container -> match (descendant includes children)
+        assert!(rule_matches_element(&rule, &nodes[2], &nodes));
+        // p.desc (id=5) is nested descendant -> match
+        assert!(rule_matches_element(&rule, &nodes[5], &nodes));
+        // p (id=6) is nested descendant -> match
+        assert!(rule_matches_element(&rule, &nodes[6], &nodes));
+    }
+
+    #[test]
+    fn test_text_node_does_not_match() {
+        // Text nodes (no element) should never match element selectors
+        let nodes = vec![
+            make_node(0, None, None, vec![1]),
+            make_node(1, Some(make_element("div")), Some(0), vec![2]),
+            HtmlNode {
+                id: NodeId(2),
+                node_type: NodeType::Text,
+                element: None,
+                value: Some("hello".to_string()),
+                children: SmallVec::new(),
+                parent: Some(NodeId(1)),
+                depth: 2,
+                document_type: None,
+            },
+        ];
+        let selector = Selector {
+            simple_selectors: vec![SimpleSelector::Universal],
+            combinators: vec![],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("color"),
+                value: "red".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        // Text node should NOT match universal selector
+        assert!(!rule_matches_element(&rule, &nodes[2], &nodes));
+    }
+
+    #[test]
+    fn test_multiple_selectors_in_rule() {
+        // A rule with multiple selectors: div, p
+        let nodes = build_dom();
+        let selectors = vec![
+            Selector {
+                simple_selectors: vec![SimpleSelector::Type(SmolStr::new("div"))],
+                combinators: vec![],
+                span: None,
+            },
+            Selector {
+                simple_selectors: vec![SimpleSelector::Type(SmolStr::new("p"))],
+                combinators: vec![],
+                span: None,
+            },
+        ];
+        let rule = StyleRule {
+            selectors,
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("color"),
+                value: "blue".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        // div (id=1) matches first selector
+        assert!(rule_matches_element(&rule, &nodes[1], &nodes));
+        // p#intro (id=2) matches second selector
+        assert!(rule_matches_element(&rule, &nodes[2], &nodes));
+        // h1 (id=4) matches neither
+        assert!(!rule_matches_element(&rule, &nodes[4], &nodes));
+    }
+
+    #[test]
+    fn test_universal_selector() {
+        // * should match any element
+        let nodes = build_dom();
+        let selector = Selector {
+            simple_selectors: vec![SimpleSelector::Universal],
+            combinators: vec![],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("color"),
+                value: "red".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        assert!(rule_matches_element(&rule, &nodes[1], &nodes));
+        assert!(rule_matches_element(&rule, &nodes[2], &nodes));
+        assert!(rule_matches_element(&rule, &nodes[4], &nodes));
+    }
+
+    #[test]
+    fn test_id_selector() {
+        // #intro should match p#intro only
+        let nodes = build_dom();
+        let selector = Selector {
+            simple_selectors: vec![SimpleSelector::Id(SmolStr::new("intro"))],
+            combinators: vec![],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("font-weight"),
+                value: "bold".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        assert!(rule_matches_element(&rule, &nodes[2], &nodes));
+        assert!(!rule_matches_element(&rule, &nodes[1], &nodes));
+        assert!(!rule_matches_element(&rule, &nodes[5], &nodes));
+    }
+
+    #[test]
+    fn test_sibling_combinator_no_match_before() {
+        // h1 + p should NOT match p that appears before h1
+        let nodes = build_dom();
+        let selector = Selector {
+            simple_selectors: vec![
+                SimpleSelector::Type(SmolStr::new("h1")),
+                SimpleSelector::Type(SmolStr::new("p")),
+            ],
+            combinators: vec![Combinator::AdjacentSibling],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("color"),
+                value: "red".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        // p#intro (id=2) is before h1 -> no match
+        assert!(!rule_matches_element(&rule, &nodes[2], &nodes));
+    }
+
+    #[test]
+    fn test_general_sibling_only_preceding() {
+        // h1 ~ div should NOT match div.wrapper (id=3) which is BEFORE h1 (id=4)
+        let nodes = build_dom();
+        let selector = Selector {
+            simple_selectors: vec![
+                SimpleSelector::Type(SmolStr::new("h1")),
+                SimpleSelector::Type(SmolStr::new("div")),
+            ],
+            combinators: vec![Combinator::GeneralSibling],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("color"),
+                value: "red".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        // div.wrapper (id=3) is BEFORE h1 (id=4) -> no match
+        assert!(!rule_matches_element(&rule, &nodes[3], &nodes));
+    }
+
+    #[test]
+    fn test_chained_descendant_and_child() {
+        // .container > .wrapper p: p is descendant of .wrapper which is child of .container
+        let nodes = build_dom();
+        let selector = Selector {
+            simple_selectors: vec![
+                SimpleSelector::Class(SmolStr::new("container")),
+                SimpleSelector::Class(SmolStr::new("wrapper")),
+                SimpleSelector::Type(SmolStr::new("p")),
+            ],
+            combinators: vec![Combinator::Child, Combinator::Descendant],
+            span: None,
+        };
+        let rule = StyleRule {
+            selectors: vec![selector],
+            declarations: smallvec![Declaration {
+                property: SmolStr::new("padding"),
+                value: "8px".to_string(),
+                important: false,
+                parsed: None,
+                span: None,
+            }],
+            span: None,
+        };
+
+        // p.desc (id=5): parent is .wrapper, grandparent is .container -> match
+        assert!(rule_matches_element(&rule, &nodes[5], &nodes));
+        // p (id=6): same -> match
+        assert!(rule_matches_element(&rule, &nodes[6], &nodes));
+        // p#intro (id=2): parent is .container, but .container is NOT .wrapper -> no match
+        assert!(!rule_matches_element(&rule, &nodes[2], &nodes));
+    }
 }
