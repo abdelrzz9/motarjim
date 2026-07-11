@@ -732,3 +732,30 @@ fn test_builder_alt_accessibility() {
         .iter()
         .any(|h| h.target.as_str() == "accessibility"));
 }
+
+#[test]
+fn test_builder_diagnostic_on_unknown_element() {
+    // Elements like `video` map to SemanticIr::Custom and should emit a diagnostic warning
+    let doc = make_element_doc(0, "video", &[]);
+    let mut diag = DiagnosticBag::new();
+    let _tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    // The builder should emit at least one warning for custom/unknown elements
+    assert!(
+        diag.has_warnings(),
+        "Expected warning for custom element, got: {} diagnostics",
+        diag.len()
+    );
+}
+
+#[test]
+fn test_builder_no_diagnostics_for_known_elements() {
+    let doc = make_nested_doc();
+    let mut diag = DiagnosticBag::new();
+    let _tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    // Known elements (div, button) should not produce diagnostics
+    assert!(
+        !diag.has_warnings(),
+        "Expected no warnings for known elements, got: {} warnings",
+        diag.len()
+    );
+}
