@@ -248,3 +248,54 @@ fn test_hero_section() {
     assert!(output.contains("SizedBox"));
     assert!(output.contains("'text',"));
 }
+
+#[test]
+fn test_table_cell_widget() {
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node(1, SemanticIr::Table, LayoutIr::Table, vec![2], Some(0)),
+            make_node(
+                2,
+                SemanticIr::TableRow,
+                LayoutIr::Table,
+                vec![3],
+                Some(1),
+            ),
+            make_node(3, SemanticIr::TableCell, LayoutIr::Table, vec![], Some(2)),
+        ],
+        0,
+    );
+    let gen = FlutterGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(output.contains("TableCell("), "Expected TableCell widget, got:\n{output}");
+    assert!(output.contains("TableRow("), "Expected TableRow widget, got:\n{output}");
+}
+
+#[test]
+fn test_table_with_multiple_cells() {
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node(1, SemanticIr::Table, LayoutIr::Table, vec![2, 3], Some(0)),
+            make_node(
+                2,
+                SemanticIr::TableRow,
+                LayoutIr::Table,
+                vec![4, 5],
+                Some(1),
+            ),
+            make_node(3, SemanticIr::TableRow, LayoutIr::Table, vec![6], Some(1)),
+            make_node(4, SemanticIr::TableCell, LayoutIr::Table, vec![], Some(2)),
+            make_node(5, SemanticIr::TableCell, LayoutIr::Table, vec![], Some(2)),
+            make_node(6, SemanticIr::TableCell, LayoutIr::Table, vec![], Some(3)),
+        ],
+        0,
+    );
+    let gen = FlutterGenerator::new();
+    let output = gen.generate(&tree);
+    // Should have 3 TableCell widgets
+    assert_eq!(output.matches("TableCell(").count(), 3);
+    // Should have 2 TableRow widgets
+    assert_eq!(output.matches("TableRow(").count(), 2);
+}
