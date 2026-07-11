@@ -366,18 +366,19 @@ impl SwiftUIGenerator {
 
     /// Emits an `HStack`.
     fn emit_hstack(&self, tree: &IrTree, node: &IrNode, w: &mut CodeWriter) {
-        w.write_line("HStack {");
-        w.indent();
-        let style = &node.computed_style;
-        if let Some(ref ai) = style.align_items {
-            let value = match ai {
+        let alignment = node
+            .computed_style
+            .align_items
+            .as_ref()
+            .map(|ai| match ai {
                 motarjim_ast_html::AlignItems::FlexStart => ".top",
                 motarjim_ast_html::AlignItems::FlexEnd => ".bottom",
                 motarjim_ast_html::AlignItems::Center => ".center",
-                _ => ".top",
-            };
-            w.write_line(&format!(".alignmentGuide(.top) {{ _ in {value} }}"));
-        }
+                _ => ".center",
+            })
+            .unwrap_or(".center");
+        w.write_line(&format!("HStack(alignment: {alignment}) {{"));
+        w.indent();
         self.emit_children(tree, &node.children, w);
         w.dedent();
         w.write_line("}");
@@ -385,18 +386,19 @@ impl SwiftUIGenerator {
 
     /// Emits a `VStack`.
     fn emit_vstack(&self, tree: &IrTree, node: &IrNode, w: &mut CodeWriter) {
-        w.write_line("VStack {");
-        w.indent();
-        let style = &node.computed_style;
-        if let Some(ref ai) = style.align_items {
-            let value = match ai {
+        let alignment = node
+            .computed_style
+            .align_items
+            .as_ref()
+            .map(|ai| match ai {
                 motarjim_ast_html::AlignItems::FlexStart => ".leading",
                 motarjim_ast_html::AlignItems::FlexEnd => ".trailing",
                 motarjim_ast_html::AlignItems::Center => ".center",
                 _ => ".leading",
-            };
-            w.write_line(&format!(".frame(maxWidth: .infinity, alignment: {value})"));
-        }
+            })
+            .unwrap_or(".leading");
+        w.write_line(&format!("VStack(alignment: {alignment}) {{"));
+        w.indent();
         self.emit_children(tree, &node.children, w);
         w.dedent();
         w.write_line("}");
