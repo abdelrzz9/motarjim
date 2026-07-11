@@ -35,7 +35,7 @@ smol_str = { workspace = true }
 tracing = { workspace = true }
 
 [features]
-default = []
+default = ["dag"]
 cancellation = ["motarjim-session/cancellation"]
 dag = ["rayon"]
 events = []
