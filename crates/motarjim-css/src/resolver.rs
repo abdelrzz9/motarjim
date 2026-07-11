@@ -1,5 +1,6 @@
 use crate::matching::{rule_matches_element, rule_max_specificity};
 use crate::*;
+use motarjim_ast::HtmlNode;
 
 /// Accepts parsed stylesheets, matches selectors against DOM elements,
 /// resolves the cascade, and computes final styles.
@@ -58,7 +59,30 @@ impl StyleResolver {
         let mut cascade = Cascade::new();
 
         for sheet in &self.stylesheets {
-            self.collect_matching_declarations(&mut cascade, sheet, element);
+            self.collect_matching_declarations(&mut cascade, sheet, element, None);
+        }
+
+        let resolved_map = cascade.resolve();
+        ComputedValues::from_map(&resolved_map, parent)
+    }
+
+    /// Resolve the computed style for a single element with full DOM context.
+    ///
+    /// This enables combinator-based selector matching (descendant, child,
+    /// sibling combinators) by providing access to the node's position in
+    /// the DOM tree.
+    #[must_use]
+    pub fn resolve_with_context(
+        &self,
+        element: &Element,
+        node: &HtmlNode,
+        nodes: &[HtmlNode],
+        parent: Option<&ComputedValues>,
+    ) -> ComputedValues {
+        let mut cascade = Cascade::new();
+
+        for sheet in &self.stylesheets {
+            self.collect_matching_declarations(&mut cascade, sheet, element, Some((node, nodes)));
         }
 
         let resolved_map = cascade.resolve();
@@ -91,17 +115,38 @@ impl StyleResolver {
         cascade: &mut Cascade,
         sheet: &CssStylesheet,
         element: &Element,
+        dom_context: Option<(&HtmlNode, &[HtmlNode])>,
     ) {
         for rule in &sheet.rules {
-            self.collect_from_rule(cascade, rule, element);
+            self.collect_from_rule(cascade, rule, element, dom_context);
         }
     }
 
     /// Collect declarations from a single rule (or nested rules inside at-rules).
-    fn collect_from_rule(&self, cascade: &mut Cascade, rule: &CssRule, element: &Element) {
+    fn collect_from_rule(
+        &self,
+        cascade: &mut Cascade,
+        rule: &CssRule,
+        element: &Element,
+        dom_context: Option<(&HtmlNode, &[HtmlNode])>,
+    ) {
         match rule {
             CssRule::Style(style_rule) => {
-                if rule_matches_element(style_rule, element) {
+                let matches = match dom_context {
+                    Some((node, nodes)) => rule_matches_element(style_rule, node, nodes),
+                    None => {
+                        // Fallback: simple selector matching without DOM context.
+                        // This only works for selectors without combinators.
+                        style_rule.selectors.iter().any(|sel| {
+                            sel.combinators.is_empty()
+                                && sel
+                                    .simple_selectors
+                                    .iter()
+                                    .all(|s| s.matches(element))
+                        })
+                    }
+                };
+                if matches {
                     let spec = rule_max_specificity(style_rule);
                     cascade.add_declarations(&style_rule.declarations, spec);
                 }
@@ -109,12 +154,12 @@ impl StyleResolver {
             CssRule::Media(media_rule) => {
                 // Always match media rules in the CSS engine (we don't have viewport info here).
                 for nested in &media_rule.rules {
-                    self.collect_from_rule(cascade, nested, element);
+                    self.collect_from_rule(cascade, nested, element, dom_context);
                 }
             }
             CssRule::Supports(supports_rule) => {
                 for nested in &supports_rule.rules {
-                    self.collect_from_rule(cascade, nested, element);
+                    self.collect_from_rule(cascade, nested, element, dom_context);
                 }
             }
             // Other at-rules (font-face, keyframes, import) do not contribute

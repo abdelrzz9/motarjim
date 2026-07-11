@@ -309,7 +309,7 @@ impl Compiler {
                 let style = node
                     .element
                     .as_ref()
-                    .map(|el| resolver.resolve(el).style)
+                    .map(|el| resolver.resolve_with_context(el, node, &ast.nodes, None).style)
                     .unwrap_or_default();
                 (node.id, style)
             })
