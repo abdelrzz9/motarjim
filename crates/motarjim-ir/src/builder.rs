@@ -73,6 +73,14 @@ impl IrBuilder {
                 });
             }
 
+            // Emit diagnostic for unknown/custom semantic roles
+            if let SemanticIr::Custom(ref name) = semantic {
+                diagnostics.push_warning(
+                    motarjim_diag::codes::A11Y_MISSING_ALT,
+                    &format!("Unknown semantic role '{name}' for element"),
+                );
+            }
+
             ir_nodes.push(IrNode {
                 id: html_node.id,
                 target: Self::infer_target(&semantic, &layout),
