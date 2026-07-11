@@ -795,8 +795,8 @@ impl CompilationDag {
                     })?;
 
                 let builder = motarjim_ir::IrBuilder::new();
-                let diag = DiagnosticBag::new();
-                let ir = builder.build(doc, style_map, &diag);
+                let mut diag = DiagnosticBag::new();
+                let ir = builder.build(doc, style_map, &mut diag);
 
                 // Transfer any diagnostics from the IR builder
                 // (currently `diag` is always empty, but forward it anyway).

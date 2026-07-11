@@ -588,8 +588,8 @@ fn test_builder_basic() {
     let doc = make_element_doc(0, "div", &[]);
     let styles = style_map(&doc);
     let builder = IrBuilder::new();
-    let diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &diagnostics);
+    let mut diagnostics = DiagnosticBag::new();
+    let tree = builder.build(&doc, &styles, &mut diagnostics);
     assert_eq!(tree.root_id, NodeId(0));
     assert_eq!(tree.nodes.len(), 1);
 }
@@ -599,8 +599,8 @@ fn test_builder_inference_integration() {
     let doc = make_element_doc(0, "button", &[]);
     let styles = style_map(&doc);
     let builder = IrBuilder::new();
-    let diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &diagnostics);
+    let mut diagnostics = DiagnosticBag::new();
+    let tree = builder.build(&doc, &styles, &mut diagnostics);
     assert_eq!(tree.nodes[0].semantic, SemanticIr::Button);
 }
 
@@ -614,8 +614,8 @@ fn test_builder_layout_integration() {
     };
     let styles = single_style(0, style);
     let builder = IrBuilder::new();
-    let diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &diagnostics);
+    let mut diagnostics = DiagnosticBag::new();
+    let tree = builder.build(&doc, &styles, &mut diagnostics);
     assert_eq!(tree.nodes[0].layout, LayoutIr::FlexRow);
 }
 
@@ -624,8 +624,8 @@ fn test_builder_nested() {
     let doc = make_nested_doc();
     let styles = style_map(&doc);
     let builder = IrBuilder::new();
-    let diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &diagnostics);
+    let mut diagnostics = DiagnosticBag::new();
+    let tree = builder.build(&doc, &styles, &mut diagnostics);
     assert_eq!(tree.nodes.len(), 2);
     assert_eq!(tree.nodes[0].semantic, SemanticIr::Container);
     assert_eq!(tree.nodes[1].semantic, SemanticIr::Button);
@@ -647,28 +647,32 @@ fn test_builder_text_node() {
         document_type: None,
     });
     doc.root_id = NodeId(0);
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
     assert_eq!(tree.nodes[0].semantic, SemanticIr::Text);
 }
 
 #[test]
 fn test_builder_missing_styles() {
     let doc = make_element_doc(0, "div", &[]);
-    let tree = IrBuilder::new().build(&doc, &HashMap::new(), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &HashMap::new(), &mut diag);
     assert_eq!(tree.nodes[0].computed_style, ComputedStyle::default());
 }
 
 #[test]
 fn test_builder_target_hints() {
     let doc = make_element_doc(0, "button", &[]);
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
     assert!(tree
         .target_hints
         .iter()
         .any(|h| h.target.as_str() == "accessibility"));
 
     let doc2 = make_element_doc(0, "div", &[]);
-    let tree2 = IrBuilder::new().build(&doc2, &style_map(&doc2), &DiagnosticBag::new());
+    let mut diag2 = DiagnosticBag::new();
+    let tree2 = IrBuilder::new().build(&doc2, &style_map(&doc2), &mut diag2);
     assert!(tree2
         .target_hints
         .iter()
@@ -678,7 +682,8 @@ fn test_builder_target_hints() {
 #[test]
 fn test_builder_target_ir() {
     let doc = make_element_doc(0, "button", &[]);
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
     assert_eq!(
         tree.nodes[0].target,
         TargetIr::Generic {
@@ -692,7 +697,8 @@ fn test_builder_target_ir() {
 fn test_builder_default() {
     let builder = IrBuilder::default();
     let doc = make_element_doc(0, "div", &[]);
-    let tree = builder.build(&doc, &style_map(&doc), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = builder.build(&doc, &style_map(&doc), &mut diag);
     assert_eq!(tree.nodes.len(), 1);
 }
 
@@ -704,7 +710,8 @@ fn test_builder_flex_column_target() {
         flex_direction: Some(FlexDirection::Column),
         ..Default::default()
     };
-    let tree = IrBuilder::new().build(&doc, &single_style(0, style), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &single_style(0, style), &mut diag);
     assert_eq!(tree.nodes[0].layout, LayoutIr::FlexColumn);
     assert_eq!(
         tree.nodes[0].target,
@@ -718,7 +725,8 @@ fn test_builder_flex_column_target() {
 #[test]
 fn test_builder_alt_accessibility() {
     let doc = make_element_doc(0, "img", &[("alt", "Logo")]);
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &DiagnosticBag::new());
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
     assert!(tree
         .target_hints
         .iter()

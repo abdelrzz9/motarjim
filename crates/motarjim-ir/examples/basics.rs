@@ -34,9 +34,9 @@ fn main() {
     styles.insert(NodeId(0), ComputedStyle::default());
     styles.insert(NodeId(1), ComputedStyle::default());
 
-    let diags = DiagnosticBag::new();
+    let mut diags = DiagnosticBag::new();
     let builder = IrBuilder::new();
-    let ir = builder.build(&doc, &styles, &diags);
+    let ir = builder.build(&doc, &styles, &mut diags);
 
     println!("Built IR tree with {} node(s)", ir.nodes.len());
     for node in &ir.nodes {

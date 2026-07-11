@@ -110,8 +110,8 @@ fn bench_build_ir_small(c: &mut Criterion) {
 
     c.bench_function("build_ir_small", |b| {
         b.iter(|| {
-            let diag = DiagnosticBag::new();
-            builder.build(black_box(&doc), black_box(&styles), black_box(&diag))
+            let mut diag = DiagnosticBag::new();
+            builder.build(black_box(&doc), black_box(&styles), black_box(&mut diag))
         });
     });
 }
@@ -123,8 +123,8 @@ fn bench_build_ir_medium(c: &mut Criterion) {
 
     c.bench_function("build_ir_medium", |b| {
         b.iter(|| {
-            let diag = DiagnosticBag::new();
-            builder.build(black_box(&doc), black_box(&styles), black_box(&diag))
+            let mut diag = DiagnosticBag::new();
+            builder.build(black_box(&doc), black_box(&styles), black_box(&mut diag))
         });
     });
 }

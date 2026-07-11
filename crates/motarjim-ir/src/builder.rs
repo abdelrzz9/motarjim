@@ -26,12 +26,11 @@ impl IrBuilder {
     }
 
     /// Builds an [`IrTree`] from the given parsed document and computed styles.
-    #[must_use]
     pub fn build(
         &self,
         doc: &Document,
         styles: &HashMap<NodeId, ComputedStyle>,
-        _diagnostics: &DiagnosticBag,
+        diagnostics: &mut DiagnosticBag,
     ) -> IrTree {
         let mut ir_nodes: Vec<IrNode> = Vec::with_capacity(doc.nodes.len());
         let mut target_hints: Vec<TargetHint> = Vec::new();

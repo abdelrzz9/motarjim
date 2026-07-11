@@ -199,6 +199,7 @@ impl Compiler {
         options: &CompileOptions,
     ) -> Result<CompileResult, Vec<Diagnostic>> {
         let mut profiling = ProfilingSession::new("compile");
+        let mut all_diagnostics: Vec<Diagnostic> = Vec::new();
 
         // Phase 1: Parse HTML
         #[cfg(feature = "events")]
@@ -206,19 +207,31 @@ impl Compiler {
             source: input.to_string(),
         });
         let mut html_timer = profiling.start_phase("parse_html");
-        let tree_doc = match NewHtmlParser::parse(input) {
+        let (parse_result, html_diags) = NewHtmlParser::parse_with_diagnostics(input);
+                for diag in &html_diags {
+                    all_diagnostics.push(Diagnostic::new(
+                        if diag.is_error() {
+                            Severity::Error
+                        } else {
+                            Severity::Warning
+                        },
+                motarjim_diag::codes::PARSER_UNEXPECTED_TOKEN,
+                &diag.message,
+            ));
+        }
+        let tree_doc = match parse_result {
             Ok(doc) => doc,
             Err(e) => {
-                let diags = vec![Diagnostic::new(
+                all_diagnostics.push(Diagnostic::new(
                     Severity::Error,
                     motarjim_diag::codes::PARSER_UNEXPECTED_TOKEN,
                     e.message,
-                )];
+                ));
                 #[cfg(feature = "events")]
                 self.emit_event(event::CompilerEvent::AfterParse {
-                    result: Err(diags.clone()),
+                    result: Err(all_diagnostics.clone()),
                 });
-                return Err(diags);
+                return Err(all_diagnostics);
             }
         };
         let ast = tree_doc_to_arena(&tree_doc);
@@ -242,7 +255,23 @@ impl Compiler {
         let css_source = extract_css_from_html(input);
         let stylesheet = css_source.as_ref().and_then(|css_text| {
             let css_parser = CssParser::new(css_text);
-            css_parser.parse().ok()
+            match css_parser.parse() {
+                Ok(sheet) => Some(sheet),
+                Err(e) => {
+                    for diag in &e.diagnostics {
+                        all_diagnostics.push(Diagnostic::new(
+                            if diag.severity.is_error() {
+                                Severity::Error
+                            } else {
+                                Severity::Warning
+                            },
+                            motarjim_diag::codes::CSS_PARSE_ERROR,
+                            &diag.message,
+                        ));
+                    }
+                    None
+                }
+            }
         });
         profiling.record_phase("parse_css", css_timer.stop());
 
@@ -326,8 +355,15 @@ impl Compiler {
         }
         let mut ir_timer = profiling.start_phase("build_ir");
         let ir_builder = IrBuilder::new();
-        let ir_diag = motarjim_diag::DiagnosticBag::new();
-        let ir = ir_builder.build(&ast, &style_map, &ir_diag);
+        let mut ir_diag = motarjim_diag::DiagnosticBag::new();
+        let ir = ir_builder.build(&ast, &style_map, &mut ir_diag);
+        for diag in ir_diag.into_diagnostics() {
+            all_diagnostics.push(Diagnostic::new(
+                diag.severity,
+                diag.code,
+                &diag.message,
+            ));
+        }
         #[cfg(feature = "events")]
         self.emit_event(event::CompilerEvent::AfterIr {
             result: Ok(ir.clone()),
@@ -393,9 +429,10 @@ impl Compiler {
         profiling.record_phase("generate", gen_timer.stop());
 
         // Check options for strict mode
-        let all_diagnostics = Vec::new();
-
-        let error_count = 0;
+        let error_count = all_diagnostics
+            .iter()
+            .filter(|d| d.severity == Severity::Error)
+            .count();
         let total_ms = profiling
             .phases()
             .values()
@@ -752,8 +789,8 @@ impl<'a> Pipeline<'a> {
     #[must_use]
     pub fn build_ir(&self, doc: &Document, styles: &HashMap<NodeId, ComputedStyle>) -> IrTree {
         let builder = IrBuilder::new();
-        let diag = motarjim_diag::DiagnosticBag::new();
-        builder.build(doc, styles, &diag)
+        let mut diag = motarjim_diag::DiagnosticBag::new();
+        builder.build(doc, styles, &mut diag)
     }
 
     /// Run optimization passes on the IR tree.
