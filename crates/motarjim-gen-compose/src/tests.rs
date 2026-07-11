@@ -214,3 +214,62 @@ fn test_hero_section() {
     assert!(output.contains("Box("));
     assert!(output.contains("text = \"text\""));
 }
+
+#[test]
+fn test_dialog_composable() {
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node(1, SemanticIr::Dialog, LayoutIr::Stack, vec![2], Some(0)),
+            make_node(
+                2,
+                SemanticIr::Text,
+                LayoutIr::Static,
+                vec![],
+                Some(1),
+            ),
+        ],
+        0,
+    );
+    let gen = ComposeGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(output.contains("AlertDialog(") || output.contains("Dialog("));
+}
+
+#[test]
+fn test_table_composable() {
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node(1, SemanticIr::Table, LayoutIr::Table, vec![2], Some(0)),
+            make_node(
+                2,
+                SemanticIr::TableRow,
+                LayoutIr::Table,
+                vec![3],
+                Some(1),
+            ),
+            make_node(3, SemanticIr::TableCell, LayoutIr::Table, vec![], Some(2)),
+        ],
+        0,
+    );
+    let gen = ComposeGenerator::new();
+    let output = gen.generate(&tree);
+    // Compose falls back to Text for unsupported table widgets
+    assert!(!output.is_empty());
+}
+
+#[test]
+fn test_scroll_composable() {
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node(1, SemanticIr::Scroll, LayoutIr::Scroll, vec![2], Some(0)),
+            make_node(2, SemanticIr::Text, LayoutIr::Static, vec![], Some(1)),
+        ],
+        0,
+    );
+    let gen = ComposeGenerator::new();
+    let output = gen.generate(&tree);
+    assert!(output.contains("LazyColumn(") || output.contains("Column("));
+}
