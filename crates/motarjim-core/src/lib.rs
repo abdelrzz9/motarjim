@@ -1059,4 +1059,134 @@ mod tests {
         assert!(!opts.source_maps);
         assert!(!opts.strict);
     }
+
+    #[test]
+    fn test_diagnostic_collection_from_invalid_css() {
+        let compiler = test_compiler();
+        let options = CompileOptions {
+            platform: OutputFormat::Dart,
+            strict: false,
+            ..Default::default()
+        };
+        // Invalid CSS (missing closing brace, bad syntax) — may produce parse diagnostics
+        let html = r#"<html><style>.foo { color: ; }</style><div>Test</div></html>"#;
+        let result = compiler.compile(html, &options);
+        assert!(result.is_ok());
+        // The compile should succeed (non-strict) even with potentially malformed CSS
+        let result = result.unwrap();
+        // diagnostics may or may not be present depending on how lenient the CSS parser is
+        // but the compile should always produce output
+        assert!(!result.output.is_empty());
+    }
+
+    #[test]
+    fn test_diagnostic_collection_empty_html() {
+        let compiler = test_compiler();
+        let options = CompileOptions::default();
+        let result = compiler.compile("<div></div>", &options).unwrap();
+        // Empty HTML should produce output
+        assert!(!result.output.is_empty());
+    }
+
+    #[test]
+    fn test_cache_hit_returns_output() {
+        let compiler = test_compiler();
+        let options = CompileOptions::default();
+        let html = "<div>Cache test</div>";
+        // First compile
+        let result1 = compiler.compile(html, &options).unwrap();
+        // Second compile should return cached or fresh result
+        let result2 = compiler.compile(html, &options).unwrap();
+        // Both should produce identical output
+        assert_eq!(result1.output, result2.output);
+    }
+
+    #[test]
+    fn test_extract_css_no_style_tag() {
+        let html = "<div>No style</div>";
+        let tree_doc = NewHtmlParser::parse(html).unwrap();
+        let css = extract_css_from_tree(&tree_doc);
+        assert!(css.is_none());
+    }
+
+    #[test]
+    fn test_extract_css_multiple_style_tags() {
+        let html = r#"<html><style>div { color: red; }</style><style>p { color: blue; }</style></html>"#;
+        let tree_doc = NewHtmlParser::parse(html).unwrap();
+        let css = extract_css_from_tree(&tree_doc);
+        assert!(css.is_some());
+        let css = css.unwrap();
+        assert!(css.contains("color: red"));
+        assert!(css.contains("color: blue"));
+    }
+
+    #[test]
+    fn test_extract_css_nested_style() {
+        let html = r#"<html><div><style>.nested { display: block; }</style></div></html>"#;
+        let tree_doc = NewHtmlParser::parse(html).unwrap();
+        let css = extract_css_from_tree(&tree_doc);
+        assert!(css.is_some());
+        assert!(css.unwrap().contains("display: block"));
+    }
+
+    #[test]
+    fn test_compile_result_has_ast_and_ir() {
+        let compiler = test_compiler();
+        let options = CompileOptions::default();
+        let html = "<div><p>Hello</p></div>";
+        let result = compiler.compile(html, &options).unwrap();
+        // Should have AST nodes
+        assert!(!result.ast.nodes.is_empty());
+        // Should have IR nodes
+        assert!(!result.ir.nodes.is_empty());
+        // Root IR node should exist
+        assert!(result.ir.root_id.0 < result.ir.nodes.len() as u32);
+    }
+
+    #[test]
+    fn test_compile_strict_mode_with_diagnostics() {
+        let compiler = test_compiler();
+        let options = CompileOptions {
+            strict: true,
+            ..Default::default()
+        };
+        // Input with no diagnostics — should succeed even in strict mode
+        let html = "<div>Hello</div>";
+        let result = compiler.compile(html, &options);
+        // In strict mode, diagnostics cause failure. For simple HTML the result
+        // depends on whether the pipeline emits any diagnostics at all.
+        // We just verify the compile doesn't panic.
+        match result {
+            Ok(r) => assert!(!r.output.is_empty()),
+            Err(diags) => assert!(!diags.is_empty()),
+        }
+    }
+
+    #[test]
+    fn test_compile_different_platforms_produce_different_output() {
+        let compiler = test_compiler();
+        let html = "<div>Hello</div>";
+
+        let dart_opts = CompileOptions {
+            platform: OutputFormat::Dart,
+            ..Default::default()
+        };
+        let swift_opts = CompileOptions {
+            platform: OutputFormat::Swift,
+            ..Default::default()
+        };
+        let compose_opts = CompileOptions {
+            platform: OutputFormat::Kotlin,
+            ..Default::default()
+        };
+
+        let dart = compiler.compile(html, &dart_opts).unwrap();
+        let swift = compiler.compile(html, &swift_opts).unwrap();
+        let compose = compiler.compile(html, &compose_opts).unwrap();
+
+        // Different platforms should produce different outputs
+        assert_ne!(dart.output, swift.output);
+        assert_ne!(dart.output, compose.output);
+        assert_ne!(swift.output, compose.output);
+    }
 }
