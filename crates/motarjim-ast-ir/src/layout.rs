@@ -3,28 +3,8 @@
 
 use smol_str::SmolStr;
 
-/// Layout strategies inferred from CSS computed styles.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
-pub enum LayoutStrategy {
-    FlexRow,
-    FlexColumn,
-    Grid,
-    Stack,
-    ZStack,
-    Scroll,
-    Absolute,
-    Relative,
-    Static,
-    Sticky,
-    Fixed,
-    Flow,
-    Inline,
-    InlineBlock,
-    None,
-}
-
 /// Layout constraints for a node.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub struct LayoutConstraints {
@@ -57,40 +37,6 @@ pub struct ResponsiveVariant {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_layout_strategy_variants() {
-        let strategies = [
-            LayoutStrategy::FlexRow,
-            LayoutStrategy::FlexColumn,
-            LayoutStrategy::Grid,
-            LayoutStrategy::Stack,
-            LayoutStrategy::Scroll,
-            LayoutStrategy::None,
-        ];
-        assert_eq!(strategies.len(), 6);
-    }
-
-    #[test]
-    fn test_layout_constraints() {
-        let lc = LayoutConstraints {
-            min_width: None,
-            max_width: None,
-            min_height: None,
-            max_height: None,
-            aspect_ratio: None,
-        };
-        assert!(lc.min_width.is_none() && lc.aspect_ratio.is_none());
-
-        let lc2 = LayoutConstraints {
-            min_width: Some(100.0),
-            max_width: Some(1200.0),
-            min_height: Some(50.0),
-            max_height: Some(800.0),
-            aspect_ratio: Some(16.0 / 9.0),
-        };
-        assert_eq!(lc2.min_width, Some(100.0));
-    }
 
     #[test]
     fn test_breakpoint_variants() {
