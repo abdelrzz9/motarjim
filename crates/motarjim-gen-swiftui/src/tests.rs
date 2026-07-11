@@ -369,3 +369,31 @@ fn test_vstack_alignment_trailing() {
         "Expected VStack(alignment: .trailing), got:\n{output}"
     );
 }
+
+#[test]
+fn test_dialog_emits_children() {
+    let tree = make_tree(
+        vec![
+            make_node(0, SemanticIr::Root, LayoutIr::FlexColumn, vec![1], None),
+            make_node(1, SemanticIr::Dialog, LayoutIr::Stack, vec![2], Some(0)),
+            make_node(2, SemanticIr::Text, LayoutIr::Static, vec![], Some(1)),
+        ],
+        0,
+    );
+    let gen = SwiftUIGenerator::new();
+    let output = gen.generate(&tree);
+    // The dialog should emit its children, not be orphaned
+    assert!(
+        output.contains("Text(\"text\")"),
+        "Dialog should emit children, got:\n{output}"
+    );
+    // Should NOT have an orphaned standalone .alert() modifier line (not in a comment)
+    let non_comment_lines: Vec<&str> = output.lines()
+        .filter(|l| !l.trim().starts_with("//"))
+        .collect();
+    let has_orphan_alert = non_comment_lines.iter().any(|l| l.contains(".alert("));
+    assert!(
+        !has_orphan_alert,
+        "Dialog should not emit orphaned .alert() modifier, got:\n{output}"
+    );
+}
