@@ -77,7 +77,7 @@ impl IrBuilder {
             if let SemanticIr::Custom(ref name) = semantic {
                 diagnostics.push_warning(
                     motarjim_diag::codes::A11Y_MISSING_ALT,
-                    &format!("Unknown semantic role '{name}' for element"),
+                    format!("Unknown semantic role '{name}' for element"),
                 );
             }
 

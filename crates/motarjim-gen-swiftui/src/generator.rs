@@ -157,7 +157,7 @@ impl SwiftUIGenerator {
                 .nodes
                 .iter()
                 .find(|n| {
-                    node.children.iter().any(|cid| *cid == n.id)
+                    node.children.contains(&n.id)
                         && n.semantic == SemanticIr::NavigationBar
                 })
                 .and_then(|n| n.text.as_deref())
