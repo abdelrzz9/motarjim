@@ -153,15 +153,25 @@ impl SwiftUIGenerator {
                 .iter()
                 .any(|n| n.id == *cid && n.semantic == SemanticIr::NavigationBar)
         }) {
-            w.write_line(".navigationTitle(\"Navigation\")");
+            let title = tree
+                .nodes
+                .iter()
+                .find(|n| {
+                    node.children.iter().any(|cid| *cid == n.id)
+                        && n.semantic == SemanticIr::NavigationBar
+                })
+                .and_then(|n| n.text.as_deref())
+                .unwrap_or("Navigation");
+            w.write_line(&format!(".navigationTitle(\"{title}\")"));
         }
         w.dedent();
         w.write_line("}");
     }
 
     /// Emits a navigation bar modifier.
-    fn emit_nav_bar(&self, _tree: &IrTree, _node: &IrNode, w: &mut CodeWriter) {
-        w.write_line(".navigationTitle(\"Page\")");
+    fn emit_nav_bar(&self, _tree: &IrTree, node: &IrNode, w: &mut CodeWriter) {
+        let title = node.text.as_deref().unwrap_or("Page");
+        w.write_line(&format!(".navigationTitle(\"{title}\")"));
         w.write_line(".navigationBarTitleDisplayMode(.inline)");
     }
 
@@ -453,17 +463,15 @@ impl SwiftUIGenerator {
     }
 
     /// Emits an alert dialog.
-    fn emit_dialog(&self, _tree: &IrTree, _node: &IrNode, w: &mut CodeWriter) {
-        w.write_line("// Alert dialog");
-        w.write_line(".alert(\"Dialog\", isPresented: .constant(true)) {");
-        w.indent();
-        w.write_line("Button(\"OK\") { }");
-        w.dedent();
-        w.write_line("} message: {");
-        w.indent();
-        w.write_line("Text(\"Dialog content\")");
-        w.dedent();
-        w.write_line("}");
+    ///
+    /// In SwiftUI, `.alert()` must be applied as a modifier on a parent view.
+    /// We emit the children as the dialog content and add a comment documenting
+    /// the correct modifier usage.
+    fn emit_dialog(&self, tree: &IrTree, node: &IrNode, w: &mut CodeWriter) {
+        w.write_line("// Dialog content — apply .alert() modifier on the parent view:");
+        w.write_line("//   .alert(\"Title\", isPresented: $showAlert) { Button(\"OK\") { } }");
+        w.write_line("//     message: { Text(\"Dialog content\") }");
+        self.emit_children(tree, &node.children, w);
     }
 
     /// Emits a tooltip/popover.
