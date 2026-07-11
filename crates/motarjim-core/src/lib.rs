@@ -1189,4 +1189,100 @@ mod tests {
         assert_ne!(dart.output, compose.output);
         assert_ne!(swift.output, compose.output);
     }
+
+    #[test]
+    fn test_end_to_end_blog_page() {
+        let compiler = test_compiler();
+        let options = CompileOptions::default();
+        let html = r#"<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #333; font-size: 2em; }
+        .author { color: #666; }
+        p { line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hello World</h1>
+        <p class="author">By Author</p>
+        <p>This is a blog post content.</p>
+    </div>
+</body>
+</html>"#;
+        let result = compiler.compile(html, &options).unwrap();
+        // Should produce non-empty output
+        assert!(!result.output.is_empty());
+        // Should have parsed multiple nodes
+        assert!(result.stats.nodes_parsed > 5);
+        // Should have CSS rules
+        assert!(result.stats.css_rules > 0);
+        // Should have IR nodes
+        assert!(result.stats.ir_nodes > 0);
+        // Should have no errors (warnings ok)
+        assert_eq!(result.stats.error_count, 0);
+    }
+
+    #[test]
+    fn test_compile_all_three_platforms() {
+        let compiler = test_compiler();
+        let html = r#"<div class="card">
+            <h1>Title</h1>
+            <p>Description</p>
+            <button>Action</button>
+        </div>"#;
+
+        let dart = compiler
+            .compile(
+                html,
+                &CompileOptions {
+                    platform: OutputFormat::Dart,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let swift = compiler
+            .compile(
+                html,
+                &CompileOptions {
+                    platform: OutputFormat::Swift,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let compose = compiler
+            .compile(
+                html,
+                &CompileOptions {
+                    platform: OutputFormat::Kotlin,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+        // All three should produce output
+        assert!(!dart.output.is_empty());
+        assert!(!swift.output.is_empty());
+        assert!(!compose.output.is_empty());
+
+        // Each should have platform-specific markers
+        assert!(dart.output.contains("flutter") || dart.output.contains("dart"));
+        assert!(swift.output.contains("SwiftUI"));
+        assert!(compose.output.contains("compose") || compose.output.contains("Compose"));
+    }
+
+    #[test]
+    fn test_extract_css_empty_style() {
+        let html = r#"<html><style></style></html>"#;
+        let tree_doc = NewHtmlParser::parse(html).unwrap();
+        let css = extract_css_from_tree(&tree_doc);
+        // Empty style tag should not produce CSS
+        // (behavior depends on whether whitespace-only text nodes are included)
+        if let Some(css) = css {
+            assert!(css.trim().is_empty());
+        }
+    }
 }
