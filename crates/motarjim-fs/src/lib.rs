@@ -121,10 +121,10 @@ impl FileSystem for RealFileSystem {
 }
 
 /// An in-memory filesystem for testing.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct VirtualFileSystem {
-    /// In-memory file storage.
-    files: std::collections::HashMap<PathBuf, Vec<u8>>,
+    /// In-memory file storage (RwLock for thread-safe interior mutability).
+    files: std::sync::RwLock<std::collections::HashMap<PathBuf, Vec<u8>>>,
 }
 
 impl VirtualFileSystem {
@@ -132,20 +132,20 @@ impl VirtualFileSystem {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            files: std::collections::HashMap::new(),
+            files: std::sync::RwLock::new(std::collections::HashMap::new()),
         }
     }
 
     /// Adds a file to the virtual filesystem.
     pub fn add_file(&mut self, path: impl Into<PathBuf>, content: impl Into<Vec<u8>>) {
-        self.files.insert(path.into(), content.into());
+        self.files.write().unwrap().insert(path.into(), content.into());
     }
 }
 
 impl FileSystem for VirtualFileSystem {
     fn read(&self, path: &Path) -> Result<FileEntry, std::io::Error> {
-        let content = self
-            .files
+        let files = self.files.read().unwrap();
+        let content = files
             .get(path)
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))?;
         let content_str = String::from_utf8(content.clone())
@@ -154,33 +154,36 @@ impl FileSystem for VirtualFileSystem {
     }
 
     fn exists(&self, path: &Path) -> bool {
-        self.files.contains_key(path)
+        self.files.read().unwrap().contains_key(path)
     }
 
     fn list(&self, dir: &Path, extension: &str) -> Result<Vec<PathBuf>, std::io::Error> {
         let ext = extension.trim_start_matches('.');
-        let mut files: Vec<PathBuf> = self
-            .files
+        let files = self.files.read().unwrap();
+        let mut result: Vec<PathBuf> = files
             .keys()
             .filter(|p| p.parent() == Some(dir))
             .filter(|p| p.extension().is_some_and(|e| e == ext))
             .cloned()
             .collect();
-        files.sort();
-        Ok(files)
+        result.sort();
+        Ok(result)
     }
 
     fn read_bytes(&self, path: &Path) -> Result<Vec<u8>, std::io::Error> {
         self.files
+            .read()
+            .unwrap()
             .get(path)
             .cloned()
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "file not found"))
     }
 
     fn write(&self, path: &Path, content: &[u8]) -> Result<(), std::io::Error> {
-        let mut files = self.files.clone();
-        files.insert(path.to_path_buf(), content.to_vec());
-        // Interior mutation via clone
+        self.files
+            .write()
+            .unwrap()
+            .insert(path.to_path_buf(), content.to_vec());
         Ok(())
     }
 
@@ -297,5 +300,20 @@ mod tests {
         let fs = RealFileSystem::new();
         // Current dir should always exist
         assert!(fs.exists(Path::new(".")));
+    }
+
+    #[test]
+    fn test_virtual_fs_write_persists() {
+        let fs = VirtualFileSystem::new();
+        // Write a file via the FileSystem trait method
+        fs.write(Path::new("output.txt"), b"hello").unwrap();
+        // Verify the file was actually persisted (not lost to a dropped clone)
+        assert!(fs.exists(Path::new("output.txt")));
+        let entry = fs.read(Path::new("output.txt")).unwrap();
+        assert_eq!(entry.content, "hello");
+        // Overwrite and verify update persists
+        fs.write(Path::new("output.txt"), b"world").unwrap();
+        let entry2 = fs.read(Path::new("output.txt")).unwrap();
+        assert_eq!(entry2.content, "world");
     }
 }
