@@ -252,7 +252,7 @@ impl Compiler {
 
         // Phase 2: Parse CSS from <style> tags
         let mut css_timer = profiling.start_phase("parse_css");
-        let css_source = extract_css_from_html(input);
+        let css_source = extract_css_from_tree(&tree_doc);
         let stylesheet = css_source.as_ref().and_then(|css_text| {
             let css_parser = CssParser::new(css_text);
             match css_parser.parse() {
@@ -569,30 +569,38 @@ impl Compiler {
     }
 }
 
-/// Extract CSS source from HTML input by looking for `<style>` tags.
-fn extract_css_from_html(input: &str) -> Option<String> {
+/// Extract CSS source from the parsed HTML tree by finding `<style>` elements.
+fn extract_css_from_tree(tree_doc: &html_ast::Document) -> Option<String> {
     let mut css_parts: Vec<String> = Vec::new();
-    let mut remaining = input;
-
-    while let Some(start) = remaining.find("<style") {
-        let after_tag = if let Some(gt) = remaining[start..].find('>') {
-            &remaining[start + gt + 1..]
-        } else {
-            break;
-        };
-
-        if let Some(end) = after_tag.find("</style>") {
-            css_parts.push(after_tag[..end].to_string());
-            remaining = &after_tag[end + 8..];
-        } else {
-            break;
-        }
-    }
-
+    extract_css_from_nodes(&tree_doc.children, &mut css_parts);
     if css_parts.is_empty() {
         None
     } else {
         Some(css_parts.join("\n"))
+    }
+}
+
+/// Recursively walk nodes to collect text content from `<style>` elements.
+fn extract_css_from_nodes(nodes: &[html_ast::Node], css_parts: &mut Vec<String>) {
+    for node in nodes {
+        if let html_ast::NodeKind::Element(ref data) = node.kind {
+            if data.tag_name.as_str() == "style" {
+                collect_text_content(&node.children, css_parts);
+            }
+        }
+        extract_css_from_nodes(&node.children, css_parts);
+    }
+}
+
+/// Collect all text content from child nodes.
+fn collect_text_content(nodes: &[html_ast::Node], parts: &mut Vec<String>) {
+    for node in nodes {
+        if let html_ast::NodeKind::Text(ref text) = node.kind {
+            if !text.value.trim().is_empty() {
+                parts.push(text.value.clone());
+            }
+        }
+        collect_text_content(&node.children, parts);
     }
 }
 
