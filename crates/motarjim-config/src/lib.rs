@@ -69,6 +69,12 @@ pub struct GlobalConfig {
     pub cache_dir: Option<PathBuf>,
     /// Whether to enable incremental compilation.
     pub incremental: bool,
+    /// Viewport width for media query evaluation (default 1920).
+    pub viewport_width: u32,
+    /// Viewport height for media query evaluation (default 1080).
+    pub viewport_height: u32,
+    /// Preferred color scheme for `prefers-color-scheme` media feature (default "light").
+    pub prefers_color_scheme: String,
     /// Custom global options.
     pub options: HashMap<String, String>,
 }
@@ -135,6 +141,9 @@ impl Config {
                 max_parallel: 4,
                 cache_dir: None,
                 incremental: true,
+                viewport_width: 1920,
+                viewport_height: 1080,
+                prefers_color_scheme: "light".to_string(),
                 options: HashMap::new(),
             },
         }
@@ -253,6 +262,15 @@ impl Config {
                     .and_then(serde_json::Value::as_bool)
                 {
                     config.global.incremental = v;
+                }
+                if let Some(v) = global.get("viewport_width").and_then(serde_json::Value::as_u64) {
+                    config.global.viewport_width = v as u32;
+                }
+                if let Some(v) = global.get("viewport_height").and_then(serde_json::Value::as_u64) {
+                    config.global.viewport_height = v as u32;
+                }
+                if let Some(v) = global.get("prefers_color_scheme").and_then(serde_json::Value::as_str) {
+                    config.global.prefers_color_scheme = v.to_string();
                 }
                 if let Some(opts) = global.get("options").and_then(|v| v.as_object()) {
                     for (k, v) in opts {
