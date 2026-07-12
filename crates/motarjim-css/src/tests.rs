@@ -1,5 +1,5 @@
 use super::*;
-use crate::properties::parse_font_weight;
+use crate::properties::{parse_font_weight, parse_grid_template, parse_grid_placement, parse_grid_template_areas, resolve_var};
 
 use motarjim_ast::css::{CssRule, CssStylesheet, Declaration};
 use motarjim_ast::Element;
@@ -56,6 +56,291 @@ fn sheet(rules: Vec<CssRule>) -> CssStylesheet {
         rules,
         source_path: None,
     }
+}
+
+// -----------------------------------------------------------------------
+// Media query resolver integration tests (TASK 3)
+// -----------------------------------------------------------------------
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_media_query_applies_when_viewport_matches() {
+    use motarjim_ast_css::{MediaCondition, MediaRule, MediaQuery};
+
+    let media_rule = MediaRule {
+        query: MediaQuery {
+            conditions: vec![MediaCondition::MaxWidth("768px".to_string())],
+        },
+        rules: vec![make_css_rule("div", vec![decl("color", "red")])],
+        span: None,
+    };
+
+    let mut resolver = StyleResolver::new();
+    resolver.set_viewport(375, 667); // Mobile viewport
+    resolver.add_stylesheet(sheet(vec![CssRule::Media(media_rule)]));
+
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.color.as_deref(), Some("red"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_media_query_skips_when_viewport_does_not_match() {
+    use motarjim_ast_css::{MediaCondition, MediaRule, MediaQuery};
+
+    let media_rule = MediaRule {
+        query: MediaQuery {
+            conditions: vec![MediaCondition::MaxWidth("768px".to_string())],
+        },
+        rules: vec![make_css_rule("div", vec![decl("color", "red")])],
+        span: None,
+    };
+
+    let mut resolver = StyleResolver::new();
+    resolver.set_viewport(1920, 1080); // Desktop viewport
+    resolver.add_stylesheet(sheet(vec![CssRule::Media(media_rule)]));
+
+    let cv = resolver.resolve(&div_el());
+    assert!(cv.style.color.is_none());
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_media_query_min_width() {
+    use motarjim_ast_css::{MediaCondition, MediaRule, MediaQuery};
+
+    let media_rule = MediaRule {
+        query: MediaQuery {
+            conditions: vec![MediaCondition::MinWidth("1024px".to_string())],
+        },
+        rules: vec![make_css_rule("div", vec![decl("color", "blue")])],
+        span: None,
+    };
+
+    let mut resolver = StyleResolver::new();
+    resolver.set_viewport(1920, 1080);
+    resolver.add_stylesheet(sheet(vec![CssRule::Media(media_rule)]));
+
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.color.as_deref(), Some("blue"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_media_query_prefers_color_scheme() {
+    use motarjim_ast_css::{MediaCondition, MediaRule, MediaQuery};
+
+    let media_rule = MediaRule {
+        query: MediaQuery {
+            conditions: vec![MediaCondition::PrefersColorScheme("dark".to_string())],
+        },
+        rules: vec![make_css_rule("div", vec![decl("background", "#1a1a2e")])],
+        span: None,
+    };
+
+    let mut resolver = StyleResolver::new();
+    resolver.set_color_scheme("dark".to_string());
+    resolver.add_stylesheet(sheet(vec![CssRule::Media(media_rule)]));
+
+    let cv = resolver.resolve(&div_el());
+    let bg = cv.style.background.as_ref().unwrap();
+    assert_eq!(bg.color.as_deref(), Some("#1a1a2e"));
+}
+
+// -----------------------------------------------------------------------
+// Grid parsing tests (TASK 4)
+// -----------------------------------------------------------------------
+
+#[test]
+fn test_parse_grid_template_fr() {
+    let t = parse_grid_template("1fr 1fr 1fr").unwrap();
+    assert_eq!(t.tracks.len(), 3);
+    assert_eq!(t.tracks[0], motarjim_ast_html::grid::GridTrack::Fr(1.0));
+    assert_eq!(t.tracks[1], motarjim_ast_html::grid::GridTrack::Fr(1.0));
+    assert_eq!(t.tracks[2], motarjim_ast_html::grid::GridTrack::Fr(1.0));
+}
+
+#[test]
+fn test_parse_grid_template_mixed() {
+    use motarjim_ast_html::grid::GridTrack;
+    let t = parse_grid_template("200px auto 1fr").unwrap();
+    assert_eq!(t.tracks.len(), 3);
+    assert_eq!(t.tracks[0], GridTrack::Fixed(200.0));
+    assert_eq!(t.tracks[1], GridTrack::Auto);
+    assert_eq!(t.tracks[2], GridTrack::Fr(1.0));
+}
+
+#[test]
+fn test_parse_grid_template_minmax() {
+    use motarjim_ast_html::grid::GridTrack;
+    let t = parse_grid_template("minmax(100px, 1fr)").unwrap();
+    assert_eq!(t.tracks.len(), 1);
+    assert!(matches!(t.tracks[0], GridTrack::MinMax(_, _)));
+}
+
+#[test]
+fn test_parse_grid_template_repeat() {
+    use motarjim_ast_html::grid::GridTrack;
+    let t = parse_grid_template("repeat(3, 1fr)").unwrap();
+    assert_eq!(t.tracks.len(), 1);
+    assert!(matches!(t.tracks[0], GridTrack::Repeat(3, _)));
+}
+
+#[test]
+fn test_parse_grid_placement_number() {
+    use motarjim_ast_html::grid::GridLine;
+    let (start, end) = parse_grid_placement("1 / 3").unwrap();
+    assert_eq!(start.line, GridLine::Number(1));
+    assert!(end.is_some());
+    assert_eq!(end.unwrap().line, GridLine::Number(3));
+}
+
+#[test]
+fn test_parse_grid_placement_span() {
+    use motarjim_ast_html::grid::GridLine;
+    let (start, end) = parse_grid_placement("span 2").unwrap();
+    assert_eq!(start.line, GridLine::Auto);
+    assert_eq!(start.span, Some(2));
+    assert!(end.is_none());
+}
+
+#[test]
+fn test_parse_grid_placement_auto() {
+    use motarjim_ast_html::grid::GridLine;
+    let (start, end) = parse_grid_placement("auto").unwrap();
+    assert_eq!(start.line, GridLine::Auto);
+    assert!(end.is_none());
+}
+
+#[test]
+fn test_parse_grid_template_areas() {
+    let areas = parse_grid_template_areas("\"header header\" \"sidebar main\" \"footer footer\"");
+    assert_eq!(areas, vec!["header", "header", "sidebar", "main", "footer", "footer"]);
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_grid_template_columns_stored() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("grid-template-columns", "1fr 1fr 1fr")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.grid_template_columns.as_deref(), Some("1fr 1fr 1fr"));
+    assert!(cv.style.grid_template_columns_structured.is_some());
+    let t = cv.style.grid_template_columns_structured.as_ref().unwrap();
+    assert_eq!(t.tracks.len(), 3);
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_grid_column_stored() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("grid-column", "1 / 3")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.grid_column.as_deref(), Some("1 / 3"));
+    assert!(cv.style.grid_column_start.is_some());
+    assert!(cv.style.grid_column_end.is_some());
+}
+
+// -----------------------------------------------------------------------
+// Animation tests (TASK 6)
+// -----------------------------------------------------------------------
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_animation_name_stored() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("animation-name", "slide")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.animation_name.as_deref(), Some("slide"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_animation_duration_stored() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("animation-duration", "1s")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.animation_duration.as_deref(), Some("1s"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_animation_shorthand() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("animation", "slide 1s ease-in-out")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.animation_name.as_deref(), Some("slide"));
+    assert_eq!(cv.style.animation_duration.as_deref(), Some("1s"));
+    assert_eq!(
+        cv.style.animation_timing_function.as_deref(),
+        Some("ease-in-out")
+    );
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_keyframes_collected() {
+    use motarjim_ast::css::{CssRule, Keyframe, KeyframesRule};
+    use smol_str::SmolStr;
+
+    let keyframes_rule = KeyframesRule {
+        name: SmolStr::new("slide"),
+        keyframes: vec![Keyframe {
+            selectors: smallvec::smallvec![SmolStr::new("from")],
+            declarations: smallvec::smallvec![],
+            span: None,
+        }],
+        span: None,
+    };
+
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![CssRule::Keyframes(keyframes_rule)]));
+
+    let keyframes = resolver.collect_keyframes();
+    assert!(keyframes.contains_key("slide"));
+    assert_eq!(keyframes["slide"].keyframes.len(), 1);
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_animation_fill_mode() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("animation-fill-mode", "forwards")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.animation_fill_mode.as_deref(), Some("forwards"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_animation_iteration_count() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("animation-iteration-count", "infinite")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(
+        cv.style.animation_iteration_count.as_deref(),
+        Some("infinite")
+    );
 }
 
 // -----------------------------------------------------------------------
@@ -442,4 +727,153 @@ fn test_font_weight_parsing() {
 
     let fw = parse_font_weight("850");
     assert_eq!(fw, Some(FontWeight::Custom(850)));
+}
+
+// -----------------------------------------------------------------------
+// CSS Variable resolution tests (TASK 1)
+// -----------------------------------------------------------------------
+
+#[test]
+fn test_var_resolution_basic() {
+    let mut style = ComputedStyle::default();
+    style
+        .custom_properties
+        .insert("primary".to_string(), "blue".to_string());
+    let resolved = resolve_var("var(--primary)", &style);
+    assert_eq!(resolved, "blue");
+}
+
+#[test]
+fn test_var_resolution_with_fallback() {
+    let style = ComputedStyle::default(); // no custom properties
+    let resolved = resolve_var("var(--undefined, red)", &style);
+    assert_eq!(resolved, "red");
+}
+
+#[test]
+fn test_var_resolution_no_fallback() {
+    let style = ComputedStyle::default();
+    let resolved = resolve_var("var(--undefined)", &style);
+    assert_eq!(resolved, "var(--undefined)");
+}
+
+#[test]
+fn test_var_resolution_nested() {
+    let mut style = ComputedStyle::default();
+    style
+        .custom_properties
+        .insert("b".to_string(), "10px".to_string());
+    style
+        .custom_properties
+        .insert("a".to_string(), "var(--b)".to_string());
+    let resolved = resolve_var("var(--a)", &style);
+    assert_eq!(resolved, "10px");
+}
+
+#[test]
+fn test_var_resolution_circular_prevented() {
+    let mut style = ComputedStyle::default();
+    style
+        .custom_properties
+        .insert("a".to_string(), "var(--b)".to_string());
+    style
+        .custom_properties
+        .insert("b".to_string(), "var(--a)".to_string());
+    let resolved = resolve_var("var(--a)", &style);
+    // Should not infinite loop; returns a string (possibly var reference)
+    assert!(!resolved.is_empty());
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_apply_declarations_stores_custom_properties() {
+    let mut style = ComputedStyle::default();
+    let mut map = HashMap::new();
+    map.insert(SmolStr::new("--primary"), "blue".to_string());
+    map.insert(SmolStr::new("color"), "var(--primary)".to_string());
+    apply_declarations(&mut style, &map);
+    assert_eq!(
+        style.custom_properties.get("primary").unwrap(),
+        "blue"
+    );
+    assert_eq!(style.color.as_deref(), Some("blue"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_apply_declarations_var_in_color() {
+    let mut style = ComputedStyle::default();
+    let mut map = HashMap::new();
+    map.insert(SmolStr::new("--bg"), "#fff".to_string());
+    map.insert(SmolStr::new("background-color"), "var(--bg)".to_string());
+    apply_declarations(&mut style, &map);
+    let bg = style.background.as_ref().unwrap();
+    assert_eq!(bg.color.as_deref(), Some("#fff"));
+}
+
+// -----------------------------------------------------------------------
+// Positioning offsets tests (TASK 2)
+// -----------------------------------------------------------------------
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_positioning_top_left() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![
+            decl("position", "absolute"),
+            decl("top", "10px"),
+            decl("left", "20px"),
+        ],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.position, PositionType::Absolute);
+    assert_eq!(cv.style.top.as_deref(), Some("10px"));
+    assert_eq!(cv.style.left.as_deref(), Some("20px"));
+    assert!(cv.style.bottom.is_none());
+    assert!(cv.style.right.is_none());
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_positioning_inset_shorthand() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("position", "absolute"), decl("inset", "10px")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.top.as_deref(), Some("10px"));
+    assert_eq!(cv.style.right.as_deref(), Some("10px"));
+    assert_eq!(cv.style.bottom.as_deref(), Some("10px"));
+    assert_eq!(cv.style.left.as_deref(), Some("10px"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_positioning_inset_two_values() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("position", "relative"), decl("inset", "5px 10px")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.top.as_deref(), Some("5px"));
+    assert_eq!(cv.style.right.as_deref(), Some("10px"));
+    assert_eq!(cv.style.bottom.as_deref(), Some("5px"));
+    assert_eq!(cv.style.left.as_deref(), Some("10px"));
+}
+
+#[test]
+#[allow(clippy::unwrap_used)]
+fn test_positioning_sticky_top() {
+    let mut resolver = StyleResolver::new();
+    resolver.add_stylesheet(sheet(vec![make_css_rule(
+        "div",
+        vec![decl("position", "sticky"), decl("top", "0")],
+    )]));
+    let cv = resolver.resolve(&div_el());
+    assert_eq!(cv.style.position, PositionType::Sticky);
+    assert_eq!(cv.style.top.as_deref(), Some("0"));
 }
