@@ -12,6 +12,7 @@
 pub mod node;
 pub mod semantic;
 pub mod style;
+pub mod grid;
 
 pub use node::{
     Attribute, Document, DocumentTypeNode, Element, HtmlNode, NodeId, NodeType, SemanticDocument,
