@@ -324,6 +324,11 @@ impl Compiler {
         });
         let mut style_timer = profiling.start_phase("resolve_styles");
         let mut resolver = StyleResolver::new();
+        resolver.set_viewport(
+            self.session.config().global.viewport_width,
+            self.session.config().global.viewport_height,
+        );
+        resolver.set_color_scheme(self.session.config().global.prefers_color_scheme.clone());
         if let Some(ref sheet) = stylesheet {
             resolver.add_stylesheet(sheet.clone());
         }
