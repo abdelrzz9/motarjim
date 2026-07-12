@@ -1177,6 +1177,7 @@ dependencies = [
  "motarjim-session",
  "motarjim-span",
  "rayon",
+ "sha2",
  "smallvec",
  "smol_str",
  "tracing",
