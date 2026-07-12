@@ -48,5 +48,9 @@ mod matching;
 /// Resolves a stylesheet and document into computed styles per node.
 mod resolver;
 pub use resolver::*;
+/// Media query evaluation engine.
+pub mod media;
+/// CSS `calc()` expression evaluator.
+pub mod calc;
 #[cfg(test)]
 mod tests;
