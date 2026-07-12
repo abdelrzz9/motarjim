@@ -2,399 +2,293 @@
 
 ## High-Level Overview
 
-motarjim is a **source-to-source compiler** that translates HTML and CSS into native UI code for Flutter (Dart), Jetpack Compose (Kotlin), and SwiftUI (Swift). It follows a classic multi-stage compiler architecture with discrete, composable passes.
+Motarjim is a **static site generator** that transforms Markdown and HTML source files into static web content (HTML, RSS/Atom feeds, JSON, plaintext). It follows a sequential pipeline architecture with a dedicated CSS engine for style resolution.
 
 The compiler is built as a **Rust workspace** of single-responsibility crates. Each crate is independently publishable, testable, and benchmarkable.
 
 ```
-HTML + CSS
+Content Files (Markdown/HTML + Frontmatter)
     │
     ▼
-┌─────────────────────────────────────────────────┐
-│                  Lexer Stage                     │
-│  ┌─────────────┐  ┌─────────────┐               │
-│  │  HtmlLexer  │  │  CssLexer   │               │
-│  └─────────────┘  └─────────────┘               │
-│         │               │                        │
-│         ▼               ▼                        │
-│  ┌─────────────┐  ┌─────────────┐               │
-│  │ HtmlParser  │  │  CssParser  │               │
-│  │ (recursive  │  │ (recursive  │               │
-│  │  descent)   │  │  descent)   │               │
-│  └─────────────┘  └─────────────┘               │
-└─────────────────────────────────────────────────┘
-         │               │
-         ▼               ▼
-┌─────────────────────────────────────────────────┐
-│                  Style Stage                     │
-│  ┌──────────────┐  ┌────────────┐               │
-│  │  Selectors   │  │  Cascade   │               │
-│  │  (matching)  │──▶│  (resolve) │               │
-│  └──────────────┘  └────────────┘               │
-│                           │                      │
-│                           ▼                      │
-│                    ┌──────────────┐              │
-│                    │  Computed    │              │
-│                    │  Style       │              │
-│                    └──────────────┘              │
-└─────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────┐
-│                   IR Stage                       │
-│  ┌──────────────┐  ┌──────────┐  ┌───────────┐ │
-│  │  Semantic    │  │  Layout  │  │  Target   │ │
-│  │  Inference   │  │Inference │  │  Hints    │ │
-│  └──────────────┘  └──────────┘  └───────────┘ │
-│         │               │              │         │
-│         └───────────────┴──────────────┘         │
-│                         │                        │
-│                         ▼                        │
-│                  ┌──────────────┐                │
-│                  │  IrBuilder   │                │
-│                  │  (IrNode)    │                │
-│                  └──────────────┘                │
-└─────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────┐
-│                Optimizer Stage                   │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐        │
-│  │  Merge   │ │  Flatten │ │  Dedup   │  ...    │
-│  │  Text    │ │Containers│ │  Styles  │        │
-│  └──────────┘ └──────────┘ └──────────┘        │
-└─────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────┐
-│               Generator Stage                    │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐        │
-│  │  Flutter │ │  Compose │ │  SwiftUI │        │
-│  │  (Dart)  │ │ (Kotlin) │ │  (Swift) │        │
-│  └──────────┘ └──────────┘ └──────────┘        │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│            Pipeline Stages               │
+│                                          │
+│  ┌──────────┐  ┌──────────┐             │
+│  │  Parse   │  │  Render  │             │
+│  │ Front-   │──▶ Template │             │
+│  │ matter   │  │ + HTML   │             │
+│  └──────────┘  └────┬─────┘             │
+│                     │                    │
+│                     ▼                    │
+│  ┌────────────────────────────────────┐  │
+│  │         Style Resolve              │  │
+│  │  ┌──────────┐  ┌──────────┐       │  │
+│  │  │ Selector │  │ Cascade  │       │  │
+│  │  │ Match    │──▶ Resolve  │       │  │
+│  │  └──────────┘  └────┬─────┘       │  │
+│  │                     │             │  │
+│  │                     ▼             │  │
+│  │  ┌──────────┐  ┌──────────┐      │  │
+│  │  │ Variable │  │ calc()   │      │  │
+│  │  │ Resolve  │  │ Eval     │      │  │
+│  │  └──────────┘  └──────────┘      │  │
+│  │  ┌──────────┐  ┌──────────┐      │  │
+│  │  │ Media    │  │ Vendor   │      │  │
+│  │  │ Query    │  │ Prefix   │      │  │
+│  │  └──────────┘  └──────────┘      │  │
+│  └────────────────────────────────────┘  │
+│                     │                    │
+│                     ▼                    │
+│  ┌──────────────────────────────────┐   │
+│  │         Output Generation        │   │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐     │   │
+│  │  │ HTML │ │ XML  │ │ JSON │     │   │
+│  │  │      │ │/Feed │ │      │     │   │
+│  │  └──────┘ └──────┘ └──────┘     │   │
+│  └──────────────────────────────────┘   │
+└──────────────────────────────────────────┘
+    │
+    ▼
+Static Site (public/)
 ```
 
 ## Crate Dependency Graph
 
 ```
-motarjim-diag          (standalone - diagnostics, spans, severity)
-motarjim-ast           (standalone - AST/IR type definitions)
-motarjim-config        → diag, fs
-motarjim-fs            → diag
-motarjim-serialize     → ast, ir, config
+motarjim-ast-html         (standalone - HTML/CSS AST types)
+motarjim-config           (standalone - config loading and validation)
 
-motarjim-lexer         → diag, ast
-motarjim-parser        → diag, ast, lexer
+motarjim-frontmatter      → motarjim-ast-html
+motarjim-css              → motarjim-ast-html
 
-motarjim-selectors     → diag, ast
-motarjim-css           → diag, ast, lexer, selectors
+motarjim-templates        → motarjim-ast-html
+motarjim-output           → motarjim-ast-html, motarjim-templates
+motarjim-assets           (standalone)
 
-motarjim-ir            → ast, css, selectors
-motarjim-optimizer     → diag, ir
-motarjim-formatter     → diag, ast
-
-motarjim-gen-flutter   → ast, ir, formatter
-motarjim-gen-compose   → ast, ir, formatter
-motarjim-gen-swiftui   → ast, ir, formatter
-
-motarjim-cache         → diag, fs, serialize
-motarjim-incremental   → cache, fs, parser, css
-motarjim-profiling     (standalone)
-
-motarjim-core          → ALL crates above (facade)
-motarjim-cli           → core, config, fs, profiling, cache
-motarjim-lsp           → core, cache, config
-motarjim-ffi           → core
-motarjim-wasm          → core, config
+motarjim-core             → ALL crates above (orchestration)
+motarjim-cli              → motarjim-core, motarjim-config
 ```
 
-## Compiler Pipeline
+## Pipeline Stages
 
-### Phase 1: Lexing
+### Stage 1: Parsing
 
-**Input:** Raw HTML/CSS source text
-**Output:** Stream of tokens with source positions
-**Crates:** `motarjim-lexer`
+**Input:** Source files (`.md`, `.html`) with YAML/TOML frontmatter
+**Output:** Parsed HTML document tree + frontmatter metadata
+**Crates:** `motarjim-frontmatter`, `motarjim-ast-html`
 
-Both HTML and CSS share a common `Cursor` abstraction that provides character-by-character iteration with position tracking. The lexer produces `Token<TokenKind>` values:
+Source files are split into two parts:
+- **Frontmatter** — YAML or TOML metadata block between `---` delimiters
+- **Content** — Markdown rendered to HTML, or raw HTML
 
-- `HtmlTokenKind`: `TagOpen`, `TagClose`, `AttributeName`, `AttributeValue`, `Text`, `Comment`, `Doctype`
-- `CssTokenKind`: `Ident`, `AtKeyword`, `Hash`, `String`, `Number`, `Percentage`, `Dimension`, `Whitespace`, `Delim`, `Function`, `Colon`, `Semicolon`, etc.
+The frontmatter parser produces typed metadata (title, date, tags, layout, draft status, custom fields) available as template variables.
 
-The lexer supports error recovery: malformed tokens produce an `Error` token instead of panicking, allowing the parser to continue and collect multiple diagnostics.
+### Stage 2: Template Rendering
 
-### Phase 2: Parsing
+**Input:** HTML document + frontmatter metadata
+**Output:** Fully rendered HTML document (template-expanded)
+**Crates:** `motarjim-templates`
 
-**Input:** Token streams
-**Output:** Typed ASTs
-**Crates:** `motarjim-parser`
+Template tags (`{{ ... }}`) in the source content are expanded using context variables derived from frontmatter and site configuration. Templates support variable substitution, iteration, and conditional blocks.
 
-#### HTML Parser
+### Stage 3: Style Resolution
 
-Recursive-descent parser that produces a `Document` containing `HtmlNode` elements:
-
-```rust
-pub struct HtmlNode {
-    pub id: NodeId,
-    pub tag_name: SmolStr,
-    pub attributes: Vec<Attribute>,
-    pub children: Vec<HtmlNode>,
-    pub value: Option<String>,       // Text content for #text nodes
-    pub source_span: SourceSpan,
-}
-```
-
-Supports: void elements, optional closing tags, implicit tag insertion, error recovery with diagnostic reporting.
-
-#### CSS Parser
-
-Recursive-descent parser that produces a `CssStylesheet` with `CssRule` and `CssDeclaration` types:
-
-```rust
-pub struct CssRule {
-    pub selectors: Vec<Selector>,
-    pub declarations: Vec<CssDeclaration>,
-    pub source_span: SourceSpan,
-}
-```
-
-Supports: class, ID, tag, universal, attribute, pseudo-class, pseudo-element selectors; `@media`, `@font-face`, `@keyframes` at-rules; selector lists; cascade layering.
-
-### Phase 3: Style Resolution
-
-**Input:** `Document` + `CssStylesheet`
+**Input:** HTML document + CSS stylesheets
 **Output:** `HashMap<NodeId, ComputedStyle>`
-**Crates:** `motarjim-css`, `motarjim-selectors`
+**Crates:** `motarjim-css`, `motarjim-ast-html`
 
-Three sub-phases:
+The CSS engine performs eight sub-passes:
 
-1. **Selector Matching** — For each HTML node, find all matching CSS rules. Uses the `motarjim-selectors` crate for selector parsing and specificity calculation. Parallelizable per node via rayon.
+#### 3a. Selector Matching
 
-2. **Cascade Resolution** — Sort matching rules by origin, specificity, and source order. Apply declarations in cascade order, resolving `inherit`/`initial`/`unset` values.
+For each HTML node, find all matching CSS rules. Selectors supported:
+- **Simple:** element, class (`.`), ID (`#`), universal (`*`)
+- **Compound:** attribute (`[attr]`, `[attr=val]`), pseudo-class (`:hover`, `:first-child`), pseudo-element (`::before`)
+- **Combinators:** descendant (space), child (`>`), adjacent sibling (`+`), general sibling (`~`)
+- **Lists:** comma-separated selector groups
 
-3. **Computed Style** — Convert resolved declarations into typed `ComputedStyle` with parsed CSS values (colors, lengths, etc.). Typed value parsing happens in `motarjim-css::values`.
+Specificity is calculated per the W3C spec (inline > ID > class/attribute/pseudo-class > element/pseudo-element).
 
-### Phase 4: IR Construction
+#### 3b. Cascade Resolution
 
-**Input:** `Document` + `HashMap<NodeId, ComputedStyle>`
-**Output:** `IrTree`
-**Crates:** `motarjim-ir`
+Sort matching rules by origin (author vs. user-agent), specificity (high to low), and source order (last declaration wins). Handles `!important`, `inherit`, `initial`, and `unset` values.
 
-The IR (Intermediate Representation) is a platform-neutral tree that bridges styled HTML and platform code generation. Each `IrNode` contains three layers:
+#### 3c. Property Application
 
-```rust
-pub struct IrNode {
-    pub id: NodeId,
-    pub semantic: SemanticIr,     // Button, Text, Card, NavBar, etc.
-    pub layout: LayoutIr,         // FlexColumn, FlexRow, Grid, Stack, etc.
-    pub target: TargetIr,         // Platform-specific mapping hints
-    pub computed_style: ComputedStyle,
-    pub children: Vec<NodeId>,
-    pub parent: Option<NodeId>,
-}
+Shorthand expansion (e.g., `margin: 10px 20px` → `margin-top`, `margin-right`, etc.), type coercion (strings to typed CSS values), and validation against property-specific value grammars.
+
+#### 3d. CSS Variable Resolution
+
+`var(--name)` function calls are resolved from the `custom_properties` map accumulated from the cascade. Features:
+- Custom property registry built from `--*` declarations
+- Cycle detection via a visited set (`HashSet<String>`) during resolution
+- Fallback values: `var(--missing, fallback-value)`
+- Inherited variable propagation through the DOM tree
+
+#### 3e. `calc()` Evaluation
+
+Recursive-descent expression evaluator (`crates/motarjim-css/src/calc.rs`) that parses and computes `calc()` expressions:
+- **Operators:** `+`, `-`, `*`, `/` with standard precedence (PEMDAS)
+- **Units:** mixed-unit arithmetic with automatic conversion (px, em, %, etc.)
+- **Percentage resolution:** percentage values resolved relative to a parent context dimension
+- **Parenthesized sub-expressions** evaluated depth-first
+- Error handling for division by zero and type mismatches
+
+#### 3f. Media Query Evaluation
+
+Runtime filtering of `@media` at-rules (`crates/motarjim-css/src/media.rs`) based on configurable viewport and user preferences:
+- **Width/height conditions:** `min-width`, `max-width`, `min-height`, `max-height`
+- **User preference:** `prefers-color-scheme` (light/dark)
+- **Boolean combinators:** `not`, `and`, `or` (comma-separated list is an implicit `or`)
+- Viewport and color scheme are configured via `GlobalConfig.build.viewport`
+
+#### 3g. Grid Layout Parsing
+
+Structured representation of CSS Grid properties (`crates/motarjim-ast-html/src/grid.rs`):
+- `grid-template-columns`, `grid-template-rows` → `GridTemplate` with track lists
+- `grid-template-areas` → named area strings
+- `grid-column`, `grid-row`, `grid-area` → `GridPlacement` with start/end lines
+- Track types: fixed length, percentage, flexible (`fr`), `min-content`, `max-content`, `auto`, `minmax()`, `repeat()`
+- Line types: auto, numeric index, named line, named line with span
+
+#### 3h. Vendor Prefix Generation
+
+Automatic `-webkit-`, `-moz-`, and `-ms-` prefix insertion for CSS properties that require vendor prefixes for cross-browser compatibility.
+
+### Stage 4: Output Generation
+
+**Input:** Styled HTML documents
+**Output:** Static files on disk
+**Crates:** `motarjim-output`
+
+Multiple output formats are generated from a single build:
+- **HTML** — Complete rendered pages with resolved styles
+- **RSS/Atom feeds** — XML feed files with configurable title, description, filtering, and item count
+- **JSON** — Structured page data for programmatic consumption
+- **Plaintext** — Stripped content for search indexing or email
+
+### Stage 5: Asset Copying
+
+**Input:** Source asset directory
+**Output:** Mirrored asset directory in output
+**Crates:** `motarjim-assets`
+
+Co-located assets (images, fonts, scripts) are copied from the content directory tree into the output directory, preserving directory structure. Only files not already processed by the pipeline are copied.
+
+### Configuration Loading
+
+**Crate:** `motarjim-config`
+
+Loads `motarjim.toml` with the following top-level sections:
+
+```toml
+[site]          # title, base_url, author, language
+[build]         # output_dir, input_dir, viewport (width, height, prefers_color_scheme)
+[feeds]         # RSS and Atom feed configuration (enabled, title, description, count, filter)
+[server]        # dev server port, host, live_reload
 ```
 
-- **SemanticIR** — Inferred from tag name, class names, ARIA roles, and CSS patterns. `<nav>` → `NavigationBar`, `.card` with shadow → `Card`.
-- **LayoutIR** — Inferred from CSS `display`, `flex-direction`, `grid-template`, and element dimensions.
-- **TargetIR** — Platform-specific hints (e.g., which Flutter widget to use for a given semantic role).
-
-### Phase 5: Optimization
-
-**Input:** `IrTree`
-**Output:** Optimized `IrTree`
-**Crates:** `motarjim-optimizer`
-
-A **PassManager** runs a sequence of modular optimization passes. Each pass implements the `OptimizationPass` trait:
-
-```rust
-pub trait OptimizationPass: Send + Sync {
-    fn name(&self) -> &'static str;
-    fn description(&self) -> &'static str;
-    fn run(&self, tree: &mut IrTree, context: &PassContext) -> PassResult;
-}
-```
-
-Default passes (in order):
-
-| Pass | Description | Cost |
-|------|-------------|------|
-| `merge_text_nodes` | Merge adjacent text nodes | O(n) |
-| `remove_empty_nodes` | Remove empty containers/text | O(n) |
-| `flatten_containers` | Flatten single-child wrappers | O(n) |
-| `style_deduplication` | Deduplicate identical styles | O(n log n) |
-| `constant_folding` | Fold constant style expressions | O(n) |
-| `dead_node_elimination` | Remove unreachable nodes | O(n) |
-| `simplify_layout` | Simplify redundant layout wrappers | O(n) |
-
-### Phase 6: Code Generation
-
-**Input:** Optimized `IrTree`
-**Output:** Platform source code (Dart/Kotlin/Swift)
-**Crates:** `motarjim-gen-flutter`, `motarjim-gen-compose`, `motarjim-gen-swiftui`
-
-Each generator crate walks the IR tree and emits platform-native code. Generators use the `motarjim-formatter` crate for consistent code output (indentation, line breaks, imports).
-
-## Compilation Targets
-
-```
-                     ┌──────────────────┐
-                     │  motarjim-core   │
-                     │  (single source) │
-                     └────────┬─────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              │               │               │
-              ▼               ▼               ▼
-     ┌────────────┐  ┌──────────────┐  ┌──────────────┐
-     │ Native CLI │  │ WebAssembly  │  │ Dynamic Lib  │
-     │ (motarjim- │  │ (motarjim-   │  │ (motarjim-   │
-     │   cli)     │  │   wasm)      │  │   ffi)       │
-     └────────────┘  └──────────────┘  └──────────────┘
-```
-
-## Data Flow
-
-```
-Source Files
-    │
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│  1. Read Files (motarjim-fs)                            │
-│     - Abstract file system for testability              │
-│     - Supports real FS, virtual FS, and remote FS       │
-└──────────────────────────────────────────────────────────┘
-    │
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│  2. Parse (motarjim-parser)                             │
-│     - HtmlParser: tokens → Document                     │
-│     - CssParser:  tokens → CssStylesheet                │
-│     - Error recovery on both paths                      │
-└──────────────────────────────────────────────────────────┘
-    │
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│  3. Resolve Styles (motarjim-css + motarjim-selectors) │
-│     - Selector matching (parallel via rayon)            │
-│     - Cascade resolution                                │
-│     - Computed style with typed values                  │
-└──────────────────────────────────────────────────────────┘
-    │
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│  4. Build IR (motarjim-ir)                              │
-│     - Semantic inference                                │
-│     - Layout inference                                  │
-│     - Target platform hints                             │
-│     - Responsive variant attachment                     │
-└──────────────────────────────────────────────────────────┘
-    │
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│  5. Optimize (motarjim-optimizer)                      │
-│     - Pass manager with ordered passes                  │
-│     - Each pass transforms tree in place                │
-└──────────────────────────────────────────────────────────┘
-    │
-    ▼
-┌──────────────────────────────────────────────────────────┐
-│  6. Generate (motarjim-gen-*)                           │
-│     - Platform-specific emitter                         │
-│     - Formatted output via motarjim-formatter           │
-└──────────────────────────────────────────────────────────┘
-    │
-    ▼
-Generated Platform Code
-    │
-    ├── Dart/Flutter   →  lib/generated.dart
-    ├── Kotlin/Compose →  app/.../GeneratedView.kt
-    └── Swift/SwiftUI  →  GeneratedView.swift
-```
+The `[build.viewport]` section controls media query evaluation:
+- `width` — viewport width in pixels (default: 1024)
+- `height` — viewport height in pixels (default: 768)
+- `prefers_color_scheme` — `"light"` or `"dark"` (default: `"light"`)
 
 ## Design Decisions
 
 ### Why Rust?
 
-- **Performance** — 40-66× faster than the TypeScript predecessor. Targets: 1ms for small pages, 30ms for large pages (5000 nodes).
-- **Memory efficiency** — Arena allocation, zero-copy parsing, small string optimization. Target: 64-96 bytes per AST node vs. 200-400 bytes in JS.
-- **Correctness** — Strong type system, ownership model, `#[deny(unsafe_code)]`, exhaustive pattern matching.
-- **Ecosystem** — Cargo workspace, criterion benchmarks, proptest, cargo-fuzz, clippy.
+- **Performance** — Blazingly fast builds; CSS engine handles thousands of selectors in microseconds
+- **Correctness** — Strong type system, ownership model, exhaustive pattern matching on CSS value types
+- **Reliability** — No runtime crashes; graceful error handling for malformed CSS and missing values
 
 ### Why Separate Crates?
 
 Each crate is independently publishable on crates.io. This enables:
-- **Reusability** — `motarjim-diag` can be used by other Rust tools. `motarjim-selectors` can be embedded in browser testing frameworks.
-- **Parallel compilation** — Cargo compiles crates in parallel.
-- **Focused testing** — Each crate has its own test suite, benchmarks, and fuzz targets.
-- **Feature gating** — Users select only the generators they need (`gen-flutter`, `gen-compose`, `gen-swiftui`).
+- **Reusability** — `motarjim-css` can be embedded in other Rust tooling that needs CSS cascade resolution
+- **Parallel compilation** — Cargo compiles crates in parallel
+- **Focused testing** — Each crate has its own test suite
 
-### Why a Plugin System?
+### CSS Engine Design
 
-Generators are plugins registered via the `Generator` trait. This allows:
-- **Third-party generators** — React Native, .NET MAUI, Qt, Tauri, etc. without modifying core.
-- **Independent development** — Each generator lives in its own crate.
-- **Feature selection** — Users only compile the generators they need.
+The CSS engine is designed for **predictability** rather than completeness:
+- Follows the W3C cascade specification for property resolution order
+- Recursive-descent parsers are simple to debug and maintain
+- Custom property resolution with cycle detection prevents infinite loops
+- `calc()` evaluation supports the full arithmetic subset with proper unit handling
+- Media queries are evaluated at build time against a configured viewport (not a real browser)
 
-### Why a Single IR?
+## Key Data Structures
 
-Early prototypes had dual IR systems (legacy `UiNode` and new `IrNode`), causing confusion and duplication. The single `IrNode` with three layers (SemanticIR, LayoutIR, TargetIR) provides:
-- A stable API contract between phases
-- Platform-neutral abstraction before platform-specific generation
-- Single optimization pass that benefits all generators
+### `ComputedStyle` (`motarjim-ast-html::style`)
 
-### Why Not Runtime/Interpretation?
+```rust
+pub struct ComputedStyle {
+    // Basic styling
+    pub color: Option<String>,
+    pub background_color: Option<String>,
+    pub font_size: Option<String>,
+    pub font_family: Option<String>,
+    pub font_weight: Option<String>,
+    pub text_align: Option<String>,
 
-motarjim generates static source files. There is no runtime library, no WebView, no interpretation layer. The output is:
-- **Idiomatic** — Uses standard platform APIs (Material Design widgets, Compose modifiers, SwiftUI views).
-- **Editable** — Output is meant to be checked into version control and maintained by hand if desired.
-- **Performant** — No overhead from a runtime bridge or DOM emulation.
+    // Box model
+    pub width: Option<String>,
+    pub height: Option<String>,
+    pub margin: Option<String>,
+    pub margin_top: Option<String>,
+    pub margin_right: Option<String>,
+    pub margin_bottom: Option<String>,
+    pub margin_left: Option<String>,
+    pub padding: Option<String>,
+    pub padding_top: Option<String>,
+    pub padding_right: Option<String>,
+    pub padding_bottom: Option<String>,
+    pub padding_left: Option<String>,
 
-## Key Architecture Patterns
+    // Border
+    pub border: Option<String>,
+    pub border_top: Option<String>,
+    pub border_right: Option<String>,
+    pub border_bottom: Option<String>,
+    pub border_left: Option<String>,
+    pub border_radius: Option<String>,
 
-### Query System (Incremental Cache)
+    // Layout
+    pub display: Option<String>,
+    pub position: Option<String>,
+    pub flex_direction: Option<String>,
+    pub flex_wrap: Option<String>,
+    pub justify_content: Option<String>,
+    pub align_items: Option<String>,
+    pub gap: Option<String>,
 
-Inspired by rustc's query system and Salsa. Each compilation phase is a `Query` with a key, value, and invalidation pattern. Results are cached and invalidated based on dependency changes.
+    // Positioning offsets
+    pub top: Option<String>,
+    pub right: Option<String>,
+    pub bottom: Option<String>,
+    pub left: Option<String>,
 
-| Query | Key | Value | Invalidation |
-|-------|-----|-------|-------------|
-| `ParseHtml` | FilePath | Document | OnFileChange |
-| `ParseCss` | FilePath | Stylesheet | OnFileChange |
-| `CascadeStyles` | NodeId | ComputedStyle | OnDependencyChange |
-| `BuildIr` | (Document, Stylesheet) | IrTree | OnDependencyChange |
-| `GenerateCode` | (IrTree, Target) | String | AlwaysExecute |
+    // Animation
+    pub animation_name: Option<String>,
+    pub animation_duration: Option<String>,
+    pub animation_timing_function: Option<String>,
 
-### Event System
+    // Grid
+    pub grid_template_columns: Option<GridTemplate>,
+    pub grid_template_rows: Option<GridTemplate>,
+    pub grid_template_areas: Option<Vec<String>>,
+    pub grid_column: Option<GridPlacement>,
+    pub grid_row: Option<GridPlacement>,
 
-Each phase emits lifecycle events. The LSP, plugins, and profiling infrastructure subscribe to these events:
+    // CSS custom properties
+    pub custom_properties: HashMap<String, String>,
+}
+```
 
-- `BeforeParse` / `AfterParse`
-- `BeforeStyle` / `AfterStyle`
-- `BeforeIr` / `AfterIr`
-- `BeforeOptimize` / `AfterOptimize`
-- `BeforeGenerate` / `AfterGenerate`
+## Future Plans
 
-### Cancellation Token
-
-Long-running operations check a shared `CancelToken`. When the user edits a file (in LSP mode), the previous compilation is cancelled and a new one starts. No work is wasted.
-
-### Telemetry
-
-Every phase emits structured telemetry: duration, allocations, cache hits/misses, nodes processed. Subscribers include console output, JSON file, Prometheus metrics, and Chrome tracing.
-
-## Future Architecture Plans
-
-1. **Compilation DAG** — Replace the sequential pipeline with a Directed Acyclic Graph scheduler. Independent nodes (semantic inference, layout inference, accessibility analysis) execute concurrently via rayon.
-2. **Incremental Recompilation** — Track per-file dependencies. Only recompile phases whose inputs changed.
-3. **Arena Allocation** — Use typed arenas with bump allocators for all AST/IR nodes. Eliminate individual heap allocations.
-4. **SIMD CSS Parsing** — Accelerate number parsing and string matching with SIMD instructions.
-5. **Lazy Style Computation** — Only compute requested CSS properties instead of full computed style for every node.
-
-## Performance Targets
-
-| Scenario | Current (Rust) | Target |
-|----------|---------------|--------|
-| Small page (50 nodes) | ~2ms | ~1ms |
-| Medium page (500 nodes) | ~10ms | ~5ms |
-| Large page (5000 nodes) | ~98ms | ~30ms |
-| Batch (100 pages) | ~1s | ~500ms |
+1. **Incremental builds** — Only re-process files whose source or dependencies changed
+2. **CSS source maps** — Line-number mapping from output styles back to source CSS
+3. **Sass/SCSS compilation** — Pre-processor support before cascade resolution
+4. **More selectors** — `:has()`, `:where()`, `:is()`, `:not()` with full selector lists
+5. **Benchmarking suite** — Criterion benchmarks for pipeline throughput

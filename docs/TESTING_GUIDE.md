@@ -115,37 +115,39 @@ mod tests {
 
 ### Integration Tests
 
-Integration tests live in `tests/` directories at crate root and test the public API:
+Integration tests exercise the full pipeline from HTML/CSS input to generated output:
 
 ```rust
-// crates/motarjim-core/tests/compile_test.rs
+// tests/integration_test.rs
 #[test]
-fn test_end_to_end_navigation_bar() {
-    let result = compile(CompilerOptions {
-        html: SourceFile::from_path("tests/html/nav-bar.html"),
-        css: Some(SourceFile::from_path("tests/css/nav-bar.css")),
-        target: Target::Flutter,
-        ..Default::default()
-    });
-    assert!(result.diagnostics.is_empty());
-    assert!(result.code.dart.unwrap().contains("AppBar"));
+fn test_css_variable_resolution() {
+    let html = r#"<html><style>
+        :root { --primary: #333; }
+        body { color: var(--primary); }
+    </style><body>Hello</body></html>"#;
+    let resolver = StyleResolver::new();
+    resolver.add_stylesheet(parse_css(html));
+    let style = resolver.resolve(...);
+    assert_eq!(style.color, Some("#333".into()));
 }
 ```
 
 ### Golden Tests
 
-Golden tests live in `crates/motarjim-test-utils/tests/golden_test.rs`:
+Golden tests compare generated output against stored snapshots:
 
 ```rust
 #[test]
-fn golden_flutter_card() {
-    let input_html = include_str!("../tests/golden/html/card.html");
-    let input_css = include_str!("../tests/golden/css/card.css");
+fn golden_css_variables() {
+    let input = r#"<html><style>
+        :root { --color: blue; }
+        div { color: var(--color); }
+    </style><div>Hello</div></html>"#;
 
     let compiler = test_compiler();
-    let result = compiler.compile(&format!("<style>{input_css}</style>\n{input_html}"), &default_options()).unwrap();
+    let result = compiler.compile(input, &default_options()).unwrap();
 
-    insta::assert_snapshot!("flutter_card", result.output);
+    insta::assert_snapshot!("css_variables", result.output);
 }
 ```
 
@@ -210,16 +212,14 @@ motarjim/
 
 | Crate | Unit Tests | Integration | Coverage Target |
 |-------|-----------|-------------|-----------------|
-| `motarjim-lexer` | Tokenize HTML/CSS | — | 95% |
-| `motarjim-parser` | Parse tokens → AST | Round-trip | 95% |
-| `motarjim-selectors` | Parse, specificity, match | — | 95% |
-| `motarjim-css` | Parse, cascade, computed | Style resolution | 90% |
-| `motarjim-ir` | Build IR from styled nodes | — | 90% |
-| `motarjim-optimizer` | Each pass individually | Pipeline | 95% |
-| `motarjim-gen-flutter` | Widget emission | Golden output | 90% |
-| `motarjim-gen-compose` | Widget emission | Golden output | 90% |
-| `motarjim-gen-swiftui` | Widget emission | Golden output | 90% |
-| `motarjim-core` | — | End-to-end | 85% |
+| `motarjim-ast-html` | CSS value parsing | — | 95% |
+| `motarjim-config` | Config loading | — | 95% |
+| `motarjim-css` | Properties, cascade, calc, media, grid, variables | Style resolution | 95% |
+| `motarjim-frontmatter` | YAML/TOML parsing | — | 95% |
+| `motarjim-templates` | Variable expansion, iteration | — | 90% |
+| `motarjim-output` | HTML/XML/JSON generation | End-to-end | 90% |
+| `motarjim-assets` | File copy | — | 90% |
+| `motarjim-core` | — | End-to-end pipeline | 85% |
 | `motarjim-cli` | Argument parsing | File I/O | 90% |
 
 ## Fixtures and Golden Files
@@ -231,25 +231,18 @@ crates/motarjim-test-utils/tests/golden/
 ├── html/
 │   ├── simple-div.html
 │   ├── nested-elements.html
-│   ├── form-with-inputs.html
-│   ├── navigation-bar.html
-│   ├── card-grid.html
-│   ├── hero-section.html
-│   ├── ecommerce-product.html
-│   ├── dashboard-layout.html
 │   └── blog-article.html
 ├── css/
 │   ├── simple-rules.css
 │   ├── cascade-specificity.css
 │   ├── media-queries.css
-│   ├── flexbox.css
-│   └── responsive.css
-├── output/
-│   ├── flutter/
-│   ├── compose/
-│   └── swiftui/
-└── ir/
-    └── *.json
+│   ├── css-variables.css
+│   ├── calc-expressions.css
+│   └── grid-layout.css
+└── output/
+    ├── html/
+    ├── rss/
+    └── json/
 ```
 
 ### Updating Golden Files
@@ -313,16 +306,14 @@ cargo bench --workspace -- --baseline main
 
 | Benchmark | What It Measures |
 |-----------|-----------------|
-| `parse_small` | 50-node HTML document |
-| `parse_medium` | 500-node HTML document |
-| `parse_large` | 5000-node HTML document |
-| `cascade_small` | 50 nodes, 10 CSS rules |
-| `cascade_medium` | 500 nodes, 100 CSS rules |
-| `build_ir_small` | 50 styled nodes → IR |
-| `optimize_small` | IR optimization passes |
-| `generate_flutter` | Full IR → Dart generation |
-| `pipeline_small` | End-to-end small page |
-| `pipeline_large` | End-to-end large page |
+| `css_parse` | CSS stylesheet parsing |
+| `selector_match` | Selector matching against HTML tree |
+| `cascade_resolve` | Cascade resolution and property application |
+| `var_resolve` | CSS custom property resolution with `var()` |
+| `calc_eval` | `calc()` expression evaluation |
+| `media_eval` | Media query condition matching |
+| `pipeline_small` | End-to-end: small page with CSS |
+| `pipeline_large` | End-to-end: large page with complex styles |
 
 ### Performance Regression Policy
 

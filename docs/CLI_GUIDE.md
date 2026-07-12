@@ -5,9 +5,9 @@
 ### From Source
 
 ```bash
-git clone https://github.com/motarjim/motarjim.git
+git clone https://github.com/your-org/motarjim
 cd motarjim
-cargo build --release -p motarjim-cli
+cargo build --release
 
 # Binary at: ./target/release/motarjim
 ```
@@ -15,68 +15,82 @@ cargo build --release -p motarjim-cli
 ### From crates.io
 
 ```bash
-cargo install motarjim-cli
+cargo install motarjim
 ```
 
 ## Commands
 
-### `motarjim compile`
+### `motarjim build`
 
-Compile HTML/CSS to a target platform.
+Build the site from source content.
 
 ```bash
-motarjim compile <INPUT> [OPTIONS]
+motarjim build [OPTIONS]
 ```
 
-**Arguments:**
-
-| Argument | Description |
-|----------|-------------|
-| `INPUT` | Path to input HTML file |
+Builds all content files in the input directory, applies templates, resolves CSS styles, and generates output files.
 
 **Options:**
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--platform <PLATFORM>` | `-p` | Target platform: `flutter`, `compose`, `swiftui` (default: `flutter`) |
-| `--output <PATH>` | `-o` | Write output to file instead of stdout |
-| `--minify` | `-m` | Minify generated code |
-| `--source-maps` | | Generate source maps |
+| `--config <PATH>` | `-c` | Path to config file (default: `motarjim.toml`) |
+| `--output <DIR>` | `-o` | Output directory (overrides config) |
+| `--input <DIR>` | `-i` | Input content directory (overrides config) |
 | `--strict` | `-s` | Treat warnings as errors |
+| `--viewport-width <PX>` | | Viewport width for media query evaluation (default: 1024) |
+| `--viewport-height <PX>` | | Viewport height for media query evaluation (default: 768) |
+| `--color-scheme <MODE>` | | Preferred color scheme: `light` or `dark` (default: `light`) |
 
 **Examples:**
 
 ```bash
-# Basic compilation to stdout
-motarjim compile index.html
+# Build with defaults
+motarjim build
 
-# Specify target platform
-motarjim compile index.html --platform swiftui
+# Build with custom config
+motarjim build --config my-site.toml
 
-# Write to output file
-motarjim compile index.html --platform compose --output app/GeneratedView.kt
+# Build with dark mode media queries
+motarjim build --color-scheme dark
 
-# Full options
-motarjim compile index.html --platform flutter --minify --source-maps --strict --output lib/generated.dart
-
-# Compile with inline CSS
-motarjim compile index.html --platform flutter
-# (CSS is extracted from <style> tags in the HTML)
+# Build for mobile viewport
+motarjim build --viewport-width 375 --viewport-height 812
 ```
 
-### `motarjim watch`
+### `motarjim serve`
 
-Watch files for changes and recompile automatically.
+Start the development server with live reload.
 
 ```bash
-motarjim watch <INPUT> [OPTIONS]
+motarjim serve [OPTIONS]
 ```
 
-**Note:** Watch mode is a stub and not yet fully implemented. Use `motarjim compile` for one-shot compilation.
+**Options:**
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--port <PORT>` | `-p` | Port to listen on (default: 8080) |
+| `--host <HOST>` | | Host to bind to (default: `127.0.0.1`) |
+| `--no-livereload` | | Disable live reload injection |
+| `--open` | `-o` | Open browser on start |
+
+**Examples:**
+
+```bash
+# Start dev server
+motarjim serve
+
+# Custom port
+motarjim serve --port 3000
+
+# Accessible from network
+motarjim serve --host 0.0.0.0 --port 80
+```
 
 ### `motarjim init`
 
-Create a default `motarjim.json` configuration file in the current directory.
+Create a default `motarjim.toml` configuration file in the current directory.
 
 ```bash
 motarjim init
@@ -84,236 +98,185 @@ motarjim init
 
 Creates:
 
-```json
-{
-  "platforms": {
-    "flutter": {
-      "format": "dart",
-      "output_dir": "output/flutter",
-      "minify": false,
-      "source_maps": false
-    },
-    "compose": {
-      "format": "kotlin",
-      "output_dir": "output/compose",
-      "minify": false,
-      "source_maps": false
-    },
-    "swiftui": {
-      "format": "swift",
-      "output_dir": "output/swiftui",
-      "minify": false,
-      "source_maps": false
-    }
-  },
-  "global": {
-    "verbose": false,
-    "strict": false,
-    "max_parallel": 4,
-    "incremental": true
-  }
-}
+```toml
+[site]
+title = "My Site"
+base_url = "https://example.com"
+author = "Your Name"
+
+[build]
+output_dir = "public"
+input_dir = "content"
+
+[build.viewport]
+width = 1024
+height = 768
+prefers_color_scheme = "light"
+
+[feeds.rss]
+enabled = true
+title = "My Site RSS Feed"
+
+[feeds.atom]
+enabled = true
 ```
 
 ### `motarjim check`
 
-Type-check and lint input without generating output.
+Validate content and CSS without generating output.
 
 ```bash
-motarjim check <INPUT>
+motarjim check <INPUT> [OPTIONS]
 ```
 
-For HTML/CSS files, runs the full compiler pipeline in strict mode and reports diagnostics. For JavaScript files (`.js`, `.mjs`, `.jsx`), routes to the `motarjim-js` parser and semantic analyzer.
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `INPUT` | Path to input file or directory |
+
+Runs the full pipeline in strict mode and reports diagnostics (parse errors, CSS cascade issues, missing templates).
 
 **Examples:**
 
 ```bash
-motarjim check index.html
-motarjim check app.js
-motarjim check component.mjs
+# Check a single file
+motarjim check content/index.md
+
+# Check all content
+motarjim check content/
 ```
 
 ## Configuration File Reference
 
-### `motarjim.json`
-
-```json
-{
-  "platforms": {
-    "<name>": {
-      "format": "dart | kotlin | swift",
-      "output_dir": "path/to/output",
-      "minify": false,
-      "source_maps": false,
-      "options": {
-        "key": "value"
-      }
-    }
-  },
-  "global": {
-    "verbose": false,
-    "strict": false,
-    "max_parallel": 4,
-    "cache_dir": ".motarjim/cache",
-    "incremental": true,
-    "options": {
-        "key": "value"
-    }
-  }
-}
-```
-
 ### `motarjim.toml`
 
 ```toml
-[platforms.flutter]
-format = "dart"
-output_dir = "output/flutter"
-minify = false
-source_maps = false
+[site]
+title = "My Site"
+base_url = "https://example.com"
+author = "Your Name"
+language = "en"
 
-[platforms.compose]
-format = "kotlin"
-output_dir = "output/compose"
-minify = false
-source_maps = false
+[build]
+output_dir = "public"
+input_dir = "content"
 
-[platforms.swiftui]
-format = "swift"
-output_dir = "output/swiftui"
-minify = false
-source_maps = false
+[build.viewport]
+width = 1024
+height = 768
+prefers_color_scheme = "light"
 
-[global]
-verbose = false
-strict = false
-max_parallel = 4
-incremental = true
+[build.formats]
+html = true
+rss = true
+atom = true
+json = false
+plaintext = false
+
+[feeds.rss]
+enabled = true
+title = "My Site RSS Feed"
+description = "Latest content"
+count = 20
+
+[feeds.atom]
+enabled = true
+title = "My Site Atom Feed"
+description = "Latest content"
+count = 20
+
+[server]
+port = 8080
+host = "127.0.0.1"
+live_reload = true
 ```
 
 ### Configuration Precedence
 
 ```
-CLI arguments > Config file (motarjim.json / motarjim.toml) > Defaults
+CLI arguments > Config file (motarjim.toml) > Defaults
 ```
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MOTARJIM_CACHE_DIR` | Override cache directory | `.motarjim/cache` |
-| `MOTARJIM_MAX_PARALLEL` | Max parallel compilation tasks | `4` |
+| `MOTARJIM_CONFIG` | Path to config file | `motarjim.toml` |
 | `MOTARJIM_STRICT` | Enable strict mode | `false` |
-| `MOTARJIM_VERBOSE` | Enable verbose output | `false` |
-| `RUST_BACKTRACE` | Rust panic backtrace (for debugging) | `0` |
-| `RUST_LOG` | Rust log level (for tracing) | `error` |
 
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
 | `0` | Success |
-| `1` | Compilation error (file not found, parse failure, diagnostics) |
+| `1` | Error (config, parse, or build failure) |
 
 ## Common Workflows
 
-### Basic HTML to Flutter
+### Create and Build a New Site
 
 ```bash
-cat > index.html <<EOF
-<div class="container">
-  <h1>Hello World</h1>
-  <p>Built with motarjim</p>
-</div>
+# Initialize
+motarjim init my-site
+cd my-site
+
+# Add content
+cat > content/index.md <<EOF
+---
+title: Home
+---
+# Welcome
+
+This is my site built with **Motarjim**.
 EOF
 
-motarjim compile index.html --platform flutter --output lib/main.dart
+# Build
+motarjim build
+
+# Serve
+motarjim serve --open
 ```
 
-### HTML with External CSS
-
-Create an HTML file with a `<style>` tag or pass CSS inline — motarjim extracts CSS from `<style>` tags automatically.
+### Using CSS Variables and Media Queries
 
 ```html
-<html>
 <style>
-  .card { padding: 16px; border-radius: 8px; background: white; }
-  h1 { color: #333; font-size: 24px; }
+  :root {
+    --primary-color: #333;
+  }
+  body {
+    color: var(--primary-color);
+    font-size: calc(16px * 1.2);
+  }
+  @media (min-width: 768px) {
+    .sidebar { display: block; }
+  }
 </style>
-<body>
-  <div class="card">
-    <h1>Card Title</h1>
-  </div>
-</body>
-</html>
 ```
+
+Build with specific viewport:
 
 ```bash
-motarjim compile card.html --platform compose --output CardView.kt
-```
-
-### Multi-Platform Output
-
-```bash
-motarjim compile index.html --platform flutter --output lib/generated.dart
-motarjim compile index.html --platform compose --output app/generated.kt
-motarjim compile index.html --platform swiftui --output GeneratedView.swift
-```
-
-### JavaScript Analysis
-
-```bash
-cat > app.js <<EOF
-const button = document.getElementById("submit");
-button.addEventListener("click", () => {
-  console.log("Clicked!");
-});
-const count = 1;
-count = 2;  // Error: const reassignment
-EOF
-
-motarjim check app.js
-# Output:
-# error[E0712]: Assignment to a const binding
-```
-
-### CI/CD Integration
-
-```yaml
-# .github/workflows/compile.yml
-name: Compile UI
-on: [push]
-jobs:
-  compile:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Compile Flutter UI
-        run: |
-          cargo build --release -p motarjim-cli
-          ./target/release/motarjim compile index.html --platform flutter --output lib/generated.dart
+motarjim build --viewport-width 768 --color-scheme dark
 ```
 
 ## Troubleshooting
 
 ### "motarjim: command not found"
 
-The binary hasn't been added to your PATH. Either:
-- Copy it: `cp ./target/release/motarjim ~/.local/bin/`
+The binary isn't in your PATH. Either:
+- Install via cargo: `cargo install motarjim`
 - Use the full path: `./target/release/motarjim`
-- Install via cargo: `cargo install motarjim-cli`
 
-### Compilation produces empty output
+### Build produces no output
 
-- Check that the HTML has content inside `<body>`
-- Verify the file is readable
+- Check that `input_dir` contains `.md` or `.html` files
+- Verify the config file is valid TOML
 - Run with `--strict` to see diagnostics
 
-### "Unknown platform" error
+### Media queries not working as expected
 
-Use one of: `flutter`, `compose`, `swiftui`.
-
-### "File not found"
-
-Ensure the input file path is correct. motarjim reads from the filesystem directly — it does NOT resolve HTML imports.
+- Set viewport dimensions explicitly with `--viewport-width` and `--viewport-height`
+- The default viewport is 1024x768 (desktop)
+- Use `--color-scheme dark` to test dark mode styles
