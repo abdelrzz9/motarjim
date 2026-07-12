@@ -1,6 +1,10 @@
 //! Computed style types for the Motarjim compiler.
 #![allow(missing_docs)]
 
+use std::collections::HashMap;
+
+use crate::grid::{GridPlacement, GridTemplate};
+
 /// CSS display types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
@@ -228,6 +232,17 @@ pub struct ComputedStyle {
     pub grid_template_rows: Option<String>,
     pub grid_column: Option<String>,
     pub grid_row: Option<String>,
+    // Structured grid fields (populated when parsing succeeds)
+    pub grid_template_columns_structured: Option<GridTemplate>,
+    pub grid_template_rows_structured: Option<GridTemplate>,
+    pub grid_column_start: Option<GridPlacement>,
+    pub grid_column_end: Option<GridPlacement>,
+    pub grid_row_start: Option<GridPlacement>,
+    pub grid_row_end: Option<GridPlacement>,
+    pub grid_template_areas: Option<Vec<String>>,
+    pub grid_auto_flow: Option<String>,
+    pub grid_auto_columns: Option<GridTemplate>,
+    pub grid_auto_rows: Option<GridTemplate>,
     pub color: Option<String>,
     pub background: Option<Background>,
     pub border: Option<Border>,
@@ -250,6 +265,22 @@ pub struct ComputedStyle {
     pub resize: Option<String>,
     pub user_select: Option<String>,
     pub appearance: Option<String>,
+    // Positioning offsets (TASK 2)
+    pub top: Option<String>,
+    pub right: Option<String>,
+    pub bottom: Option<String>,
+    pub left: Option<String>,
+    // Animation properties (TASK 6)
+    pub animation_name: Option<String>,
+    pub animation_duration: Option<String>,
+    pub animation_timing_function: Option<String>,
+    pub animation_delay: Option<String>,
+    pub animation_iteration_count: Option<String>,
+    pub animation_direction: Option<String>,
+    pub animation_fill_mode: Option<String>,
+    pub animation_play_state: Option<String>,
+    // CSS custom properties / variables (TASK 1)
+    pub custom_properties: HashMap<String, String>,
 }
 
 impl Default for ComputedStyle {
@@ -281,6 +312,17 @@ impl Default for ComputedStyle {
             grid_template_rows: None,
             grid_column: None,
             grid_row: None,
+            // Structured grid fields
+            grid_template_columns_structured: None,
+            grid_template_rows_structured: None,
+            grid_column_start: None,
+            grid_column_end: None,
+            grid_row_start: None,
+            grid_row_end: None,
+            grid_template_areas: None,
+            grid_auto_flow: None,
+            grid_auto_columns: None,
+            grid_auto_rows: None,
             color: None,
             background: None,
             border: None,
@@ -303,6 +345,22 @@ impl Default for ComputedStyle {
             resize: None,
             user_select: None,
             appearance: None,
+            // Positioning offsets
+            top: None,
+            right: None,
+            bottom: None,
+            left: None,
+            // Animation properties
+            animation_name: None,
+            animation_duration: None,
+            animation_timing_function: None,
+            animation_delay: None,
+            animation_iteration_count: None,
+            animation_direction: None,
+            animation_fill_mode: None,
+            animation_play_state: None,
+            // CSS custom properties
+            custom_properties: HashMap::new(),
         }
     }
 }
