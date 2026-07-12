@@ -1,4 +1,5 @@
 use crate::matching::{rule_matches_element, rule_max_specificity};
+use crate::media::evaluate_media_query;
 use crate::*;
 use motarjim_ast::HtmlNode;
 
@@ -23,15 +24,31 @@ use motarjim_ast::HtmlNode;
 pub struct StyleResolver {
     /// Loaded stylesheets to resolve against.
     stylesheets: Vec<CssStylesheet>,
+    /// Viewport dimensions for media query evaluation (width, height).
+    viewport: (u32, u32),
+    /// Preferred color scheme for `prefers-color-scheme` media feature.
+    color_scheme: String,
 }
 
 impl StyleResolver {
-    /// Create a new empty style resolver.
+    /// Create a new empty style resolver with default viewport (1920x1080).
     #[must_use]
     pub const fn new() -> Self {
         Self {
             stylesheets: Vec::new(),
+            viewport: (1920, 1080),
+            color_scheme: String::new(),
         }
+    }
+
+    /// Set the viewport dimensions for media query evaluation.
+    pub fn set_viewport(&mut self, width: u32, height: u32) {
+        self.viewport = (width, height);
+    }
+
+    /// Set the preferred color scheme for media query evaluation.
+    pub fn set_color_scheme(&mut self, scheme: String) {
+        self.color_scheme = scheme;
     }
 
     /// Add a parsed stylesheet to the resolver.
@@ -152,9 +169,11 @@ impl StyleResolver {
                 }
             }
             CssRule::Media(media_rule) => {
-                // Always match media rules in the CSS engine (we don't have viewport info here).
-                for nested in &media_rule.rules {
-                    self.collect_from_rule(cascade, nested, element, dom_context);
+                // Evaluate the media query against the configured viewport.
+                if evaluate_media_query(&media_rule.query, self.viewport, &self.color_scheme) {
+                    for nested in &media_rule.rules {
+                        self.collect_from_rule(cascade, nested, element, dom_context);
+                    }
                 }
             }
             CssRule::Supports(supports_rule) => {
@@ -177,6 +196,42 @@ impl StyleResolver {
     /// Clear all registered stylesheets.
     pub fn clear(&mut self) {
         self.stylesheets.clear();
+    }
+
+    /// Collect all `@keyframes` rules from all registered stylesheets.
+    ///
+    /// Returns a map of animation name → `KeyframesRule`.
+    #[must_use]
+    pub fn collect_keyframes(&self) -> std::collections::HashMap<SmolStr, motarjim_ast::css::KeyframesRule> {
+        let mut keyframes = std::collections::HashMap::new();
+        for sheet in &self.stylesheets {
+            for rule in &sheet.rules {
+                Self::collect_keyframes_from_rule(rule, &mut keyframes);
+            }
+        }
+        keyframes
+    }
+
+    fn collect_keyframes_from_rule(
+        rule: &CssRule,
+        keyframes: &mut std::collections::HashMap<SmolStr, motarjim_ast::css::KeyframesRule>,
+    ) {
+        match rule {
+            CssRule::Keyframes(kr) => {
+                keyframes.insert(kr.name.clone(), kr.clone());
+            }
+            CssRule::Media(media_rule) => {
+                for nested in &media_rule.rules {
+                    Self::collect_keyframes_from_rule(nested, keyframes);
+                }
+            }
+            CssRule::Supports(supports_rule) => {
+                for nested in &supports_rule.rules {
+                    Self::collect_keyframes_from_rule(nested, keyframes);
+                }
+            }
+            _ => {}
+        }
     }
 }
 
