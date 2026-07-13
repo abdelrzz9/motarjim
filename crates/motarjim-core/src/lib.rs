@@ -527,11 +527,29 @@ impl Compiler {
         })?;
 
         let file_hash = sha256(entry.content.as_bytes());
-        if let Some(incr) = self.session.incremental() {
+        if let Some(ref incr) = *self.session.incremental() {
             use motarjim_incremental::CompilationStatus;
             match incr.status(path, file_hash) {
                 CompilationStatus::UpToDate => {
-                    tracing::trace!("incremental: {} is up-to-date", path.display());
+                    tracing::trace!("incremental: {} is up-to-date, checking cache", path.display());
+                    // Fast path: if the artifact cache has a hit, skip entirely.
+                    if let Some(cache) = self.session.cache() {
+                        let config_hash = sha256(format!("{:?}", self.session.config()).as_bytes());
+                        let key = CacheKey::new(file_hash, options.platform.to_string(), config_hash);
+                        if let Ok(Some(cached_bytes)) = cache.load(&key) {
+                            if let Ok(cached_output) = String::from_utf8(cached_bytes) {
+                                tracing::trace!("incremental: {} cache hit, skipping compilation", path.display());
+                                return Ok(CompileResult {
+                                    output: cached_output,
+                                    ast: motarjim_ast_html::Document::new(),
+                                    ir: IrTree { nodes: vec![], root_id: motarjim_ast::NodeId(0), target_hints: vec![] },
+                                    diagnostics: vec![],
+                                    stats: CompileStats::default(),
+                                });
+                            }
+                        }
+                    }
+                    tracing::trace!("incremental: {} up-to-date but no cache, recompiling", path.display());
                 }
                 CompilationStatus::Stale => {
                     tracing::debug!("incremental: {} is stale, recompiling", path.display());
@@ -542,7 +560,15 @@ impl Compiler {
             }
         }
 
-        self.compile(&entry.content, options)
+        let result = self.compile(&entry.content, options);
+
+        // Record the file hash for future incremental checks.
+        if let Some(ref mut incr) = *self.session.incremental_mut() {
+            incr.register_file(path, file_hash);
+            let _ = incr.save_state();
+        }
+
+        result
     }
 
     /// Compile multiple targets and return results for each.
@@ -697,7 +723,7 @@ fn generate_for_platform(ir: &IrTree, platform: OutputFormat, _minify: bool) -> 
 }
 
 /// Convert a tree-based AST from motarjim-html into an arena-based Document for the pipeline.
-fn tree_doc_to_arena(tree_doc: &html_ast::Document) -> Document {
+pub(crate) fn tree_doc_to_arena(tree_doc: &html_ast::Document) -> Document {
     let mut raw_nodes: Vec<(motarjim_ast::NodeId, motarjim_ast::HtmlNode)> = Vec::new();
     let root_id = NodeId(0);
     let mut unsorted_root = motarjim_ast::HtmlNode {

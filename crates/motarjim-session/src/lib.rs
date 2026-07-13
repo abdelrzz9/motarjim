@@ -139,7 +139,7 @@ pub struct Session {
     /// Optional content-addressable artifact cache.
     cache: Option<ArtifactCache>,
     /// Optional incremental compilation engine.
-    incremental: Option<IncrementalEngine>,
+    incremental: std::sync::Mutex<Option<IncrementalEngine>>,
     /// Performance profiling session (interior mutability).
     profiling: std::sync::Mutex<ProfilingSession>,
     /// Token for cooperative cancellation.
@@ -164,7 +164,10 @@ impl std::fmt::Debug for Session {
             )
             .field("source_map", &format_args!("Mutex<SourceMap({sm_len})>"))
             .field("cache", &self.cache)
-            .field("incremental", &self.incremental)
+            .field(
+                "incremental",
+                &self.incremental.lock().ok().map(|i| i.is_some()),
+            )
             .field(
                 "profiling",
                 &format_args!("Mutex<ProfilingSession({profiling_label})>"),
@@ -192,9 +195,9 @@ impl Session {
                 .cache_dir
                 .clone()
                 .unwrap_or_else(|| PathBuf::from(".motarjim/cache"));
-            Some(IncrementalEngine::new(dir.join("incremental")))
+            std::sync::Mutex::new(Some(IncrementalEngine::new(dir.join("incremental"))))
         } else {
-            None
+            std::sync::Mutex::new(None)
         };
 
         Self {
@@ -234,8 +237,13 @@ impl Session {
 
     /// Returns a reference to the optional incremental engine.
     #[must_use]
-    pub const fn incremental(&self) -> &Option<IncrementalEngine> {
-        &self.incremental
+    pub fn incremental(&self) -> std::sync::MutexGuard<'_, Option<IncrementalEngine>> {
+        self.incremental.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    /// Returns a mutable reference to the optional incremental engine.
+    pub fn incremental_mut(&self) -> std::sync::MutexGuard<'_, Option<IncrementalEngine>> {
+        self.incremental.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     /// Returns a clone of the cancellation token for sharing with phases.
