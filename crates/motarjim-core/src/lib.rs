@@ -508,8 +508,8 @@ impl Compiler {
     /// Compile a file by reading it from the filesystem.
     ///
     /// When the incremental engine is enabled the file hash is checked
-    /// against the last recorded state. The compilation always runs;
-    /// full incremental skip is deferred to a future iteration.
+    /// against the last recorded state. If the file is `UpToDate` and
+    /// a cached artifact exists, compilation is skipped entirely.
     ///
     /// # Errors
     /// Returns a vector of [`Diagnostic`]s if compilation fails.

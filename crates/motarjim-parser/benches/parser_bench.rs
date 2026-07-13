@@ -1,10 +1,6 @@
 #![allow(clippy::missing_docs_in_private_items)]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use motarjim_parser::{CssParser, HtmlParser};
-
-const HTML_SMALL: &str = "<div>hello world</div>";
-const HTML_MEDIUM: &str = r##"<div class="container" id="main"><header class="hero"><h1>Welcome</h1><p class="subtitle">This is a medium HTML document with <strong>nested</strong> elements and attributes.</p></header><section class="content"><article><h2>Article</h2><p>Some paragraph text here with <a href="#">a link</a> and <em>emphasis</em>.</p></article></section></div>"##;
-const HTML_LARGE: &str = r#"<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Test</title></head><body><header><nav><a href="/">Home</a><a href="/about">About</a><a href="/contact">Contact</a></nav></header><main><section class="hero"><h1>Welcome</h1><p>Hero description text.</p></section><section class="features"><div class="feature"><h2>Feature 1</h2><p>Desc 1</p></div><div class="feature"><h2>Feature 2</h2><p>Desc 2</p></div><div class="feature"><h2>Feature 3</h2><p>Desc 3</p></div></section><section class="gallery"><div class="card"><img src="a.jpg" alt="A"/><p>A</p></div><div class="card"><img src="b.jpg" alt="B"/><p>B</p></div><div class="card"><img src="c.jpg" alt="C"/><p>C</p></div></section><footer><p>&copy; 2024</p></footer></main></body></html>"#;
+use motarjim_parser::CssParser;
 
 const CSS_SMALL: &str = "div { color: red; font-size: 16px; }";
 const CSS_LARGE: &str = r"
@@ -28,33 +24,6 @@ const CSS_LARGE: &str = r"
 @supports (display: grid) { .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; } }
 ";
 
-fn bench_parse_small_html(c: &mut Criterion) {
-    c.bench_function("parse_html_small", |b| {
-        b.iter(|| {
-            let mut parser = HtmlParser::new(black_box(HTML_SMALL));
-            parser.parse()
-        });
-    });
-}
-
-fn bench_parse_medium_html(c: &mut Criterion) {
-    c.bench_function("parse_html_medium", |b| {
-        b.iter(|| {
-            let mut parser = HtmlParser::new(black_box(HTML_MEDIUM));
-            parser.parse()
-        });
-    });
-}
-
-fn bench_parse_large_html(c: &mut Criterion) {
-    c.bench_function("parse_html_large", |b| {
-        b.iter(|| {
-            let mut parser = HtmlParser::new(black_box(HTML_LARGE));
-            parser.parse()
-        });
-    });
-}
-
 fn bench_parse_css_small(c: &mut Criterion) {
     c.bench_function("parse_css_small", |b| {
         b.iter(|| {
@@ -75,9 +44,6 @@ fn bench_parse_css_large(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    bench_parse_small_html,
-    bench_parse_medium_html,
-    bench_parse_large_html,
     bench_parse_css_small,
     bench_parse_css_large
 );

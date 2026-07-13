@@ -9,7 +9,6 @@ description = "HTML and CSS parser for Motarjim compiler"
 motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
 motarjim-ast-css = { workspace = true }
-motarjim-lexer = { workspace = true }
 motarjim-span = { workspace = true }
 smallvec = { workspace = true }
 smol_str = { workspace = true }

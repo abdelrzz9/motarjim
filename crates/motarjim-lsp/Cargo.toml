@@ -14,7 +14,7 @@ motarjim-core = { workspace = true }
 motarjim-cache = { workspace = true }
 motarjim-config = { workspace = true }
 motarjim-diag = { workspace = true }
-motarjim-parser = { workspace = true }
+motarjim-html = { workspace = true }
 motarjim-ast = { workspace = true }
 motarjim-fs = { workspace = true }
 motarjim-span = { workspace = true }

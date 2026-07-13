@@ -14,6 +14,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 motarjim-lexer = { path = "../crates/motarjim-lexer" }
 motarjim-parser = { path = "../crates/motarjim-parser" }
+motarjim-html = { path = "../crates/motarjim-html" }
 motarjim-selectors = { path = "../crates/motarjim-selectors" }
 motarjim-css = { path = "../crates/motarjim-css" }
 motarjim-diag = { path = "../crates/motarjim-diag" }

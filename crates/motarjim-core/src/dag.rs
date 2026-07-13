@@ -38,6 +38,8 @@ use motarjim_ast::{ComputedStyle, Document, NodeId, StyledDocument, StyledNode};
 use motarjim_diag::{Diagnostic, DiagnosticBag, Severity};
 use rayon::prelude::*;
 
+use crate::tree_doc_to_arena;
+
 /// Identifies a single phase in the compilation DAG.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Phase {
@@ -544,9 +546,14 @@ impl CompilationDag {
 
         // ParseHtml
         dag.add_node(CompilationNode::new(Phase::ParseHtml, vec![], |ctx| {
-            let mut parser = motarjim_parser::HtmlParser::new(&ctx.html_source);
-            let doc = parser.parse()?;
-            Ok(PhaseOutput::Document(doc))
+            let tree_doc = motarjim_html::HtmlParser::parse(&ctx.html_source).map_err(|e| {
+                vec![Diagnostic::new(
+                    Severity::Error,
+                    motarjim_diag::codes::PARSER_UNEXPECTED_TOKEN,
+                    e.message,
+                )]
+            })?;
+            Ok(PhaseOutput::Document(tree_doc_to_arena(&tree_doc)))
         }))
         .unwrap();
 
