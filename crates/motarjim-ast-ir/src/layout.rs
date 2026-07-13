@@ -3,18 +3,6 @@
 
 use smol_str::SmolStr;
 
-/// Layout constraints for a node.
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
-pub struct LayoutConstraints {
-    pub min_width: Option<f64>,
-    pub max_width: Option<f64>,
-    pub min_height: Option<f64>,
-    pub max_height: Option<f64>,
-    pub aspect_ratio: Option<f64>,
-}
-
 /// A responsive breakpoint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]

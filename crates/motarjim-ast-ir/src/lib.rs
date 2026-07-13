@@ -12,4 +12,4 @@ pub mod ir;
 pub mod layout;
 
 pub use ir::{HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr};
-pub use layout::{Breakpoint, LayoutConstraints, ResponsiveVariant};
+pub use layout::{Breakpoint, ResponsiveVariant};
