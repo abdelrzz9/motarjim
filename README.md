@@ -18,16 +18,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/motarjim/motarjim"><img src="https://img.shields.io/github/stars/motarjim/motarjim?style=for-the-badge&logo=github&label=Stars" alt="GitHub Stars"></a>
+  <a href="https://github.com/abdelrzz9/motarjim"><img src="https://img.shields.io/github/stars/abdelrzz9/motarjim?style=for-the-badge&logo=github&label=Stars" alt="GitHub Stars"></a>
   <a href="https://crates.io/crates/motarjim"><img src="https://img.shields.io/crates/v/motarjim?style=for-the-badge&logo=rust&label=Crates.io" alt="Crates.io"></a>
   <a href="https://www.npmjs.com/package/@motarjim/web"><img src="https://img.shields.io/npm/v/%40motarjim%2Fweb?style=for-the-badge&logo=npm&label=NPM" alt="NPM"></a>
   <a href="https://pub.dev/packages/motarjim"><img src="https://img.shields.io/pub/v/motarjim?style=for-the-badge&logo=dart&label=Flutter" alt="Flutter"></a>
-  <a href="https://github.com/motarjim/motarjim/actions"><img src="https://img.shields.io/github/actions/workflow/status/motarjim/motarjim/ci.yml?style=for-the-badge&logo=githubactions&label=CI" alt="CI"></a>
+  <a href="https://github.com/abdelrzz9/motarjim/actions"><img src="https://img.shields.io/github/actions/workflow/status/abdelrzz9/motarjim/ci.yml?style=for-the-badge&logo=githubactions&label=CI" alt="CI"></a>
   <br>
-  <a href="https://docs.motarjim.dev"><img src="https://img.shields.io/badge/Documentation-motarjim.dev-blue?style=for-the-badge&logo=readthedocs&label=Docs" alt="Documentation"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0%20OR%20MIT-green?style=for-the-badge" alt="License"></a>
-  <a href="https://discord.gg/motarjim"><img src="https://img.shields.io/discord/000000000000000000?style=for-the-badge&logo=discord&label=Discord" alt="Discord"></a>
-  <a href="https://github.com/sponsors/motarjim"><img src="https://img.shields.io/github/sponsors/motarjim?style=for-the-badge&logo=githubsponsors&label=Sponsor" alt="Sponsor"></a>
+  <a href="https://github.com/abdelrzz9/motarjim/blob/main/docs/"><img src="https://img.shields.io/badge/Documentation-local-blue?style=for-the-badge&logo=readthedocs&label=Docs" alt="Documentation"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
+  <a href="https://github.com/abdelrzz9/motarjim/discussions"><img src="https://img.shields.io/github/discussions/abdelrzz9/motarjim?style=for-the-badge&logo=github&label=Discussions" alt="Discussions"></a>
+  <a href="https://github.com/sponsors/abdelrzz9"><img src="https://img.shields.io/badge/Sponsor-30363D?style=for-the-badge&logo=githubsponsors&label=Sponsor" alt="Sponsor"></a>
 </p>
 
 <p align="center">
@@ -67,7 +67,7 @@
   <table>
     <tr>
       <td align="center"><strong>▶️ Animated Demo</strong><br><br><img alt="Demo GIF" src="" width="480"><br><sub><em>Compiling HTML/CSS to Flutter, SwiftUI, and Jetpack Compose in real-time</em></sub></td>
-      <td align="center"><strong>🎮 Live Playground</strong><br><br><a href="https://play.motarjim.dev"><img alt="Playground" src="" width="480"></a><br><sub><em>Try Motarjim online at <strong>play.motarjim.dev</strong></em></sub></td>
+      <td align="center"><strong>🎮 Live Playground</strong><br><br><a href="https://github.com/abdelrzz9/motarjim"><img alt="Playground" src="" width="480"></a><br><sub><em>Try Motarjim online — <strong>clone the repo</strong> and run <code>cd apps/web && npm run dev</code></em></sub></td>
     </tr>
   </table>
 </p>
@@ -1017,7 +1017,7 @@ motarjim/
 cargo install motarjim
 
 # Or build from source
-git clone https://github.com/motarjim/motarjim.git
+git clone https://github.com/abdelrzz9/motarjim.git
 cd motarjim
 cargo build --release
 ```
@@ -1212,7 +1212,7 @@ error[E0401]: Assignment to constant variable
 
 The Motarjim Playground is a web-based IDE for experimenting with the compiler in real-time.
 
-**🌐 [play.motarjim.dev](https://play.motarjim.dev)**
+**🌐 [github.com/abdelrzz9/motarjim/apps/web](https://github.com/abdelrzz9/motarjim/tree/main/apps/web)**
 
 ### Features
 
@@ -1855,8 +1855,8 @@ cargo nextest run --workspace
 
 ### What to Work On
 
-- [Open issues](https://github.com/motarjim/motarjim/issues) — Bug fixes and feature requests
-- [Good first issues](https://github.com/motarjim/motarjim/labels/good%20first%20issue) — Beginner-friendly tasks
+- [Open issues](https://github.com/abdelrzz9/motarjim/issues) — Bug fixes and feature requests
+- [Good first issues](https://github.com/abdelrzz9/motarjim/labels/good%20first%20issue) — Beginner-friendly tasks
 - [Roadmap items](#roadmap) — Planned features
 - Documentation improvements
 - New generators for unsupported platforms
@@ -2015,13 +2015,13 @@ See the [Contributing](#contributing) section and [CONTRIBUTING.md](CONTRIBUTING
 <details>
 <summary><strong>How can I report a bug?</strong></summary>
 
-Open an issue on [GitHub](https://github.com/motarjim/motarjim/issues/new/choose) using the bug report template. Include the input HTML/CSS, expected output, actual output, and your Motarjim version.
+Open an issue on [GitHub](https://github.com/abdelrzz9/motarjim/issues/new/choose) using the bug report template. Include the input HTML/CSS, expected output, actual output, and your Motarjim version.
 </details>
 
 <details>
 <summary><strong>How can I request a feature?</strong></summary>
 
-Open an issue using the feature request template, or start a discussion on [GitHub Discussions](https://github.com/motarjim/motarjim/discussions). For major features, consider writing an RFC-style proposal.
+Open an issue using the feature request template, or start a discussion on [GitHub Discussions](https://github.com/abdelrzz9/motarjim/discussions). For major features, consider writing an RFC-style proposal.
 </details>
 
 <details>
@@ -2033,13 +2033,13 @@ During alpha, releases are made as significant milestones are reached. As the pr
 <details>
 <summary><strong>Can I sponsor Motarjim?</strong></summary>
 
-Yes! Sponsorships help fund development, infrastructure, and community initiatives. Visit our [GitHub Sponsors page](https://github.com/sponsors/motarjim). All sponsors are acknowledged in the repository.
+Yes! Sponsorships help fund development, infrastructure, and community initiatives. Visit our [GitHub Sponsors page](https://github.com/sponsors/abdelrzz9). All sponsors are acknowledged in the repository.
 </details>
 
 <details>
 <summary><strong>Is there a community chat?</strong></summary>
 
-Yes, join our [Discord server](https://discord.gg/motarjim) for real-time discussion, help, and community interaction.
+Yes, join our [Discord server](https://discord.gg/your-invite-link) for real-time discussion, help, and community interaction.
 </details>
 
 <br>
@@ -2056,7 +2056,7 @@ Motarjim takes security seriously. As a compiler that processes potentially untr
 - **WASM sandboxing** — The browser build runs in a WebAssembly sandbox with no access to the host system
 - **Local-first** — The CLI processes files on your machine; no data is sent to external servers
 - **Regular auditing** — Dependencies are audited with `cargo-deny`
-- **Responsible disclosure** — Report vulnerabilities privately to security@motarjim.dev
+- **Responsible disclosure** — Report vulnerabilities privately to security@your-email.com
 
 See [SECURITY.md](SECURITY.md) for our full security policy and disclosure process.
 
@@ -2124,16 +2124,14 @@ We thank the open-source community for making this project possible:
 
 | Resource | Link |
 |---|---|
-| **GitHub** | [github.com/motarjim/motarjim](https://github.com/motarjim/motarjim) |
-| **Discord** | [discord.gg/motarjim](https://discord.gg/motarjim) |
-| **Documentation** | [docs.motarjim.dev](https://docs.motarjim.dev) |
-| **Playground** | [play.motarjim.dev](https://play.motarjim.dev) |
-| **Issues** | [github.com/motarjim/motarjim/issues](https://github.com/motarjim/motarjim/issues) |
-| **Discussions** | [github.com/motarjim/motarjim/discussions](https://github.com/motarjim/motarjim/discussions) |
+| **GitHub** | [github.com/abdelrzz9/motarjim](https://github.com/abdelrzz9/motarjim) |
+| **Discord** | [discord.gg/your-invite-link](https://discord.gg/your-invite-link) |
+| **Documentation** | [github.com/abdelrzz9/motarjim/docs](https://github.com/abdelrzz9/motarjim/docs) |
+| **Playground** | [github.com/abdelrzz9/motarjim](https://github.com/abdelrzz9/motarjim) |
+| **Issues** | [github.com/abdelrzz9/motarjim/issues](https://github.com/abdelrzz9/motarjim/issues) |
+| **Discussions** | [github.com/abdelrzz9/motarjim/discussions](https://github.com/abdelrzz9/motarjim/discussions) |
 | **Roadmap** | [ROADMAP.md](ROADMAP.md) |
-| **RFC Process** | [github.com/motarjim/rfcs](https://github.com/motarjim/rfcs) |
-| **Twitter/X** | [@motarjim](https://twitter.com/motarjim) |
-| **YouTube** | [@motarjim](https://youtube.com/@motarjim) |
+| **RFC Process** | [github.com/abdelrzz9/motarjim/discussions](https://github.com/abdelrzz9/motarjim/discussions) |
 
 <br>
 
@@ -2143,7 +2141,7 @@ We thank the open-source community for making this project possible:
 
 ## Changelog
 
-See [GitHub Releases](https://github.com/motarjim/motarjim/releases) for the full changelog.
+See [GitHub Releases](https://github.com/abdelrzz9/motarjim/releases) for the full changelog.
 
 ### Latest
 
@@ -2166,8 +2164,8 @@ See [GitHub Releases](https://github.com/motarjim/motarjim/releases) for the ful
 
 ## Contributors
 
-<a href="https://github.com/motarjim/motarjim/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=motarjim/motarjim" alt="Contributors" width="100%">
+<a href="https://github.com/abdelrzz9/motarjim/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=abdelrzz9/motarjim" alt="Contributors" width="100%">
 </a>
 
 <br>
@@ -2183,10 +2181,10 @@ See [GitHub Releases](https://github.com/motarjim/motarjim/releases) for the ful
 
 ## Star History
 
-<a href="https://star-history.com/#motarjim/motarjim&Date">
+<a href="https://star-history.com/#abdelrzz9/motarjim&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=motarjim/motarjim&type=Date&theme=dark" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=motarjim/motarjim&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=abdelrzz9/motarjim&type=Date&theme=dark" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=abdelrzz9/motarjim&type=Date" />
   </picture>
 </a>
 
@@ -2201,14 +2199,13 @@ See [GitHub Releases](https://github.com/motarjim/motarjim/releases) for the ful
   <strong>Motarjim</strong> — The Universal UI Compiler.
   <br>
   <br>
-  <a href="https://github.com/motarjim/motarjim">GitHub</a> •
-  <a href="https://docs.motarjim.dev">Documentation</a> •
-  <a href="https://play.motarjim.dev">Playground</a> •
-  <a href="https://discord.gg/motarjim">Discord</a> •
-  <a href="https://github.com/motarjim/motarjim/issues">Issues</a>
+  <a href="https://github.com/abdelrzz9/motarjim">GitHub</a> •
+  <a href="https://github.com/abdelrzz9/motarjim/docs">Documentation</a> •
+  <a href="https://github.com/abdelrzz9/motarjim/issues">Issues</a> •
+  <a href="https://github.com/abdelrzz9/motarjim/discussions">Discussions</a>
   <br>
   <br>
   <sub>Built with ❤️ by the open-source community.</sub>
   <br>
-  <sub>Copyright © 2026 The Motarjim Authors.</sub>
+  <sub>Copyright © 2026 abdelrzz9.</sub>
 </p>

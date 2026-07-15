@@ -56,10 +56,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-motarjim-ast = { git = "https://github.com/motarjim/motarjim.git" }
-motarjim-diag = { git = "https://github.com/motarjim/motarjim.git" }
-motarjim-ir = { git = "https://github.com/motarjim/motarjim.git" }
-motarjim-formatter = { git = "https://github.com/motarjim/motarjim.git" }
+motarjim-ast = { git = "https://github.com/abdelrzz9/motarjim.git" }
+motarjim-diag = { git = "https://github.com/abdelrzz9/motarjim.git" }
+motarjim-ir = { git = "https://github.com/abdelrzz9/motarjim.git" }
+motarjim-formatter = { git = "https://github.com/abdelrzz9/motarjim.git" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ```
@@ -286,7 +286,7 @@ When `plugin-system` feature is enabled:
 ```toml
 # Cargo.toml
 [dependencies]
-motarjim-core = { git = "https://github.com/motarjim/motarjim.git", features = ["plugin-system"] }
+motarjim-core = { git = "https://github.com/abdelrzz9/motarjim.git", features = ["plugin-system"] }
 ```
 
 The compiler uses the `GeneratorRegistry` for dispatch. Register any number of generators via `Compiler::register_generator()` or `Compiler::register_plugin()`.

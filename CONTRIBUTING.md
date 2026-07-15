@@ -10,7 +10,7 @@
 ### Clone and Build
 
 ```bash
-git clone https://github.com/motarjim/motarjim.git
+git clone https://github.com/abdelrzz9/motarjim.git
 cd motarjim
 
 # Build the entire Rust workspace
@@ -218,8 +218,8 @@ Include:
 
 ## Getting Help
 
-- Open a [GitHub Discussion](https://github.com/motarjim/motarjim/discussions)
-- Check existing [issues](https://github.com/motarjim/motarjim/issues)
+- Open a [GitHub Discussion](https://github.com/abdelrzz9/motarjim/discussions)
+- Check existing [issues](https://github.com/abdelrzz9/motarjim/issues)
 
 ## Good First Issues
 

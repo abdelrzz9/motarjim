@@ -114,7 +114,7 @@ git push origin v0.2.0
 
 ### 9. Create GitHub Release
 
-Go to [GitHub Releases](https://github.com/motarjim/motarjim/releases/new):
+Go to [GitHub Releases](https://github.com/abdelrzz9/motarjim/releases/new):
 
 - Select the tag `v0.2.0`
 - Title: `v0.2.0`
@@ -261,7 +261,7 @@ cargo publish -p motarjim-ast --dry-run
 
 ### Manual Process
 
-1. Go to [GitHub Releases](https://github.com/motarjim/motarjim/releases/new)
+1. Go to [GitHub Releases](https://github.com/abdelrzz9/motarjim/releases/new)
 2. Select the version tag
 3. Title: `v0.2.0`
 4. Paste the changelog entry
@@ -300,7 +300,7 @@ zip motarjim-x86_64-windows.zip target/x86_64-pc-windows-gnu/release/motarjim.ex
 
 ### Announce the Release
 
-- [ ] Post on [GitHub Discussions](https://github.com/motarjim/motarjim/discussions)
+- [ ] Post on [GitHub Discussions](https://github.com/abdelrzz9/motarjim/discussions)
 - [ ] Tweet/post on social media (if project has presence)
 - [ ] Notify community channels
 

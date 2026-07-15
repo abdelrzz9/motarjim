@@ -17,7 +17,7 @@ The motarjim project takes security seriously. If you discover a security vulner
 Report vulnerabilities privately through one of these channels:
 
 1. **GitHub Security Advisories** (preferred):
-   - Go to [https://github.com/motarjim/motarjim/security/advisories/new](https://github.com/motarjim/motarjim/security/advisories/new)
+   - Go to [https://github.com/abdelrzz9/motarjim/security/advisories/new](https://github.com/abdelrzz9/motarjim/security/advisories/new)
    - Click "Report a vulnerability"
 
 2. **Email** the maintainers directly (see repository profile for contact information)
