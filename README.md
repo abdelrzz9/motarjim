@@ -144,8 +144,6 @@ graph LR
     B --> C["Flutter (Dart)"]
     B --> D["SwiftUI (Swift)"]
     B --> E["Jetpack Compose (Kotlin)"]
-    B --> F["React (JSX)"]
-    B --> G["HTML/CSS"]
 ```
 
 ### Why Motarjim?
@@ -166,7 +164,7 @@ Motarjim eliminates this trilemma. Instead of choosing between duplication, abst
 | **Architecture** | Monolithic runtime | String templating | **Multi-stage IR** |
 | **Extensibility** | Framework plugins | Fixed outputs | **Plugin system** |
 | **Optimization** | JIT/runtime | None | **Static analysis + passes** |
-| **Output** | Runs everywhere | One target | **Multi-target codegen** |
+| **Output** | Runs everywhere | One target | **Multi-target (Flutter, SwiftUI, Compose)** |
 | **Language** | Framework-specific | Limited DSL | **Standard HTML/CSS** |
 
 Motarjim treats UI transformation as a **compilation problem** — not a runtime one. This fundamental shift unlocks capabilities that runtime frameworks cannot offer: static optimization, multi-target code generation, deep static analysis, and a plugin architecture that grows with the ecosystem.
@@ -216,7 +214,7 @@ mindmap
       Permissive licensing
 ```
 
-- **Write Once, Generate Native** — One HTML/CSS source produces idiomatic Flutter, SwiftUI, Compose, and React code. No runtime interpreters. No abstraction layers. Just native code.
+- **Write Once, Generate Native** — One HTML/CSS source produces idiomatic Flutter, SwiftUI, and Compose code. No runtime interpreters. No abstraction layers. Just native code.
 - **Compiler First** — By treating UI as code to be compiled, Motarjim can analyze, optimize, and transform it in ways no runtime framework can. Errors are caught at compile time, not runtime.
 - **Framework Agnostic** — Motarjim has no allegiance to any single framework. Its architecture is designed to generate code for any UI paradigm — existing or future.
 - **Plugin Driven** — The entire compilation pipeline is extensible. New languages, frameworks, and transformations can be added as plugins without modifying the compiler core.
@@ -234,7 +232,7 @@ mindmap
 
 | Feature | Description | Status |
 |---|---|---|
-| **Multi-platform code generation** | Generate native code for Flutter, SwiftUI, Jetpack Compose, React, and HTML | ✅ Available |
+| **Multi-platform code generation** | Generate native code for Flutter, SwiftUI, and Jetpack Compose | ✅ Available |
 | **Compiler pipeline** | Complete multi-stage compilation pipeline (Parse → Analyze → IR → Optimize → Generate) | ✅ Available |
 | **Abstract Syntax Tree (AST)** | Structured AST for HTML, CSS, and the intermediate representation | ✅ Available |
 | **Intermediate Representation (IR)** | Platform-independent IR decoupling analysis from generation | ✅ Available |
@@ -275,8 +273,7 @@ mindmap
 | **Flutter** | ✅ Available | Dart | `motarjim-gen-flutter` | [View Example](#) |
 | **SwiftUI** | ✅ Available | Swift | `motarjim-gen-swiftui` | [View Example](#) |
 | **Jetpack Compose** | ✅ Available | Kotlin | `motarjim-gen-compose` | [View Example](#) |
-| **React (JSX)** | ✅ Available | TypeScript/JSX | `motarjim-gen-react` | [View Example](#) |
-| **HTML/CSS** | ✅ Available | HTML/CSS | `motarjim-gen-html` | [View Example](#) |
+| **React (JSX)** | 🚧 Planned | TypeScript/JSX | — | — |
 | **Vue** | 🚧 Planned | TypeScript/Vue | — | — |
 | **Svelte** | 🚧 Planned | TypeScript/Svelte | — | — |
 | **SolidJS** | 🚧 Planned | TypeScript/JSX | — | — |
@@ -328,21 +325,15 @@ graph TB
         K["Flutter Generator"]
         L["SwiftUI Generator"]
         M["Compose Generator"]
-        N["React Generator"]
-        O["HTML Writer"]
     end
 
     J --> K
     J --> L
     J --> M
-    J --> N
-    J --> O
 
     K --> P["Output: Dart Code"]
     L --> Q["Output: Swift Code"]
     M --> R["Output: Kotlin Code"]
-    N --> S["Output: JSX Code"]
-    O --> T["Output: HTML/CSS"]
 ```
 
 ### Compilation Pipeline (Detailed)
@@ -603,7 +594,7 @@ pub trait Generator: Send + Sync {
 }
 ```
 
-Built-in generators produce idiomatic code for each platform:
+Built-in generators produce idiomatic code for each supported platform:
 
 <details>
 <summary><strong>Flutter/Dart Generator</strong></summary>
@@ -1515,8 +1506,7 @@ CLI Arguments > Config File > Defaults
 - [x] Flutter/Dart code generator
 - [x] SwiftUI code generator
 - [x] Jetpack Compose code generator
-- [x] React (JSX) code generator
-- [x] HTML/CSS output emitter
+- [ ] React (JSX) code generator
 - [x] CLI with compile, check, and init commands
 - [x] Diagnostic system with error codes and severity levels
 - [x] LSP server with diagnostics
@@ -1905,7 +1895,7 @@ Flutter is a cross-platform *framework* that renders its own widgets using its o
 <details>
 <summary><strong>Is this production-ready?</strong></summary>
 
-Motarjim is currently in **early alpha** (v0.1.0). The core compiler pipeline works, generators produce valid output for Flutter, SwiftUI, Jetpack Compose, and React, and there are 500+ tests. However, the CSS engine is not yet complete, some generators produce incomplete output for complex layouts, and the plugin API is still stabilizing. We recommend experimenting with Motarjim now and watching the repository for production releases.
+Motarjim is currently in **early alpha** (v0.1.0). The core compiler pipeline works, generators produce valid output for Flutter, SwiftUI, and Jetpack Compose, and there are 500+ tests. However, the CSS engine is not yet complete, some generators produce incomplete output for complex layouts, and the plugin API is still stabilizing. We recommend experimenting with Motarjim now and watching the repository for production releases.
 </details>
 
 <details>
@@ -2148,13 +2138,12 @@ See [GitHub Releases](https://github.com/abdelrzz9/motarjim/releases) for the fu
 **v0.1.0** (TBD)
 
 - Initial release with HTML/CSS to Flutter, SwiftUI, and Jetpack Compose compilation
-- Complete compiler pipeline: lexer → parser → AST → semantic analysis → style resolution → IR → optimization → code generation
+- Complete compiler pipeline
 - 6 optimization passes
 - CLI with compile, check, and init commands
 - 500+ tests with fuzz, property, snapshot, and benchmark testing
 - Web playground, WASM bindings, LSP server, VS Code extension
 - Plugin system with Generator trait
-- JavaScript frontend (lexer, parser, semantic analyzer)
 
 <br>
 
