@@ -384,9 +384,10 @@ impl Compiler {
             });
         }
         let mut ir_timer = profiling.start_phase("build_ir");
+        let breakpoints = resolver.collect_breakpoints();
         let ir_builder = IrBuilder::new();
         let mut ir_diag = motarjim_diag::DiagnosticBag::new();
-        let ir = ir_builder.build(&ast, &style_map, &mut ir_diag);
+        let ir = ir_builder.build(&ast, &style_map, &mut ir_diag, &breakpoints);
         for diag in ir_diag.into_diagnostics() {
             all_diagnostics.push(Diagnostic::new(
                 diag.severity,
@@ -897,7 +898,7 @@ impl<'a> Pipeline<'a> {
     pub fn build_ir(&self, doc: &Document, styles: &HashMap<NodeId, ComputedStyle>) -> IrTree {
         let builder = IrBuilder::new();
         let mut diag = motarjim_diag::DiagnosticBag::new();
-        builder.build(doc, styles, &mut diag)
+        builder.build(doc, styles, &mut diag, &[])
     }
 
     /// Run optimization passes on the IR tree.

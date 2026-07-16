@@ -746,8 +746,19 @@ impl CompilationDag {
                     })?;
 
                 let inferrer = motarjim_ir::AccessibilityInferrer::new();
+                let id_map: std::collections::HashMap<String, motarjim_ast::NodeId> = {
+                    let mut map = std::collections::HashMap::new();
+                    for node in &doc.nodes {
+                        if let Some(ref element) = node.element {
+                            if let Some(id) = element.get_attribute("id") {
+                                map.insert(id.to_string(), node.id);
+                            }
+                        }
+                    }
+                    map
+                };
                 for node in &doc.nodes {
-                    let _a11y = inferrer.infer(node);
+                    let _a11y = inferrer.infer(node, doc, &id_map);
                 }
 
                 let style_map = ctx
@@ -803,7 +814,7 @@ impl CompilationDag {
 
                 let builder = motarjim_ir::IrBuilder::new();
                 let mut diag = DiagnosticBag::new();
-                let ir = builder.build(doc, style_map, &mut diag);
+                let ir = builder.build(doc, style_map, &mut diag, &[]);
 
                 // Transfer any diagnostics from the IR builder
                 // (currently `diag` is always empty, but forward it anyway).

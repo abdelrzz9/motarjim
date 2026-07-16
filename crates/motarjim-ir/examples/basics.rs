@@ -36,7 +36,7 @@ fn main() {
 
     let mut diags = DiagnosticBag::new();
     let builder = IrBuilder::new();
-    let ir = builder.build(&doc, &styles, &mut diags);
+    let ir = builder.build(&doc, &styles, &mut diags, &[]);
 
     println!("Built IR tree with {} node(s)", ir.nodes.len());
     for node in &ir.nodes {

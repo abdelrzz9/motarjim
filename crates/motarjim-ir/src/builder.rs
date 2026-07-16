@@ -1,4 +1,6 @@
 use crate::*;
+use motarjim_ast_ir::{BreakpointRange, TextDirection};
+use std::collections::HashMap;
 
 /// The main IR builder that converts a parsed HTML [`Document`] into an [`IrTree`].
 #[derive(Debug, Clone)]
@@ -26,26 +28,58 @@ impl IrBuilder {
     }
 
     /// Builds an [`IrTree`] from the given parsed document and computed styles.
+    ///
+    /// The `breakpoints` parameter contains the breakpoint ranges extracted from
+    /// `@media` rules by the CSS resolver's `collect_breakpoints()` method.
     pub fn build(
         &self,
         doc: &Document,
         styles: &HashMap<NodeId, ComputedStyle>,
         diagnostics: &mut DiagnosticBag,
+        breakpoints: &[BreakpointRange],
     ) -> IrTree {
         let mut ir_nodes: Vec<IrNode> = Vec::with_capacity(doc.nodes.len());
         let mut target_hints: Vec<TargetHint> = Vec::new();
+
+        // Build ID → NodeId map for aria-labelledby resolution
+        let id_map: HashMap<String, NodeId> = {
+            let mut map = HashMap::new();
+            for node in &doc.nodes {
+                if let Some(ref element) = node.element {
+                    if let Some(id) = element.get_attribute("id") {
+                        map.insert(id.to_string(), node.id);
+                    }
+                }
+            }
+            map
+        };
 
         for html_node in &doc.nodes {
             let computed_style = styles.get(&html_node.id).cloned().unwrap_or_default();
 
             let semantic = self.semantic_analyzer.infer(html_node);
             let layout = self.layout_inferrer.infer(&computed_style);
-            let responsive = self.responsive_inferrer.infer(html_node, &computed_style);
-            let accessibility = self.accessibility_inferrer.infer(html_node);
+            let responsive = self.responsive_inferrer.infer(html_node, &computed_style, breakpoints);
+            let accessibility = self.accessibility_inferrer.infer(html_node, doc, &id_map);
+
+            // Check for unresolvable aria-labelledby references
+            if let Some(ref element) = html_node.element {
+                if let Some(labelledby) = element.get_attribute("aria-labelledby") {
+                    if !id_map.contains_key(labelledby) {
+                        diagnostics.push_warning(
+                            motarjim_diag::codes::IR_ARIA_LABELLEDBY_UNRESOLVED,
+                            format!(
+                                "aria-labelledby references '{labelledby}' but no element with this id exists"
+                            ),
+                        );
+                    }
+                }
+            }
 
             for variant in &responsive {
                 let hint_value = format!(
-                    "breakpoint={variant:?}:{}",
+                    "breakpoint={}:{}",
+                    variant.breakpoint.classify(),
                     variant
                         .style_override
                         .iter()
@@ -81,6 +115,32 @@ impl IrBuilder {
                 );
             }
 
+            // Emit diagnostic for invalid heading levels (HTML only defines h1-h6)
+            if let SemanticIr::Heading { level } = semantic {
+                if level > 6 {
+                    diagnostics.push_warning(
+                        motarjim_diag::codes::IR_HEADING_LEVEL_INVALID,
+                        format!("Heading level {level} is invalid; HTML defines h1-h6 only"),
+                    );
+                }
+            }
+
+            // Detect text direction from dir attribute
+            let text_direction = if let Some(ref element) = html_node.element {
+                if let Some(dir) = element.get_attribute("dir") {
+                    match dir {
+                        "ltr" => Some(TextDirection::Ltr),
+                        "rtl" => Some(TextDirection::Rtl),
+                        "auto" => Some(TextDirection::Auto),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
             ir_nodes.push(IrNode {
                 id: html_node.id,
                 target: Self::infer_target(&semantic, &layout),
@@ -90,8 +150,14 @@ impl IrBuilder {
                 children: html_node.children.clone(),
                 parent: html_node.parent,
                 text: html_node.value.clone(),
+                responsive,
+                events: Vec::new(),
+                text_direction,
             });
         }
+
+        // Post-processing: promote tree-aware layout variants (ZStack, LazyList)
+        self.layout_inferrer.promote_tree_aware(&mut ir_nodes, &doc.nodes);
 
         IrTree {
             nodes: ir_nodes,

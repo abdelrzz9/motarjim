@@ -1,7 +1,9 @@
 use super::*;
 
 use motarjim_ast::Attribute;
+use motarjim_ast_ir::BreakpointRange;
 use smallvec::SmallVec;
+use std::collections::HashMap;
 
 fn make_element_doc(id: u32, tag_name: &str, attrs: &[(&str, &str)]) -> Document {
     let mut doc = Document::new();
@@ -398,7 +400,13 @@ fn test_accessibility_role() {
     let mut element = Element::new("div");
     element.attributes.push(Attribute::new("role", "button"));
     let node = make_html_node(0, NodeType::Element, Some(element));
-    assert_eq!(inferrer.infer(&node).role.as_deref(), Some("button"));
+    let doc = Document {
+        nodes: vec![node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    let id_map = std::collections::HashMap::new();
+    assert_eq!(inferrer.infer(&node, &doc, &id_map).role.as_deref(), Some("button"));
 }
 
 #[test]
@@ -407,9 +415,16 @@ fn test_accessibility_labels() {
 
     let mut btn = Element::new("button");
     btn.attributes.push(Attribute::new("aria-label", "Submit"));
+    let btn_node = make_html_node(0, NodeType::Element, Some(btn));
+    let btn_doc = Document {
+        nodes: vec![btn_node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    let id_map = std::collections::HashMap::new();
     assert_eq!(
         inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(btn)))
+            .infer(&btn_node, &btn_doc, &id_map)
             .label
             .as_deref(),
         Some("Submit")
@@ -417,9 +432,15 @@ fn test_accessibility_labels() {
 
     let mut img = Element::new("img");
     img.attributes.push(Attribute::new("alt", "A photo"));
+    let img_node = make_html_node(0, NodeType::Element, Some(img));
+    let img_doc = Document {
+        nodes: vec![img_node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
     assert_eq!(
         inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(img)))
+            .infer(&img_node, &img_doc, &id_map)
             .label
             .as_deref(),
         Some("A photo")
@@ -429,9 +450,15 @@ fn test_accessibility_labels() {
     input
         .attributes
         .push(Attribute::new("placeholder", "Enter name"));
+    let input_node = make_html_node(0, NodeType::Element, Some(input));
+    let input_doc = Document {
+        nodes: vec![input_node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
     assert_eq!(
         inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(input)))
+            .infer(&input_node, &input_doc, &id_map)
             .label
             .as_deref(),
         Some("Enter name")
@@ -441,35 +468,43 @@ fn test_accessibility_labels() {
 #[test]
 fn test_accessibility_hidden_focused() {
     let inferrer = AccessibilityInferrer::new();
+    let id_map = std::collections::HashMap::new();
 
     let mut el = Element::new("div");
     el.attributes.push(Attribute::new("aria-hidden", "true"));
-    assert!(
-        inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el)))
-            .hidden
-    );
+    let node1 = make_html_node(0, NodeType::Element, Some(el));
+    let doc1 = Document {
+        nodes: vec![node1.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    assert!(inferrer.infer(&node1, &doc1, &id_map).hidden);
 
     let mut el2 = Element::new("div");
     el2.attributes.push(Attribute::new("aria-hidden", "false"));
-    assert!(
-        !inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el2)))
-            .hidden
-    );
+    let node2 = make_html_node(0, NodeType::Element, Some(el2));
+    let doc2 = Document {
+        nodes: vec![node2.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    assert!(!inferrer.infer(&node2, &doc2, &id_map).hidden);
 
     let mut el3 = Element::new("input");
     el3.attributes.push(Attribute::new("autofocus", ""));
-    assert!(
-        inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el3)))
-            .focused
-    );
+    let node3 = make_html_node(0, NodeType::Element, Some(el3));
+    let doc3 = Document {
+        nodes: vec![node3.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    assert!(inferrer.infer(&node3, &doc3, &id_map).focused);
 }
 
 #[test]
 fn test_accessibility_inferred_role() {
     let inferrer = AccessibilityInferrer::new();
+    let id_map = std::collections::HashMap::new();
     let cases: [(&str, Option<&str>); 10] = [
         ("nav", Some("navigation")),
         ("header", Some("banner")),
@@ -484,8 +519,13 @@ fn test_accessibility_inferred_role() {
     ];
     for (tag, expected) in &cases {
         let node = make_html_node(0, NodeType::Element, Some(Element::new(*tag)));
+        let doc = Document {
+            nodes: vec![node.clone()],
+            root_id: NodeId(0),
+            ..Document::new()
+        };
         assert_eq!(
-            inferrer.infer(&node).role.as_deref(),
+            inferrer.infer(&node, &doc, &id_map).role.as_deref(),
             *expected,
             "mismatch for tag {tag}"
         );
@@ -495,43 +535,58 @@ fn test_accessibility_inferred_role() {
 #[test]
 fn test_accessibility_aria_attributes() {
     let inferrer = AccessibilityInferrer::new();
+    let id_map = std::collections::HashMap::new();
 
     let mut el = Element::new("div");
     el.attributes.push(Attribute::new("tabindex", "0"));
+    let node1 = make_html_node(0, NodeType::Element, Some(el));
+    let doc1 = Document {
+        nodes: vec![node1.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
     assert_eq!(
-        inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el)))
-            .tab_index,
+        inferrer.infer(&node1, &doc1, &id_map).tab_index,
         Some(0)
     );
 
     let mut el2 = Element::new("button");
     el2.attributes.push(Attribute::new("aria-expanded", "true"));
+    let node2 = make_html_node(0, NodeType::Element, Some(el2));
+    let doc2 = Document {
+        nodes: vec![node2.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
     assert_eq!(
-        inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el2)))
-            .aria_expanded,
+        inferrer.infer(&node2, &doc2, &id_map).aria_expanded,
         Some(true)
     );
 
     let mut el3 = Element::new("div");
     el3.attributes
         .push(Attribute::new("aria-controls", "panel-1"));
+    let node3 = make_html_node(0, NodeType::Element, Some(el3));
+    let doc3 = Document {
+        nodes: vec![node3.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
     assert_eq!(
-        inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el3)))
-            .aria_controls
-            .as_deref(),
+        inferrer.infer(&node3, &doc3, &id_map).aria_controls.as_deref(),
         Some("panel-1")
     );
 
     let mut el4 = Element::new("div");
     el4.attributes.push(Attribute::new("aria-live", "polite"));
+    let node4 = make_html_node(0, NodeType::Element, Some(el4));
+    let doc4 = Document {
+        nodes: vec![node4.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
     assert_eq!(
-        inferrer
-            .infer(&make_html_node(0, NodeType::Element, Some(el4)))
-            .aria_live
-            .as_deref(),
+        inferrer.infer(&node4, &doc4, &id_map).aria_live.as_deref(),
         Some("polite")
     );
 }
@@ -540,7 +595,13 @@ fn test_accessibility_aria_attributes() {
 fn test_accessibility_no_attributes() {
     let inferrer = AccessibilityInferrer::new();
     let node = make_html_node(0, NodeType::Element, Some(Element::new("div")));
-    let info = inferrer.infer(&node);
+    let doc = Document {
+        nodes: vec![node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    let id_map = std::collections::HashMap::new();
+    let info = inferrer.infer(&node, &doc, &id_map);
     assert!(info.role.is_none() && info.label.is_none() && !info.hidden && !info.focused);
 }
 
@@ -557,7 +618,13 @@ fn test_accessibility_text_node() {
         depth: 0,
         document_type: None,
     };
-    let info = inferrer.infer(&node);
+    let doc = Document {
+        nodes: vec![node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    let id_map = std::collections::HashMap::new();
+    let info = inferrer.infer(&node, &doc, &id_map);
     assert!(info.role.is_none() && info.label.is_none());
 }
 
@@ -568,7 +635,14 @@ fn test_accessibility_description() {
     element
         .attributes
         .push(Attribute::new("aria-description", "A description"));
-    let info = inferrer.infer(&make_html_node(0, NodeType::Element, Some(element)));
+    let node = make_html_node(0, NodeType::Element, Some(element));
+    let doc = Document {
+        nodes: vec![node.clone()],
+        root_id: NodeId(0),
+        ..Document::new()
+    };
+    let id_map = std::collections::HashMap::new();
+    let info = inferrer.infer(&node, &doc, &id_map);
     assert_eq!(info.description.as_deref(), Some("A description"));
 }
 
@@ -578,7 +652,18 @@ fn test_accessibility_description() {
 fn test_responsive_inferrer() {
     let inferrer = ResponsiveInferrer::new();
     let node = make_html_node(0, NodeType::Element, Some(Element::new("div")));
-    assert!(inferrer.infer(&node, &ComputedStyle::default()).is_empty());
+    assert!(inferrer
+        .infer(&node, &ComputedStyle::default(), &[])
+        .is_empty());
+}
+
+#[test]
+fn test_responsive_inferrer_with_breakpoints() {
+    let inferrer = ResponsiveInferrer::new();
+    let node = make_html_node(0, NodeType::Element, Some(Element::new("div")));
+    let breakpoints = vec![BreakpointRange::max(768), BreakpointRange::min(768)];
+    let variants = inferrer.infer(&node, &ComputedStyle::default(), &breakpoints);
+    assert_eq!(variants.len(), 2);
 }
 
 // IrBuilder integration tests
@@ -589,7 +674,7 @@ fn test_builder_basic() {
     let styles = style_map(&doc);
     let builder = IrBuilder::new();
     let mut diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &mut diagnostics);
+    let tree = builder.build(&doc, &styles, &mut diagnostics, &[]);
     assert_eq!(tree.root_id, NodeId(0));
     assert_eq!(tree.nodes.len(), 1);
 }
@@ -600,7 +685,7 @@ fn test_builder_inference_integration() {
     let styles = style_map(&doc);
     let builder = IrBuilder::new();
     let mut diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &mut diagnostics);
+    let tree = builder.build(&doc, &styles, &mut diagnostics, &[]);
     assert_eq!(tree.nodes[0].semantic, SemanticIr::Button);
 }
 
@@ -615,7 +700,7 @@ fn test_builder_layout_integration() {
     let styles = single_style(0, style);
     let builder = IrBuilder::new();
     let mut diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &mut diagnostics);
+    let tree = builder.build(&doc, &styles, &mut diagnostics, &[]);
     assert_eq!(tree.nodes[0].layout, LayoutIr::FlexRow);
 }
 
@@ -625,7 +710,7 @@ fn test_builder_nested() {
     let styles = style_map(&doc);
     let builder = IrBuilder::new();
     let mut diagnostics = DiagnosticBag::new();
-    let tree = builder.build(&doc, &styles, &mut diagnostics);
+    let tree = builder.build(&doc, &styles, &mut diagnostics, &[]);
     assert_eq!(tree.nodes.len(), 2);
     assert_eq!(tree.nodes[0].semantic, SemanticIr::Container);
     assert_eq!(tree.nodes[1].semantic, SemanticIr::Button);
@@ -648,7 +733,7 @@ fn test_builder_text_node() {
     });
     doc.root_id = NodeId(0);
     let mut diag = DiagnosticBag::new();
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag, &[]);
     assert_eq!(tree.nodes[0].semantic, SemanticIr::Text);
 }
 
@@ -656,7 +741,7 @@ fn test_builder_text_node() {
 fn test_builder_missing_styles() {
     let doc = make_element_doc(0, "div", &[]);
     let mut diag = DiagnosticBag::new();
-    let tree = IrBuilder::new().build(&doc, &HashMap::new(), &mut diag);
+    let tree = IrBuilder::new().build(&doc, &HashMap::new(), &mut diag, &[]);
     assert_eq!(tree.nodes[0].computed_style, ComputedStyle::default());
 }
 
@@ -664,7 +749,7 @@ fn test_builder_missing_styles() {
 fn test_builder_target_hints() {
     let doc = make_element_doc(0, "button", &[]);
     let mut diag = DiagnosticBag::new();
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag, &[]);
     assert!(tree
         .target_hints
         .iter()
@@ -672,7 +757,7 @@ fn test_builder_target_hints() {
 
     let doc2 = make_element_doc(0, "div", &[]);
     let mut diag2 = DiagnosticBag::new();
-    let tree2 = IrBuilder::new().build(&doc2, &style_map(&doc2), &mut diag2);
+    let tree2 = IrBuilder::new().build(&doc2, &style_map(&doc2), &mut diag2, &[]);
     assert!(tree2
         .target_hints
         .iter()
@@ -683,7 +768,7 @@ fn test_builder_target_hints() {
 fn test_builder_target_ir() {
     let doc = make_element_doc(0, "button", &[]);
     let mut diag = DiagnosticBag::new();
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag, &[]);
     assert_eq!(
         tree.nodes[0].target,
         TargetIr::Generic {
@@ -698,7 +783,7 @@ fn test_builder_default() {
     let builder = IrBuilder::default();
     let doc = make_element_doc(0, "div", &[]);
     let mut diag = DiagnosticBag::new();
-    let tree = builder.build(&doc, &style_map(&doc), &mut diag);
+    let tree = builder.build(&doc, &style_map(&doc), &mut diag, &[]);
     assert_eq!(tree.nodes.len(), 1);
 }
 
@@ -711,7 +796,7 @@ fn test_builder_flex_column_target() {
         ..Default::default()
     };
     let mut diag = DiagnosticBag::new();
-    let tree = IrBuilder::new().build(&doc, &single_style(0, style), &mut diag);
+    let tree = IrBuilder::new().build(&doc, &single_style(0, style), &mut diag, &[]);
     assert_eq!(tree.nodes[0].layout, LayoutIr::FlexColumn);
     assert_eq!(
         tree.nodes[0].target,
@@ -726,7 +811,7 @@ fn test_builder_flex_column_target() {
 fn test_builder_alt_accessibility() {
     let doc = make_element_doc(0, "img", &[("alt", "Logo")]);
     let mut diag = DiagnosticBag::new();
-    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    let tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag, &[]);
     assert!(tree
         .target_hints
         .iter()
@@ -738,7 +823,7 @@ fn test_builder_diagnostic_on_unknown_element() {
     // Elements like `video` map to SemanticIr::Custom and should emit a diagnostic warning
     let doc = make_element_doc(0, "video", &[]);
     let mut diag = DiagnosticBag::new();
-    let _tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    let _tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag, &[]);
     // The builder should emit at least one warning for custom/unknown elements
     assert!(
         diag.has_warnings(),
@@ -751,11 +836,212 @@ fn test_builder_diagnostic_on_unknown_element() {
 fn test_builder_no_diagnostics_for_known_elements() {
     let doc = make_nested_doc();
     let mut diag = DiagnosticBag::new();
-    let _tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag);
+    let _tree = IrBuilder::new().build(&doc, &style_map(&doc), &mut diag, &[]);
     // Known elements (div, button) should not produce diagnostics
     assert!(
         !diag.has_warnings(),
         "Expected no warnings for known elements, got: {} warnings",
         diag.len()
     );
+}
+
+// ── ZStack / LazyList promotion tests ──────────────────────────────────
+
+#[test]
+fn test_zstack_promotion() {
+    let mut doc = Document::new();
+    // Parent: position:relative (becomes Stack → promoted to ZStack)
+    doc.nodes.push(HtmlNode {
+        id: NodeId(0),
+        node_type: NodeType::Element,
+        element: Some({
+            let mut e = Element::new("div");
+            e.attributes
+                .push(Attribute::new("style", "position:relative"));
+            e
+        }),
+        value: None,
+        children: smallvec::smallvec![NodeId(1), NodeId(2)],
+        parent: None,
+        depth: 0,
+        document_type: None,
+    });
+    // Child 1: position:absolute
+    doc.nodes.push(HtmlNode {
+        id: NodeId(1),
+        node_type: NodeType::Element,
+        element: Some({
+            let mut e = Element::new("div");
+            e.attributes
+                .push(Attribute::new("style", "position:absolute"));
+            e
+        }),
+        value: None,
+        children: SmallVec::new(),
+        parent: Some(NodeId(0)),
+        depth: 1,
+        document_type: None,
+    });
+    // Child 2: position:absolute
+    doc.nodes.push(HtmlNode {
+        id: NodeId(2),
+        node_type: NodeType::Element,
+        element: Some({
+            let mut e = Element::new("div");
+            e.attributes
+                .push(Attribute::new("style", "position:absolute"));
+            e
+        }),
+        value: None,
+        children: SmallVec::new(),
+        parent: Some(NodeId(0)),
+        depth: 1,
+        document_type: None,
+    });
+    doc.root_id = NodeId(0);
+
+    let mut styles = HashMap::new();
+    let mut parent_style = ComputedStyle::default();
+    parent_style.position = PositionType::Relative;
+    styles.insert(NodeId(0), parent_style);
+    let mut child_style = ComputedStyle::default();
+    child_style.position = PositionType::Absolute;
+    styles.insert(NodeId(1), child_style.clone());
+    styles.insert(NodeId(2), child_style);
+
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &styles, &mut diag, &[]);
+
+    let parent = tree.nodes.iter().find(|n| n.id == NodeId(0)).unwrap();
+    assert_eq!(parent.layout, LayoutIr::ZStack);
+}
+
+#[test]
+fn test_zstack_not_promoted_with_one_absolute_child() {
+    let mut doc = Document::new();
+    doc.nodes.push(HtmlNode {
+        id: NodeId(0),
+        node_type: NodeType::Element,
+        element: Some(Element::new("div")),
+        value: None,
+        children: smallvec::smallvec![NodeId(1)],
+        parent: None,
+        depth: 0,
+        document_type: None,
+    });
+    doc.nodes.push(HtmlNode {
+        id: NodeId(1),
+        node_type: NodeType::Element,
+        element: Some(Element::new("div")),
+        value: None,
+        children: SmallVec::new(),
+        parent: Some(NodeId(0)),
+        depth: 1,
+        document_type: None,
+    });
+    doc.root_id = NodeId(0);
+
+    let mut styles = HashMap::new();
+    let mut child_style = ComputedStyle::default();
+    child_style.position = PositionType::Absolute;
+    styles.insert(NodeId(0), ComputedStyle::default());
+    styles.insert(NodeId(1), child_style);
+
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &styles, &mut diag, &[]);
+
+    let parent = tree.nodes.iter().find(|n| n.id == NodeId(0)).unwrap();
+    assert_eq!(parent.layout, LayoutIr::Stack);
+}
+
+#[test]
+fn test_lazylist_promotion_for_ul() {
+    let mut doc = Document::new();
+    doc.nodes.push(HtmlNode {
+        id: NodeId(0),
+        node_type: NodeType::Element,
+        element: Some(Element::new("ul")),
+        value: None,
+        children: smallvec::smallvec![NodeId(1), NodeId(2)],
+        parent: None,
+        depth: 0,
+        document_type: None,
+    });
+    doc.nodes.push(HtmlNode {
+        id: NodeId(1),
+        node_type: NodeType::Element,
+        element: Some(Element::new("li")),
+        value: None,
+        children: SmallVec::new(),
+        parent: Some(NodeId(0)),
+        depth: 1,
+        document_type: None,
+    });
+    doc.nodes.push(HtmlNode {
+        id: NodeId(2),
+        node_type: NodeType::Element,
+        element: Some(Element::new("li")),
+        value: None,
+        children: SmallVec::new(),
+        parent: Some(NodeId(0)),
+        depth: 1,
+        document_type: None,
+    });
+    doc.root_id = NodeId(0);
+
+    let mut styles = HashMap::new();
+    let mut scroll_style = ComputedStyle::default();
+    scroll_style.overflow = Some(Overflow::Scroll);
+    styles.insert(NodeId(0), scroll_style);
+    styles.insert(NodeId(1), ComputedStyle::default());
+    styles.insert(NodeId(2), ComputedStyle::default());
+
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &styles, &mut diag, &[]);
+
+    let ul = tree.nodes.iter().find(|n| n.id == NodeId(0)).unwrap();
+    assert_eq!(ul.layout, LayoutIr::LazyList);
+}
+
+#[test]
+fn test_lazylist_promotion_for_many_children() {
+    let mut doc = Document::new();
+    let child_ids: Vec<u32> = (1..=6).collect();
+    doc.nodes.push(HtmlNode {
+        id: NodeId(0),
+        node_type: NodeType::Element,
+        element: Some(Element::new("div")),
+        value: None,
+        children: child_ids.iter().map(|&id| NodeId(id)).collect(),
+        parent: None,
+        depth: 0,
+        document_type: None,
+    });
+    for &id in &child_ids {
+        doc.nodes.push(HtmlNode {
+            id: NodeId(id),
+            node_type: NodeType::Element,
+            element: Some(Element::new("div")),
+            value: None,
+            children: SmallVec::new(),
+            parent: Some(NodeId(0)),
+            depth: 1,
+            document_type: None,
+        });
+    }
+    doc.root_id = NodeId(0);
+
+    let mut styles = HashMap::new();
+    let mut scroll_style = ComputedStyle::default();
+    scroll_style.overflow = Some(Overflow::Scroll);
+    styles.insert(NodeId(0), scroll_style);
+    for &id in &child_ids {
+        styles.insert(NodeId(id), ComputedStyle::default());
+    }
+
+    let mut diag = DiagnosticBag::new();
+    let tree = IrBuilder::new().build(&doc, &styles, &mut diag, &[]);
+
+    let div = tree.nodes.iter().find(|n| n.id == NodeId(0)).unwrap();
+    assert_eq!(div.layout, LayoutIr::LazyList);
 }

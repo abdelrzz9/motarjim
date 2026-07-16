@@ -68,6 +68,14 @@ pub const A11Y_LOW_CONTRAST: DiagnosticCode = DiagnosticCode::new(302, "Low colo
 /// An unsupported layout strategy was encountered.
 pub const IR_UNSUPPORTED_LAYOUT: DiagnosticCode = DiagnosticCode::new(400, "Unsupported layout");
 
+/// A heading element has a level greater than 6.
+pub const IR_HEADING_LEVEL_INVALID: DiagnosticCode =
+    DiagnosticCode::new(401, "Invalid heading level");
+
+/// An aria-labelledby attribute references an element that does not exist.
+pub const IR_ARIA_LABELLEDBY_UNRESOLVED: DiagnosticCode =
+    DiagnosticCode::new(402, "Unresolved aria-labelledby reference");
+
 // Generator codes (E0500-E0599)
 
 /// An unsupported feature for the target platform.
@@ -138,6 +146,8 @@ mod tests {
     #[test]
     fn test_ir_codes() {
         assert_eq!(IR_UNSUPPORTED_LAYOUT.number, 400);
+        assert_eq!(IR_HEADING_LEVEL_INVALID.number, 401);
+        assert_eq!(IR_ARIA_LABELLEDBY_UNRESOLVED.number, 402);
     }
 
     #[test]
