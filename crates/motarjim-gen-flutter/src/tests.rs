@@ -23,6 +23,9 @@ fn make_node(
         children: children.into_iter().map(NodeId).collect(),
         parent: parent.map(NodeId),
         text: None,
+        responsive: Vec::new(),
+        events: Vec::new(),
+        text_direction: None,
     }
 }
 

@@ -162,6 +162,9 @@ mod tests {
                 children: smallvec::smallvec![],
                 parent: None,
                 text: None,
+                responsive: Vec::new(),
+                events: Vec::new(),
+                text_direction: None,
             }],
             root_id: NodeId(0),
             target_hints: vec![],
@@ -206,6 +209,9 @@ mod tests {
             children: smallvec::smallvec![],
             parent: None,
             text: None,
+            responsive: Vec::new(),
+            events: Vec::new(),
+            text_direction: None,
         };
         let json = ir_json::node_to_string(&node).unwrap();
         assert!(json.contains("Button"));

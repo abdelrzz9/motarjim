@@ -28,6 +28,9 @@ fn make_node(
         children,
         parent,
         text: None,
+        responsive: Vec::new(),
+        events: Vec::new(),
+        text_direction: None,
     }
 }
 
@@ -50,6 +53,9 @@ fn make_text_node(
         children,
         parent,
         text: None,
+        responsive: Vec::new(),
+        events: Vec::new(),
+        text_direction: None,
     }
 }
 

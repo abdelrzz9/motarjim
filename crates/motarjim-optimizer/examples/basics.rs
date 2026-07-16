@@ -16,6 +16,9 @@ fn make_text_node(id: u32, text: &str) -> IrNode {
         children: smallvec::smallvec![],
         parent: None,
         text: None,
+        responsive: Vec::new(),
+        events: Vec::new(),
+        text_direction: None,
     }
 }
 
@@ -36,6 +39,9 @@ fn make_container(
         children,
         parent,
         text: None,
+        responsive: Vec::new(),
+        events: Vec::new(),
+        text_direction: None,
     }
 }
 
