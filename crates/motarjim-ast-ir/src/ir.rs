@@ -23,6 +23,36 @@ pub struct IrNode {
     pub parent: Option<motarjim_ast_html::NodeId>,
     /// The text content of this node, if it is a text node.
     pub text: Option<String>,
+    /// Responsive variants that apply to this node.
+    pub responsive: Vec<crate::layout::ResponsiveVariant>,
+    /// Event handlers attached to this node (e.g., onclick, onchange).
+    pub events: Vec<EventHandler>,
+    /// Inherited text direction (ltr/rtl/auto).
+    pub text_direction: Option<TextDirection>,
+}
+
+/// An event handler attached to an element.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
+pub struct EventHandler {
+    /// The event type (e.g., "click", "change", "submit").
+    pub event_type: SmolStr,
+    /// The source location where this event handler was defined.
+    pub source_span: motarjim_ast_html::NodeId,
+    /// The JavaScript function name or expression bound to this event.
+    pub js_binding: Option<SmolStr>,
+}
+
+/// The text direction of an element.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
+pub enum TextDirection {
+    /// Left-to-right text.
+    Ltr,
+    /// Right-to-left text.
+    Rtl,
+    /// Automatic direction detection (based on content).
+    Auto,
 }
 
 /// The full IR tree.
@@ -257,6 +287,9 @@ mod tests {
             children: SmallVec::new(),
             parent: None,
             text: None,
+            responsive: Vec::new(),
+            events: Vec::new(),
+            text_direction: None,
         }
     }
 

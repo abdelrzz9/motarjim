@@ -35,5 +35,5 @@ pub use motarjim_ast_html::{
     JustifyContent, Overflow, PositionType, TextAlign,
 };
 
-pub use motarjim_ast_ir::{Breakpoint, ResponsiveVariant};
-pub use motarjim_ast_ir::{HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr};
+pub use motarjim_ast_ir::{BreakpointCategory, BreakpointRange, ResponsiveVariant};
+pub use motarjim_ast_ir::{EventHandler, HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr, TextDirection};

@@ -11,5 +11,5 @@
 pub mod ir;
 pub mod layout;
 
-pub use ir::{HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr};
-pub use layout::{Breakpoint, ResponsiveVariant};
+pub use ir::{EventHandler, HintType, IrNode, IrTree, LayoutIr, SemanticIr, TargetHint, TargetIr, TextDirection};
+pub use layout::{BreakpointCategory, BreakpointRange, ResponsiveVariant};
