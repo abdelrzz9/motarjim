@@ -1,7 +1,8 @@
 use crate::matching::{rule_matches_element, rule_max_specificity};
-use crate::media::evaluate_media_query;
+use crate::media::{evaluate_media_query, parse_px_value};
 use crate::*;
 use motarjim_ast::HtmlNode;
+use motarjim_ast_css::{MediaCondition, MediaQuery};
 
 /// Accepts parsed stylesheets, matches selectors against DOM elements,
 /// resolves the cascade, and computes final styles.
@@ -196,6 +197,106 @@ impl StyleResolver {
     /// Clear all registered stylesheets.
     pub fn clear(&mut self) {
         self.stylesheets.clear();
+    }
+
+    /// Collect all unique breakpoint ranges from `@media` rules across all stylesheets.
+    ///
+    /// Walks the stylesheet tree, extracts `min-width` and `max-width` conditions
+    /// from `@media` rules, and returns deduplicated [`BreakpointRange`] values.
+    #[must_use]
+    pub fn collect_breakpoints(&self) -> Vec<motarjim_ast_ir::BreakpointRange> {
+        let mut breakpoints: Vec<motarjim_ast_ir::BreakpointRange> = Vec::new();
+        for sheet in &self.stylesheets {
+            for rule in &sheet.rules {
+                Self::collect_breakpoints_from_rule(rule, &mut breakpoints);
+            }
+        }
+        breakpoints
+    }
+
+    fn collect_breakpoints_from_rule(
+        rule: &CssRule,
+        breakpoints: &mut Vec<motarjim_ast_ir::BreakpointRange>,
+    ) {
+        match rule {
+            CssRule::Media(media_rule) => {
+                let range = Self::extract_breakpoint_range(&media_rule.query);
+                if let Some(bp) = range {
+                    if !breakpoints.contains(&bp) {
+                        breakpoints.push(bp);
+                    }
+                }
+                for nested in &media_rule.rules {
+                    Self::collect_breakpoints_from_rule(nested, breakpoints);
+                }
+            }
+            CssRule::Supports(supports_rule) => {
+                for nested in &supports_rule.rules {
+                    Self::collect_breakpoints_from_rule(nested, breakpoints);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Extract a [`BreakpointRange`] from a media query's conditions.
+    fn extract_breakpoint_range(query: &MediaQuery) -> Option<motarjim_ast_ir::BreakpointRange> {
+        let mut min_width: Option<u32> = None;
+        let mut max_width: Option<u32> = None;
+
+        for cond in &query.conditions {
+            match cond {
+                MediaCondition::MinWidth(px) => {
+                    if let Some(val) = parse_px_value(px) {
+                        min_width = Some(val as u32);
+                    }
+                }
+                MediaCondition::MaxWidth(px) => {
+                    if let Some(val) = parse_px_value(px) {
+                        max_width = Some(val as u32);
+                    }
+                }
+                MediaCondition::And(conds) => {
+                    for c in conds {
+                        match c {
+                            MediaCondition::MinWidth(px) => {
+                                if let Some(val) = parse_px_value(px) {
+                                    min_width = Some(val as u32);
+                                }
+                            }
+                            MediaCondition::MaxWidth(px) => {
+                                if let Some(val) = parse_px_value(px) {
+                                    max_width = Some(val as u32);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                MediaCondition::Feature { name, value: Some(val) } => {
+                    match name.as_str() {
+                        "min-width" => {
+                            if let Some(v) = parse_px_value(val) {
+                                min_width = Some(v as u32);
+                            }
+                        }
+                        "max-width" => {
+                            if let Some(v) = parse_px_value(val) {
+                                max_width = Some(v as u32);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        if min_width.is_some() || max_width.is_some() {
+            Some(motarjim_ast_ir::BreakpointRange::new(min_width, max_width))
+        } else {
+            None
+        }
     }
 
     /// Collect all `@keyframes` rules from all registered stylesheets.

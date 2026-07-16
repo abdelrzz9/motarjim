@@ -1192,6 +1192,7 @@ dependencies = [
  "motarjim-ast",
  "motarjim-ast-css",
  "motarjim-ast-html",
+ "motarjim-ast-ir",
  "motarjim-diag",
  "motarjim-lexer",
  "motarjim-selectors",

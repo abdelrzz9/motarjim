@@ -10,6 +10,7 @@ motarjim-diag = { workspace = true }
 motarjim-ast = { workspace = true }
 motarjim-ast-css = { workspace = true }
 motarjim-ast-html = { workspace = true }
+motarjim-ast-ir = { workspace = true }
 motarjim-lexer = { workspace = true }
 motarjim-selectors = { workspace = true }
 motarjim-span = { workspace = true }

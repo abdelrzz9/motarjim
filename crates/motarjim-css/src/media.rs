@@ -77,7 +77,7 @@ fn evaluate_condition(condition: &MediaCondition, viewport: (u32, u32), color_sc
 }
 
 /// Parse a pixel value from a CSS string like `"768px"` or `"768"`.
-fn parse_px_value(s: &str) -> Option<f64> {
+pub fn parse_px_value(s: &str) -> Option<f64> {
     let s = s.trim();
     if let Some(num) = s.strip_suffix("px") {
         num.trim().parse::<f64>().ok()
